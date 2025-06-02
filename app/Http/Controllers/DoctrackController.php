@@ -195,11 +195,11 @@ public function search(Request $request)
 
     $slip = Doctrack::where('docslip_id', $query)->first();
 
-    // if ($slip) {
-    //     return redirect()->route('slipMonitoring', ['docslip_id' => $slip->docslip_id]);
-    // } else {
-    //     return redirect()->back()->with('error', 'Tracking code not found.');
-    // }
+    if ($slip) {
+        return redirect()->route('slipMonitoring', ['docslip_id' => $slip->docslip_id]);
+    } else {
+        return redirect()->back()->with('error', 'Tracking code not found.');
+    }
 }
 
 // public function updateSlipStatus(Request $request, $id)
