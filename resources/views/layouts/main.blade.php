@@ -255,45 +255,92 @@
 
     <script>
         function scanQRCode(input) {
-            const file = input.files[0];
-            if (!file) return;
+            try {
+                const file = input.files[0];
+                if (!file) {
+                    console.warn("No file selected.");
+                    return;
+                }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const scale = 500 / img.width;
-                    canvas.width = 500;
-                    canvas.height = img.height * scale;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const reader = new FileReader();
 
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
-
-                    if (qrCode) {
-                        const trackingCode = qrCode.data;
-
-                        // 🔁 Use same logic as search form
-                        fetch(`{{ route('search') }}?query=${trackingCode}`)
-                            .then(response => {
-                                if (response.redirected) {
-                                    // ✅ Follow Laravel redirect to slipMonitoring
-                                    window.location.href = response.url;
-                                } else {
-                                    alert('Tracking code not found.');
-                                }
-                            });
-                    } else {
-                        alert('No QR Code detected in the image.');
-                    }
-
-                    input.value = ''; // Reset file input
+                reader.onerror = function (e) {
+                    console.error("FileReader error:", e);
+                    alert("Failed to read the file.");
                 };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+
+                reader.onload = function (e) {
+                    try {
+                        const img = new Image();
+
+                        img.onerror = function (err) {
+                            console.error("Image load error:", err);
+                            alert("Could not load the image.");
+                        };
+
+                        img.onload = function () {
+                            try {
+                                const canvas = document.createElement('canvas');
+                                const scale = 500 / img.width;
+                                canvas.width = 500;
+                                canvas.height = img.height * scale;
+
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                                let qrCode;
+                                try {
+                                    qrCode = jsQR(imageData.data, canvas.width, canvas.height);
+                                } catch (qrErr) {
+                                    console.error("Error decoding QR code:", qrErr);
+                                    alert("Error decoding QR code.");
+                                    return;
+                                }
+
+                                if (qrCode) {
+                                    const trackingCode = qrCode.data;
+                                    console.log("QR Code detected:", trackingCode);
+
+                                    fetch(`{{ route('search') }}?query=${encodeURIComponent(trackingCode)}`)
+                                        .then(response => {
+                                            if (response.redirected) {
+                                                console.log("Redirecting to:", response.url);
+                                                window.location.href = response.url;
+                                            } else {
+                                                console.warn("Tracking code not found in system.");
+                                                alert('Tracking code not found.');
+                                            }
+                                        })
+                                        .catch(fetchErr => {
+                                            console.error("Fetch error:", fetchErr);
+                                            alert("An error occurred while processing the tracking code.");
+                                        });
+                                } else {
+                                    console.warn("No QR Code detected.");
+                                    alert('No QR Code detected in the image.');
+                                }
+
+                                input.value = ''; // Reset file input
+                            } catch (canvasErr) {
+                                console.error("Canvas or image processing error:", canvasErr);
+                                alert("Error processing the image.");
+                            }
+                        };
+
+                        img.src = e.target.result;
+                    } catch (imgSetupErr) {
+                        console.error("Error initializing image object:", imgSetupErr);
+                        alert("Unexpected error occurred while preparing image.");
+                    }
+                };
+
+                reader.readAsDataURL(file);
+            } catch (err) {
+                console.error("Unexpected error in scanQRCode function:", err);
+                alert("An unexpected error occurred. Please try again.");
+            }
         }
     </script>
 
