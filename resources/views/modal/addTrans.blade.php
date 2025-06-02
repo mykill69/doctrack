@@ -21,6 +21,7 @@
                             <option value="DPCR/IPCR">DPCR/IPCR</option>
                             <option value="Reimbursement">Reimbursement</option>
                             <option value="Travel Autority">Travel Autority</option>
+                            <option value="Other Document">Other Document</option>
                         </select>
                     </div>
                     <div class="input-group mb-2">
