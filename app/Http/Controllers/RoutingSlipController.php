@@ -170,10 +170,10 @@ public function storeSlip(Request $request)
         
                 // Add stamp ONLY to the first page
                 if ($pageNo == 1) {
-                    $stampWidth = 65;  // adjust width
+                    $stampWidth = 60;  // adjust width
                     $stampHeight = 18; // adjust height
-                    $x = 130;          // adjust X position
-                    $y = 10;           // adjust Y position
+                    $x = 157;          // adjust X position
+                    $y = 3;           // adjust Y position
                     $pdf->Image($stampPath, $x, $y, $stampWidth, $stampHeight);
 
 
@@ -194,7 +194,7 @@ $textY = $y + 13;
 $pdf->Text($textX, $textY, $receivedName);
 
 // Set black font for slip ID
-$pdf->SetTextColor(0, 0, 0); // Black
+$pdf->SetTextColor(0, 139, 139); // Black
 
 $slipIdX = $textX + 27; // Shift right to avoid sticking
 $pdf->Text($slipIdX, $textY, "$slipId");
@@ -357,6 +357,8 @@ public function pdfSlip($id)
         'r_destination'   => 'nullable|string',
         'route_status'    => 'required|string',
         'esig'            => 'nullable|file|mimes:pdf,doc,docx,jpeg,png,jpg,gif',
+        'received_name'   => 'required|array',
+    'received_name.*' => 'required|string',
         // 'received_name'   => 'required|string',
         // 'date_received'   => 'required|date',
         // 'ctrl_no'         => 'required|string',
@@ -383,29 +385,38 @@ public function pdfSlip($id)
                 $pdf->useTemplate($templateId);
 
                 if ($pageNo == 1) {
-                    $stampWidth = 65;
-                    $stampHeight = 18;
-                    $x = 130;
-                    $y = 10 + 25.4;
+    $stampWidth = 60;
+    $stampHeight = 18;
+    $x = 130 + 25.4;;
+    $y = 24;
 
-                    $pdf->Image($stampPath, $x, $y, $stampWidth, $stampHeight);
+    $pdf->Image($stampPath, $x, $y, $stampWidth, $stampHeight);
 
-                    $dateReceived = strtoupper(Carbon::parse($request->input('date_received'))->format('M d, Y'));
-                    $receivedName = $request->input('received_name');
-                    $slipId = $request->input('ctrl_no');
+    // Format date
+    $dateReceived = strtoupper(Carbon::parse($request->input('date_received'))->format('M d, Y'));
+    $receivedNames = $request->input('received_name');
+    $receivedName = end($receivedNames);
+   
+    $opCtrl = $request->input('op_ctrl');
 
-                    $pdf->SetFont('Arial', '', 8);
-                    $pdf->SetTextColor(0, 139, 139);
-                    $textX = $x + 20;
-                    $textY = $y + 13;
-                    $pdf->Text($textX, $textY, $receivedName);
+    $pdf->SetFont('Arial', '', 8);
 
-                    $pdf->SetTextColor(0, 0, 0);
-                    $pdf->Text($textX + 27, $textY, "$slipId");
+    // Text base position
+    $textX = $x + 20;
+    $textY = $y + 13;
 
-                    $pdf->SetTextColor(0, 139, 139);
-                    $pdf->Text($textX, $textY + 4, $dateReceived);
-                }
+    // Set darker aqua green for received name
+    $pdf->SetTextColor(101, 82, 164);
+    $pdf->Text($textX, $textY, $receivedName);
+
+    // Set black for op_ctrl and slip ID
+    $pdf->SetTextColor(101, 82, 164);
+    $pdf->Text($textX + 30, $textY, "$opCtrl"); // Show op_ctrl
+
+    // Aqua green for date below
+    $pdf->SetTextColor(101, 82, 164);
+    $pdf->Text($textX, $textY + 4, $dateReceived);
+}
             }
 
             $pdf->Output('F', $fullDocumentPath); // Overwrite original
@@ -439,6 +450,12 @@ public function pdfSlip($id)
     $routingSlip->r_destination  = $request->input('r_destination');
     $routingSlip->route_status   = $request->input('route_status');
     $routingSlip->save();
+
+$existingNames = $routingSlip->received_name ? explode(',', $routingSlip->received_name) : [];
+$newNames = array_map('trim', $request->input('received_name')); // remove spaces
+$mergedNames = array_unique(array_merge($existingNames, $newNames)); // prevent duplicates
+
+$routingSlip->received_name = implode(', ', $mergedNames);
 
     return redirect()->route('viewSlip')->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated and stamped successfully.');
 }

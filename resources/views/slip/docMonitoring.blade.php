@@ -198,34 +198,31 @@
                                     </p>
                                 </div>
 
-                                @if ($documentTrack->update_by !== null)
+                               @php
+    $currentUserId = auth()->user()->id;
+    $canComment = $documentTrack->update_by === $currentUserId;
+@endphp
+
+@if ($documentTrack->update_by !== null)
     <div class="mt-2">
         <h5 class="text-muted">Comments:</h5>
         <form id="commentForm{{ $loop->index }}"
-              action="{{ route('updateSlipStatus', $documentTrack->id) }}" method="POST"
-              class="comment-form d-flex gap-2">
+              action="{{ route('updateSlipStatus', $documentTrack->id) }}"
+              method="POST" class="comment-form d-flex gap-2">
             @csrf
             @method('PUT')
 
-            <textarea
-                class="form-control comment-input"
-                name="comments"
-                 rows="3"
-                placeholder="Add a comment"
-                {{ !$isEnabled || $documentTrack->comments ? 'disabled' : '' }}
-            >{{ $documentTrack->comments }}</textarea>
+            <textarea class="form-control comment-input" name="comments" rows="3"
+                      placeholder="Add a comment"
+                      {{ !$canComment ? 'disabled' : '' }}>{{ $documentTrack->comments }}</textarea>
 
-            <button type="submit"
-                    class="btn btn-primary"
-                    {{ !$isEnabled || $documentTrack->comments ? 'disabled' : '' }}>
+            <button type="submit" class="btn btn-primary"
+                    {{ !$canComment ? 'disabled' : '' }}>
                 <i class="fa fa-paper-plane"></i>
             </button>
         </form>
     </div>
 @endif
-
-
-
 
                             </div>
 
