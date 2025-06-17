@@ -231,19 +231,15 @@ public function updateSlipStatus(Request $request, $id)
 
 public function deleteSlip($id)
 {
-    // Find the user by ID
+    // Find the document by ID
     $documentTrack = Doctrack::findOrFail($id);
 
-    // Delete the user
+    // Delete the document
     $documentTrack->delete();
 
-    // Redirect back with a success message
-    if ($documentTrack) {
-        return redirect()->route('slipMonitoring', ['docslip_id' => $documentTrack->docslip_id])
+    // Redirect to doctrackslip-list with a success message
+    return redirect()->route('doctrackSlip')
         ->with('success', 'Document deleted successfully!');
-    } else {
-        return redirect()->back()->with('error', 'Tracking code not found.');
-    }
 }
 
 
