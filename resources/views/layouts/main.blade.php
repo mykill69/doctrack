@@ -100,7 +100,7 @@
                                         </li>
                                     </ul>
                                 </div>
-                            @elseif ($user_role === 'staff')
+                            @elseif (in_array($user_role, ['super_user', 'staff']))
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-warning dropdown-toggle"
                                         data-toggle="dropdown" aria-expanded="false">
