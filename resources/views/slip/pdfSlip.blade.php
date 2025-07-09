@@ -1,8 +1,5 @@
 <style>
-@font-face {
-font-family: 'Embassy BT';
-src: url('{{ public_path("font/embassybt_regular.ttf") }}') format('truetype');
-}
+
 .text-font {
 font-family: 'Embassy BT', Arial, sans-serif;
 }
@@ -78,7 +75,7 @@ line-height: 2.3;
 /*border: 1px solid black;*/
 }
 </style>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+{{-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"> --}}
 <div class="content-wrapper">
     <div class="card-body">
         <div class="table-container">

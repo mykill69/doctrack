@@ -18,103 +18,12 @@ use App\Models\Log;
 use App\Models\LogsHistory;
 use App\Models\AssignLogs;
 use App\Models\Remark;
+use App\Models\User;
 
 
 class RoutingSlipController extends Controller
 {
-    // public function storeSlip(Request $request)
-    // {
-    // $isSuperUser = auth()->user()->role === 'super_user';
-    // $request->validate([
-    // 'ctrl_no' => 'required|integer',  // Control number input from the form
-    // 'user_id' => 'required|integer',
-    // 'source' => 'required|string',
-    // 'subject' => 'required|string',
-    // 'trans_remarks' => 'nullable|string',
-    // 'other_remarks' => 'nullable|string',
-    // 'r_destination' => $isSuperUser ? 'required|string' : 'nullable|string',
-    // 'route_status' => 'required|string',
-    // 'document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,png,jpeg',
-    // 'date_received' => 'required|string',
-    // ]);
-    // if ($request->hasFile('document')) {
-    // $documentPath = $request->file('document')->store('documents');
-    // } else {
-    // return redirect()->back()->withErrors(['document' => 'No document file provided.']);
-    // }
-    // // Get the control number from the input field
-    // $rslip_id = $request->input('ctrl_no');
-    // $file = $request->file('document');
-    // $documentName = str_replace(' ', '_', $file->getClientOriginalName());
-    // $documentPath = $file->storeAs('documents', $documentName);
-    // RoutingSlip::create([
-    // 'rslip_id' => $rslip_id,  // Use control number as rslip_id
-    // 'user_id' => $request->input('user_id'),
-    // 'source' => $request->input('source'),
-    // 'subject' => $request->input('subject'),
-    // 'trans_remarks' => $request->input('trans_remarks'),
-    // 'other_remarks' => $request->input('other_remarks'),
-    // 'r_destination' => $request->input('r_destination'),
-    // 'document' => $documentName,
-    // 'route_status' => $request->input('route_status'),
-    // 'date_received' => $request->input('date_received'),
-    // ]);
-    // return redirect()->route('viewSlip')->with('success', 'Routing Slip added successfully.');
-    // }
-//     public function storeSlip(Request $request)
-// {
-//     $isSuperUser = auth()->user()->role === 'super_user';
-    
-//     // Validate the incoming request
-//     $request->validate([
-//         'ctrl_no' => 'required|integer',
-//         'user_id' => 'required|integer',
-//         'source' => 'required|string',
-//         'subject' => 'required|string',
-//         'trans_remarks' => 'nullable|string',
-//         'other_remarks' => 'nullable|string',
-//         'r_destination' => $isSuperUser ? 'required|string' : 'nullable|string',
-//         'route_status' => 'required|string',
-//         'received_name' => 'required|string',
-//         'document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,png,jpeg',
-//         'date_received' => 'required|string',
-//     ]);
-
-//     // Check if the request has a document file
-//     if ($request->hasFile('document')) {
-//         // Get the file
-//         $file = $request->file('document');
-        
-//         // Sanitize the file name by replacing spaces with underscores
-//         $documentName = str_replace(' ', '_', $file->getClientOriginalName());
-        
-//         // Store the file with the desired name
-//         $documentPath = $file->storeAs('documents', $documentName);
-//     } else {
-//         return redirect()->back()->withErrors(['document' => 'No document file provided.']);
-//     }
-
-//     // Get the control number from the input field
-//     $rslip_id = $request->input('ctrl_no');
-
-//     // Create a new routing slip record in the database
-//     RoutingSlip::create([
-//         'rslip_id' => $rslip_id,  // Use control number as rslip_id
-//         'user_id' => $request->input('user_id'),
-//         'source' => $request->input('source'),
-//         'subject' => $request->input('subject'),
-//         'trans_remarks' => $request->input('trans_remarks'),
-//         'other_remarks' => $request->input('other_remarks'),
-//         'r_destination' => $request->input('r_destination'),
-//         'document' => $documentName,  // Save the sanitized document name
-//         'received_name' => $request->input('received_name'),
-//         'route_status' => $request->input('route_status'),
-//         'date_received' => $request->input('date_received'),
-//     ]);
-
-//     // Redirect back with success message
-//     return redirect()->route('viewSlip')->with('success', 'Routing Slip added successfully.');
-// }
+   
 
 public function storeSlip(Request $request)
 {
