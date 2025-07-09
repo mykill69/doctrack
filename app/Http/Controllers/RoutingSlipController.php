@@ -144,54 +144,62 @@ $pdf->Text($textX, $textY + 4, $dateReceived);
 }
 
 
-    public function viewSlip()
-    {
-    $userId = auth()->user()->id;
-    $userDepartment = auth()->user()->department;
+public function viewSlip()
+{
+    /** @var \App\Models\User $user */
+    $user = auth()->user(); // hint to IDE
+
+    $userId = $user->id;
+    $userDepartment = $user->department;
     $logs = Log::where('user_id', $userId)->get();
+
     // Count routing slips
-    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+        ? RoutingSlip::where('route_status', 3)->count()
+        : 0;
+
+    $superUserCount = $user->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $user->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+
     $routingSlips = RoutingSlip::all();
     $offices = Office::all();
-    return view('slip.routingSlip', compact('routingSlips','routingSlipCount','superUserCount', 'offices','recordsOfficerCount'));
-    }
 
-    public function viewPdfslip($id)
-    {
-    $document = RoutingSlip::findOrFail($id);
-    $routingSlips = RoutingSlip::all();
-    $filePath = storage_path('app/documents/' . $document->document);
-    if (file_exists($filePath)) {
-        // Set filename in download
-        $filename = $document->document; // This should be the original file name stored
-
-        return response()->file($filePath, [
-            'Content-Disposition' => 'inline; filename="' . $filename . '"'
-        ]);
-    } else {
-        return redirect()->back()->with('error', 'File not found.');
-    }
+    return view('slip.routingSlip', compact(
+        'routingSlips',
+        'routingSlipCount',
+        'superUserCount',
+        'offices',
+        'recordsOfficerCount'
+    ));
 }
 
-    public function slipForm($id)
+
+public function slipForm($id)
 {
+    /** @var \App\Models\User $user */
+    $user = auth()->user();
+
     // Fetch the routing slip record based on the given ID
     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
 
     // Fetch all remarks from the remarks table
     $remarks = Remark::all();
 
-    // Fetch other related data if needed (e.g., document info, users, etc.)
+    // Fetch related documents
     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $recordsOfficerCount = $user->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $user->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
 
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-
-    return view('slip.slipForm', compact('remarks', 'routingSlip', 'relatedDocuments', 'recordsOfficerCount', 'superUserCount'));
+    return view('slip.slipForm', compact(
+        'remarks',
+        'routingSlip',
+        'relatedDocuments',
+        'recordsOfficerCount',
+        'superUserCount'
+    ));
 }
+
 
 public function pdfSlip($id)
 {
@@ -242,17 +250,32 @@ public function pdfSlip($id)
 }
 
 
-    public function editSlip($id)
-    {
-    $userId = auth()->user()->id;
-    $userDepartment = auth()->user()->department;
+public function editSlip($id)
+{
+    /** @var \App\Models\User $user */
+    $user = auth()->user(); // help Intelephense understand the type
+
+    $userId = $user->id;
+    $userDepartment = $user->department;
+
     $routingSlips = RoutingSlip::findOrFail($id);
     $logs = Log::where('user_id', $userId)->get();
-    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
-    return view('slip.editSlip', compact('routingSlips','routingSlipCount','superUserCount','recordsOfficerCount'));
-    }
+
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+        ? RoutingSlip::where('route_status', 3)->count()
+        : 0;
+
+    $superUserCount = $user->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $user->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+
+    return view('slip.editSlip', compact(
+        'routingSlips',
+        'routingSlipCount',
+        'superUserCount',
+        'recordsOfficerCount'
+    ));
+}
+
 
     public function updateSlip(Request $request, $id)
 {
@@ -336,8 +359,8 @@ public function pdfSlip($id)
     // Handle e-signature upload
     if ($request->hasFile('esig')) {
         // Delete the old e-signature file if exists
-        if ($routingSlip->esig && \Storage::exists('documents/' . $routingSlip->esig)) {
-            \Storage::delete('documents/' . $routingSlip->esig);
+        if ($routingSlip->esig && Storage::exists('documents/' . $routingSlip->esig)) {
+            Storage::delete('documents/' . $routingSlip->esig);
         }
 
         // Store the new e-signature file
@@ -377,8 +400,8 @@ $routingSlip->received_name = implode(', ', $mergedNames);
     $offices = Office::all();
     $logs = Log::where('user_id', $userId)->get();
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $userId()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $userId()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
     return view('slip.editDest', compact('routingSlips','offices','routingSlipCount','superUserCount','recordsOfficerCount'));
     }
 
@@ -576,8 +599,8 @@ public function updateAssign(Request $request, $routeId)
 
     $logs = Log::where('user_id', $userId)->get();
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $userId()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $userId()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     return view('slip.editAssign', compact('routingSlips', 'offices', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'document'));
 }
