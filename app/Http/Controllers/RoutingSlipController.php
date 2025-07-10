@@ -19,6 +19,8 @@ use App\Models\LogsHistory;
 use App\Models\AssignLogs;
 use App\Models\Remark;
 use App\Models\User;
+use App\Mail\DocumentRoutedNotification;
+use Illuminate\Support\Facades\Mail;
 
 
 class RoutingSlipController extends Controller
@@ -39,109 +41,40 @@ public function storeSlip(Request $request)
         'r_destination' => $isSuperUser ? 'required|string' : 'nullable|string',
         'route_status' => 'required|string',
         'received_name' => 'required|string',
-        'document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,png,jpeg',
+        'document' => 'required|file|mimes:pdf',
+        'file_stamp' => 'required|file|mimes:jpg,jpeg,png',
         'date_received' => 'required|string',
     ]);
 
-    if ($request->hasFile('document')) {
-        $file = $request->file('document');
-        $originalName = str_replace(' ', '_', $file->getClientOriginalName());
-        $filename = pathinfo($originalName, PATHINFO_FILENAME);
-        $extension = $file->getClientOriginalExtension();
-        $documentName = $filename . '.' . $extension;
-        $documentPath = 'documents/' . $documentName;
-        $counter = 1;
+    // Store the uploaded PDF
+    $pdfFile = $request->file('document');
+    $pdfName = $pdfFile->getClientOriginalName();
+    $pdfFile->storeAs('documents', $pdfName);
 
-        // Check if file exists and rename if necessary
-        while (Storage::exists($documentPath)) {
-            $documentName = $filename . " (copy $counter)." . $extension;
-            $documentPath = 'documents/' . $documentName;
-            $counter++;
-        }
+    // Store the uploaded stamp image
+$stampFile = $request->file('file_stamp');
+$stampName = $stampFile->getClientOriginalName(); // keep the original filename
+$stampFile->storeAs('stamps', $stampName); // this will overwrite if file already exists
 
-        // Save the file
-        $file->storeAs('documents', $documentName);
-
-        // === Start Stamping Process ===
-        if ($file->getClientOriginalExtension() === 'pdf') {
-            $fullDocumentPath = storage_path('app/' . $documentPath); // Path to uploaded PDF
-            $stampPath = storage_path('app/stamps/received_records.png'); // Path to stamp image
-        
-            $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($fullDocumentPath);
-        
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
-        
-                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                $pdf->useTemplate($templateId);
-        
-                // Add stamp ONLY to the first page
-                if ($pageNo == 1) {
-                    $stampWidth = 60;  // adjust width
-                    $stampHeight = 18; // adjust height
-                    $x = 157;          // adjust X position
-                    $y = 3;           // adjust Y position
-                    $pdf->Image($stampPath, $x, $y, $stampWidth, $stampHeight);
-
-
-// Format date
-$dateReceived = Carbon::parse($request->input('date_received'))->format('M d, Y');
-$dateReceived = strtoupper($dateReceived);
-
-$receivedName = $request->input('received_name');
-$slipId = $request->input('ctrl_no');
-
-// Set font and darker aqua green color for received name
-$pdf->SetFont('Arial', '', 8);
-$pdf->SetTextColor(0, 139, 139); // Darker aqua green
-
-$textX = $x + 20;
-$textY = $y + 13;
-
-$pdf->Text($textX, $textY, $receivedName);
-
-// Set black font for slip ID
-$pdf->SetTextColor(0, 139, 139); // Black
-
-$slipIdX = $textX + 27; // Shift right to avoid sticking
-$pdf->Text($slipIdX, $textY, "$slipId");
-
-// Draw the date below
-$pdf->SetTextColor(0, 139, 139); // Aqua green again for date
-$pdf->Text($textX, $textY + 4, $dateReceived);
-                }
-            }
-        
-            // Save the stamped PDF (overwrite original)
-            $pdf->Output('F', $fullDocumentPath);
-        }
-        // === End Stamping Process ===
-
-    } else {
-        return redirect()->back()->withErrors(['document' => 'No document file provided.']);
-    }
-
-    $rslip_id = $request->input('ctrl_no');
-
+    // Save to DB without modifying PDF
     RoutingSlip::create([
-
-        'rslip_id' => $rslip_id,
-        'user_id' => $request->input('user_id'),
-        'source' => $request->input('source'),
-        'subject' => $request->input('subject'),
-        'trans_remarks' => $request->input('trans_remarks'),
-        'other_remarks' => $request->input('other_remarks'),
-        'r_destination' => $request->input('r_destination'),
-        'document' => $documentName,
-        'received_name' => $request->input('received_name'),
-        'route_status' => $request->input('route_status'),
-        'date_received' => $request->input('date_received'),
+        'rslip_id' => $request->ctrl_no,
+        'user_id' => $request->user_id,
+        'source' => $request->source,
+        'subject' => $request->subject,
+        'trans_remarks' => $request->trans_remarks,
+        'other_remarks' => $request->other_remarks,
+        'r_destination' => $request->r_destination,
+        'document' => $pdfName,
+        'received_name' => $request->received_name,
+        'route_status' => $request->route_status,
+        'date_received' => $request->date_received,
     ]);
 
-    return redirect()->route('viewSlip')->with('success', 'Routing Slip added and stamped successfully.');
+    return redirect()->route('viewSlip')->with('success', 'PDF and stamp uploaded successfully.');
 }
+
+
 
 
 public function viewSlip()
@@ -171,6 +104,22 @@ public function viewSlip()
         'offices',
         'recordsOfficerCount'
     ));
+}
+public function viewPdfslip($id)
+    {
+    $document = RoutingSlip::findOrFail($id);
+    $routingSlips = RoutingSlip::all();
+    $filePath = storage_path('app/documents/' . $document->document);
+    if (file_exists($filePath)) {
+        // Set filename in download
+        $filename = $document->document; // This should be the original file name stored
+
+        return response()->file($filePath, [
+            'Content-Disposition' => 'inline; filename="' . $filename . '"'
+        ]);
+    } else {
+        return redirect()->back()->with('error', 'File not found.');
+    }
 }
 
 
@@ -289,90 +238,39 @@ public function editSlip($id)
         'r_destination'   => 'nullable|string',
         'route_status'    => 'required|string',
         'esig'            => 'nullable|file|mimes:pdf,doc,docx,jpeg,png,jpg,gif',
+        'file_stamp'      => 'nullable|file|mimes:jpg,jpeg,png',
         'received_name'   => 'required|array',
-    'received_name.*' => 'required|string',
-        // 'received_name'   => 'required|string',
-        // 'date_received'   => 'required|date',
-        // 'ctrl_no'         => 'required|string',
+        'received_name.*' => 'required|string',
     ]);
 
     $routingSlip = RoutingSlip::findOrFail($id);
 
-    // === Start Stamping Process ===
-    if ($routingSlip->document && str_ends_with(strtolower($routingSlip->document), '.pdf')) {
-        $documentPath = 'documents/' . $routingSlip->document;
-        $fullDocumentPath = storage_path('app/' . $documentPath); // Full path to PDF
-
-        if (file_exists($fullDocumentPath)) {
-            $stampPath = storage_path('app/stamps/PRESIDENT_1.png'); // Stamp path
-
-            $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($fullDocumentPath);
-
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
-
-                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                $pdf->useTemplate($templateId);
-
-                if ($pageNo == 1) {
-    $stampWidth = 60;
-    $stampHeight = 18;
-    $x = 130 + 25.4;;
-    $y = 24;
-
-    $pdf->Image($stampPath, $x, $y, $stampWidth, $stampHeight);
-
-    // Format date
-    $dateReceived = strtoupper(Carbon::parse($request->input('date_received'))->format('M d, Y'));
-    $receivedNames = $request->input('received_name');
-    $receivedName = end($receivedNames);
-   
-    $opCtrl = $request->input('op_ctrl');
-
-    $pdf->SetFont('Arial', '', 8);
-
-    // Text base position
-    $textX = $x + 20;
-    $textY = $y + 13;
-
-    // Set darker aqua green for received name
-    $pdf->SetTextColor(101, 82, 164);
-    $pdf->Text($textX, $textY, $receivedName);
-
-    // Set black for op_ctrl and slip ID
-    $pdf->SetTextColor(101, 82, 164);
-    $pdf->Text($textX + 30, $textY, "$opCtrl"); // Show op_ctrl
-
-    // Aqua green for date below
-    $pdf->SetTextColor(101, 82, 164);
-    $pdf->Text($textX, $textY + 4, $dateReceived);
-}
-            }
-
-            $pdf->Output('F', $fullDocumentPath); // Overwrite original
-        }
-    }
-    // === End Stamping Process ===
-
-    // Handle e-signature upload
+    // Handle new e-signature upload
     if ($request->hasFile('esig')) {
-        // Delete the old e-signature file if exists
         if ($routingSlip->esig && Storage::exists('documents/' . $routingSlip->esig)) {
             Storage::delete('documents/' . $routingSlip->esig);
         }
 
-        // Store the new e-signature file
-        $file = $request->file('esig');
-        $filename = time() . '_' . $file->getClientOriginalName();
-        $file->storeAs('documents', $filename);
+        $esig = $request->file('esig');
+        $esigName = $esig->getClientOriginalName();
+        $esig->storeAs('documents', $esigName);
+        $routingSlip->esig = $esigName;
+    }
+// Handle file stamp upload (no renaming, replace if already exists)
+if ($request->hasFile('file_stamp')) {
+    $stampFile = $request->file('file_stamp');
+    $stampName = $stampFile->getClientOriginalName();
 
-        // Update the routing slip with the new e-signature filename
-        $routingSlip->esig = $filename;
+    // Delete if it already exists
+    if (Storage::exists('stamps/' . $stampName)) {
+        Storage::delete('stamps/' . $stampName);
     }
 
-    // Update routing slip fields
+    // Save the new stamp (replace old one with same name)
+    $stampFile->storeAs('stamps', $stampName);
+}
+
+    // Update other fields
     $routingSlip->op_ctrl        = $request->input('op_ctrl');
     $routingSlip->user_id        = $request->input('user_id');
     $routingSlip->pres_dept      = $request->input('pres_dept');
@@ -381,137 +279,123 @@ public function editSlip($id)
     $routingSlip->other_remarks  = $request->input('other_remarks');
     $routingSlip->r_destination  = $request->input('r_destination');
     $routingSlip->route_status   = $request->input('route_status');
+
+    // Merge received names
+    $existingNames = $routingSlip->received_name ? explode(',', $routingSlip->received_name) : [];
+    $newNames = array_map('trim', $request->input('received_name'));
+    $mergedNames = array_unique(array_merge($existingNames, $newNames));
+    $routingSlip->received_name = implode(', ', $mergedNames);
+
     $routingSlip->save();
 
-$existingNames = $routingSlip->received_name ? explode(',', $routingSlip->received_name) : [];
-$newNames = array_map('trim', $request->input('received_name')); // remove spaces
-$mergedNames = array_unique(array_merge($existingNames, $newNames)); // prevent duplicates
-
-$routingSlip->received_name = implode(', ', $mergedNames);
-
-    return redirect()->route('viewSlip')->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated and stamped successfully.');
+    return redirect()->route('viewSlip')->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
 }
 
+
     public function editDest($id)
-    {
-    $userId = auth()->user()->id;
-    $userDepartment = auth()->user()->department;
+{
+    $user = auth()->user(); // Full user object
+    $userId = $user->id;
+    $userDepartment = $user->department;
+    $userRole = $user->role;
+
     $routingSlips = RoutingSlip::findOrFail($id);
-    $offices = Office::all();
+    $users = User::select('id', 'fname', 'lname')->get();
     $logs = Log::where('user_id', $userId)->get();
-    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = $userId()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = $userId()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
-    return view('slip.editDest', compact('routingSlips','offices','routingSlipCount','superUserCount','recordsOfficerCount'));
-    }
+
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+        ? RoutingSlip::where('route_status', 3)->count()
+        : 0;
+
+    $superUserCount = ($userRole === 'super_user')
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
+    $recordsOfficerCount = ($userRole === 'records_officer')
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
+
+    return view('slip.editDest', compact(
+    'routingSlips',
+    'users', // changed from 'offices'
+    'routingSlipCount',
+    'superUserCount',
+    'recordsOfficerCount'
+));
+}
 
     public function storeRouteDoc(Request $request)
 {
     $validatedData = $request->validate([
-        'doc_type' => 'required|string',
-        'full_name' => 'required|string',
-        'subject' => 'required|string',
-        'file_name' => 'required|string',
-        'purpose' => 'nullable|string',
-        'department' => 'required|string',
-        'for_to' => 'required|string',
-        'doc_stat' => 'required|integer',
-        'user_id' => 'required|integer',
-        'route_id' => 'required|integer',
+        'doc_type'     => 'required|string',
+        'full_name'    => 'required|string',
+        'subject'      => 'required|string',
+        'file_name'    => 'required|string',
+        'purpose'      => 'nullable|string',
+        'department'   => 'required|string',
+        'for_to'       => 'required|string',
+        'doc_stat'     => 'required|integer',
+        'user_id'      => 'required|integer',
+        'route_id'     => 'required|integer',
+        'routed_to'    => 'required|array',
+        'routed_to.*'  => 'required|string',
     ]);
 
+    // Save to documents table
     $document = new Document();
-    $document->doc_type = $validatedData['doc_type'];
-    $document->full_name = $validatedData['full_name'];
-    $document->subject = $validatedData['subject'];
-    $document->file_name = $validatedData['file_name'];
-    $document->purpose = $validatedData['purpose'];
+    $document->doc_type   = $validatedData['doc_type'];
+    $document->full_name  = $validatedData['full_name'];
+    $document->subject    = $validatedData['subject'];
+    $document->file_name  = $validatedData['file_name'];
+    $document->purpose    = $validatedData['purpose'];
     $document->department = $validatedData['department'];
-    $document->for_to = $validatedData['for_to'];
-    $document->doc_stat = $validatedData['doc_stat'];
-    $document->user_id = $validatedData['user_id'];
-    $document->route_id = $validatedData['route_id'];
+    $document->for_to     = $validatedData['for_to'];
+    $document->doc_stat   = $validatedData['doc_stat'];
+    $document->user_id    = $validatedData['user_id'];
+    $document->route_id   = $validatedData['route_id'];
     $document->save();
 
-    $destinationFields = ['destination_1', 'destination_2', 'destination_3', 'destination_4', 'destination_5', 'destination_6', 'destination_7', 'destination_8', 'destination_9', 'destination_10'];
-    
-    $routeDocument = RouteDocument::where('route_id', $document->route_id)->first();
-
-    if ($routeDocument) {
-        foreach ($destinationFields as $field) {
-            if (is_null($routeDocument->{$field}) || empty($routeDocument->{$field})) {
-                if ($request->has($field)) {
-                    foreach ($request->input($field) as $destination) {
-                        $routeDocument->{$field} = $destination;
-
-                        $log = Log::create([
-                            'user_id' => auth()->user()->id,
-                            'doc_id' => $document->id,
-                            'route_id' => $document->route_id,
-                            'action' => 'Added new destination',
-                            'status_update' => $document->doc_stat,
-                            'prev_file' => null,
-                            'new_file' => $document->file_name,
-                            'new_destination' => $destination,
-                            'created_at' => now(),
-                        ]);
-
-                        // Insert into logs_history
-                        LogsHistory::create([
-                            
-                            'doc_id' => $document->id,
-                            'action' => $log->action,
-                            'status_update' => $log->status_update
-                        ]);
-                    }
-                    $routeDocument->save();
-                    break;
-                }
-            }
-        }
-    } else {
-        $routeDocument = new RouteDocument();
-        $routeDocument->route_id = $document->route_id;
-
-        foreach ($destinationFields as $field) {
-            if ($request->has($field)) {
-                foreach ($request->input($field) as $destination) {
-                    $routeDocument->{$field} = $destination;
-
-                    $log = Log::create([
-                        'user_id' => auth()->user()->id,
-                        'doc_id' => $document->id,
-                        'route_id' => $document->route_id,
-                        'action' => 'Added new destination',
-                        'status_update' => $document->doc_stat,
-                        'prev_file' => null,
-                        'new_file' => $document->file_name,
-                        'new_destination' => $destination,
-                        'created_at' => now(),
-                    ]);
-
-                    // Insert into logs_history
-                    LogsHistory::create([
-                        
-                        'doc_id' => $document->id,
-                        'action' => $log->action,
-                        'status_update' => $log->status_update
-                    ]);
-                }
-            }
-        }
-
-        $routeDocument->save();
+    // Save routed users as a string (comma-separated) to routing_slip
+    $routedUsers = implode(', ', $validatedData['routed_to']);
+    $routingSlip = RoutingSlip::where('rslip_id', $validatedData['route_id'])->first();
+    if ($routingSlip) {
+        $routingSlip->routed_users = $routedUsers;
+        $routingSlip->route_status = 3;
+        $routingSlip->save();
     }
 
-    $routingSlips = RoutingSlip::where('rslip_id', $validatedData['route_id'])->first();
-    if ($routingSlips) {
-        $routingSlips->route_status = 3;
-        $routingSlips->save();
+    // ✅ ADD EMAIL & LOGIC HERE
+    foreach ($validatedData['routed_to'] as $destination) {
+        // Save to logs table
+        $log = Log::create([
+            'user_id'         => auth()->user()->id,
+            'doc_id'          => $document->id,
+            'route_id'        => $document->route_id,
+            'action'          => 'Added new destination',
+            'status_update'   => $document->doc_stat,
+            'prev_file'       => null,
+            'new_file'        => $document->file_name,
+            'new_destination' => $destination,
+            'created_at'      => now(),
+        ]);
+
+        // Save to logs_history
+        LogsHistory::create([
+            'doc_id'        => $document->id,
+            'action'        => $log->action,
+            'status_update' => $log->status_update
+        ]);
+
+        // Email logic
+        $userRecipient = \App\Models\User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
+        if ($userRecipient && $userRecipient->email) {
+            Mail::to($userRecipient->email)->send(new DocumentRoutedNotification($document, $destination));
+        }
     }
 
-    return redirect()->route('dashboard')->with('success', 'Document with CTRL#' . $routingSlips->rslip_id . ' was created successfully.');
+    return redirect()->route('dashboard')->with('success', 'Document with CTRL#' . $routingSlip->rslip_id . ' was created successfully.');
 }
+
 
 
 public function updateAssign(Request $request, $routeId)

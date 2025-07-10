@@ -17,12 +17,12 @@ class LoginAuthController extends Controller
     public function postLogin(Request $request)
     {
         $request->validate([
-            'username' => 'required',
+            'email' => 'required',
             'password' => 'required',
         ]);
 
         $validatedAdmin = auth()->attempt([
-            'username' => $request->username,
+            'email' => $request->email,
             'password' => $request->password,
         ]);
 

@@ -52,45 +52,47 @@
                                 placeholder="Type the subject here" required></textarea>
                         </div>
 
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-list-ul"></i></span>
-                            </div>
-                            <select class="form-control" id="transRemarks" name="trans_remarks"
-                                @if (auth()->user()->role !== 'super_user') disabled @endif required>
-                                <option value="">Select Remarks</option>
-                                <option value="Appropriate Action">Appropriate Action</option>
-                                <option value="Comment &/or Recommendation">Comment &/or Recommendation</option>
-                                <option value="Information">Information</option>
-                                <option value="Endorsement">Endorsement</option>
-                                <option value="Edit/Correct">Edit/Correct</option>
-                                <option value="Review/Study">Review/Study</option>
-                                <option value="File">File</option>
-                                <option value="Draft Reply">Draft Reply</option>
-                            </select>
-                        </div>
+                        @php
+                            $isSuperUser = auth()->user()->role === 'super_user';
+                        @endphp
 
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">
-                                    <i class="fa fa-map-marker"></i>
-                                </span>
+                        @if ($isSuperUser)
+                            <!-- Select Remarks (Visible only to super_user) -->
+                            <div class="input-group mb-2">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fa fa-list-ul"></i></span>
+                                </div>
+                                <select class="form-control" id="transRemarks" name="trans_remarks" required>
+                                    <option value="">Select Remarks</option>
+                                    <option value="Appropriate Action">Appropriate Action</option>
+                                    <option value="Comment &/or Recommendation">Comment &/or Recommendation</option>
+                                    <option value="Information">Information</option>
+                                    <option value="Endorsement">Endorsement</option>
+                                    <option value="Edit/Correct">Edit/Correct</option>
+                                    <option value="Review/Study">Review/Study</option>
+                                    <option value="File">File</option>
+                                    <option value="Draft Reply">Draft Reply</option>
+                                </select>
                             </div>
-                            <input type="text" class="form-control float-right" id="destination" name="r_destination"
-                                placeholder="Enter destination..." @if (auth()->user()->role !== 'super_user') disabled @endif
-                                required>
-                        </div>
 
-                        <!-- File input -->
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">
-                                    <i class="fa fa-file"></i>
-                                </span>
+                            <!-- Destination (Visible only to super_user) -->
+                            <div class="input-group mb-2">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fa fa-map-marker"></i></span>
+                                </div>
+                                <input type="text" class="form-control float-right" id="destination"
+                                    name="r_destination" placeholder="Enter destination..." required>
                             </div>
-                            <input type="file" class="form-control" name="document" required>
-                        </div>
+                        @endif
 
+
+                        <div class="input-group mb-3">
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="chooseDocuments" name="document"
+                                    required>
+                                <label class="custom-file-label" for="chooseDocuments">Choose documents</label>
+                            </div>
+                        </div>
                         <div class="input-group mb-2">
                             <div class="input-group-prepend">
                                 <span class="input-group-text">
@@ -100,6 +102,16 @@
                             <input type="text" class="form-control float-right" id="received_name"
                                 name="received_name" placeholder="Name on the Received stamp" required>
                         </div>
+                        <!-- Upload File Stamp -->
+                        <div class="input-group mb-3">
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="uploadStamp" name="file_stamp"
+                                    required>
+                                <label class="custom-file-label" for="uploadStamp">Upload file stamp</label>
+                            </div>
+                        </div>
+
+
 
 
                         <input type="hidden" id="route_status" name="route_status" value="1" required>
@@ -111,3 +123,13 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Automatically update the label when a file is selected
+    document.querySelectorAll('.custom-file-input').forEach(function(input) {
+        input.addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || "Choose file";
+            e.target.nextElementSibling.innerText = fileName;
+        });
+    });
+</script>

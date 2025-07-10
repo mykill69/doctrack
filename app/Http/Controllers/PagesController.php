@@ -25,8 +25,11 @@ class PagesController extends Controller
    
     public function incoming()
 {
-    $userDepartment = auth()->user()->department;
-    $userId = auth()->user()->id;
+    $user = auth()->user();
+    $userDepartment = $user->department;
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
 
     $logs = Log::where(function ($query) use ($userId, $userDepartment) {
         $query->where('new_user', $userId)
@@ -35,8 +38,8 @@ class PagesController extends Controller
     })->get(); 
 
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0; 
+    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $userRole->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0; 
 
     $offices = Office::all();
 
@@ -45,8 +48,11 @@ class PagesController extends Controller
 
 public function doctrackSlip()
 {
-    $userDepartment = auth()->user()->department;
-    $userId = auth()->user()->id;
+    $user = auth()->user();
+    $userDepartment = $user->department;
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
 
     // Retrieve logs based on the current user or department
     $logs = Log::where(function ($query) use ($userId, $userDepartment) {
@@ -56,8 +62,8 @@ public function doctrackSlip()
     })->get(); 
 
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0; 
+    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $userRole->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0; 
 
     $offices = Office::all();
 
@@ -74,7 +80,7 @@ public function doctrackSlip()
             if ($index == 0) {
                 // For the first item in the group, consider it the oldest
                 $oldest = $item;
-                $item->time_diff = ['days' => 0, 'hours' => 0, 'minutes' => 0]; // No diff for the first item
+               $item->setAttribute('time_diff',['days' => 0, 'hours' => 0, 'minutes' => 0]); // No diff for the first item
             } else {
                 // For subsequent items, calculate the time difference from the oldest
                 $start = \Carbon\Carbon::parse($group->first()->created_at);
@@ -82,11 +88,11 @@ public function doctrackSlip()
                 $diffInMinutes = $end->diffInMinutes($start);
 
                 // Add time_diff to the item object
-                $item->time_diff = [
+               $item->setAttribute('time_diff', [
                     'days' => floor($diffInMinutes / 1440),
                     'hours' => floor(($diffInMinutes % 1440) / 60),
                     'minutes' => $diffInMinutes % 60,
-                ];
+                ]);
             }
             return $item;
         });
@@ -122,23 +128,29 @@ public function doctrackSlip()
 
     // return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount','superUserCount'));
     // }
-    public function pending()
+
+
+public function pending()
 {
-    $userDepartment = auth()->user()->department;
-    $userId = auth()->user()->id;
+    $user = auth()->user();
+    $userDepartment = $user->department;
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
 
     $logs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
-        ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id') // Left join with routing_slip
-        ->select('logs.*', 'documents.*', 'routing_slip.*') // Select date_received from routing_slip
-        ->when(!auth()->user()->hasRole('records_officer'), function ($query) {
+        ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
+        ->select('logs.*', 'documents.*', 'routing_slip.*')
+        ->when($userRole !== 'records_officer', function ($query) {
             return $query->where('logs.status_update', '!=', 3);
         })
-        ->when(auth()->user()->hasRole('records_officer'), function ($query) {
+        ->when($userRole === 'records_officer', function ($query) {
             return $query->where('logs.status_update', 2);
-        }, function ($query) use ($userDepartment, $userId) {
-            return $query->where(function ($subQuery) use ($userDepartment, $userId) {
+        }, function ($query) use ($userDepartment, $userId, $userFullName) {
+            return $query->where(function ($subQuery) use ($userDepartment, $userId, $userFullName) {
                 $subQuery->where('logs.new_destination', $userDepartment)
-                         ->orWhere('logs.user_id', $userId);
+                         ->orWhere('logs.user_id', $userId)
+                         ->orWhereRaw("FIND_IN_SET(?, routing_slip.routed_users)", [$userFullName]);
             });
         })
         ->orderBy('logs.created_at', 'desc')
@@ -147,17 +159,28 @@ public function doctrackSlip()
 
     $offices = Office::all();
 
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = ($userRole === 'records_officer') 
+        ? RoutingSlip::where('route_status', 2)->count() 
+        : 0;
+
+    $superUserCount = ($userRole === 'super_user') 
+        ? RoutingSlip::where('route_status', 1)->count() 
+        : 0;
 
     return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount'));
 }
 
 
+
+
     public function served()
     {
     
-    $userId = auth()->user()->id;
+     $user = auth()->user();
+    $userDepartment = $user->department;
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
     
     $logs = Log::where(function($query) use ($userId) {
     $query->where('new_user', $userId)
@@ -165,17 +188,20 @@ public function doctrackSlip()
     })->whereNotNull('new_user')->get(); 
     $offices = Office::all();
     
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $recordsOfficerCount = $userRole->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
 
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0; 
+    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0; 
 
     return view('home.served', compact('logs', 'offices', 'recordsOfficerCount','superUserCount'));
     }
 
     public function viewLogs()
 {
-    $userId = auth()->user()->id;
-    $userDepartment = auth()->user()->department;
+    $user = auth()->user();
+    $userDepartment = $user->department;
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
 
     $logsAll = LogsHistory::leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
         ->leftJoin('users as original_users', function ($join) {
@@ -204,8 +230,8 @@ public function doctrackSlip()
 
     // Routing slip counts
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $userRole->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     return view('home.viewLogs', compact(
         'logsAll', 'userId', 'userDepartment',
@@ -226,18 +252,22 @@ public function doctrackSlip()
     }
 
     $user = User::find($id);
-
+$user = auth()->user();
+    $userDepartment = $user->department;
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
     if (!$user) {
         return redirect()->back()->with('error', 'User not found');
     }
 
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') 
+    $recordsOfficerCount = $userRole->hasRole('records_officer') 
         ? RoutingSlip::where('route_status', 2)->count() 
         : 0;
 
     $offices = Office::all();
     $office = $user->department;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
 
     return view('home.changepass', compact('user', 'offices', 'office', 'recordsOfficerCount','superUserCount'));
 }

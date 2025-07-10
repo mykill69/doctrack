@@ -107,14 +107,14 @@
                             @endif
 
                             <div class="input-group mb-2">
-                                <input type="text" class="form-control" name="username" placeholder="Username" value="{{ old('username') }}" autofocus="">
+                                <input type="text" class="form-control" name="email" placeholder="Institutional Email" value="{{ old('email') }}" autofocus="">
                                 <div class="input-group-append">
                                     <div class="input-group-text iconBg">
                                         <span class="fas fa-user text-light"></span>
                                     </div>
                                 </div>
                             </div>
-                            <span style="color: #FF0000; font-size: 10pt;" class="form-text text-left">@error('username') {{ $message }} @enderror</span>
+                            <span style="color: #FF0000; font-size: 10pt;" class="form-text text-left">@error('email') {{ $message }} @enderror</span>
 
                             <div class="input-group mb-2">
                                 <input type="password" class="form-control" name="password" id="myInput" placeholder="Password">

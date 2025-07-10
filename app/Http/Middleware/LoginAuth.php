@@ -26,7 +26,7 @@ class LoginAuth
             //         return redirect()->route('dashboard')->with('error1', 'You do not have permission to access this page');
             //     }
             // }
-            if(Auth::user()->hasRole('staffs')) {
+            if(Auth::user()->role== 'staffs') {
                 if ($request->is('users', 'office') || $request->is('users/*', 'office/*')) {
                     return redirect()->route('dashboard')->with('error1', 'You do not have permission to access this page');
                 }

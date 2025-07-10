@@ -22,6 +22,7 @@ class RoutingSlip extends Model
         'trans_remarks',
         'other_remarks',
         'r_destination',
+        'routed_to',
         'assigned_to',
         'assign_com',
         'document',
