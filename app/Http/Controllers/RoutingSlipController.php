@@ -71,6 +71,8 @@ $stampFile->storeAs('stamps', $stampName); // this will overwrite if file alread
         'date_received' => $request->date_received,
     ]);
 
+
+    
     return redirect()->route('viewSlip')->with('success', 'PDF and stamp uploaded successfully.');
 }
 
@@ -82,17 +84,18 @@ public function viewSlip()
     /** @var \App\Models\User $user */
     $user = auth()->user(); // hint to IDE
 
-    $userId = $user->id;
+    $userRole = $user->id;
     $userDepartment = $user->department;
-    $logs = Log::where('user_id', $userId)->get();
+    $logs = Log::where('user_id', $userRole)->get();
 
     // Count routing slips
-    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
-        ? RoutingSlip::where('route_status', 3)->count()
-        : 0;
+    // $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+    //     ? RoutingSlip::where('route_status', 3)->count()
+    //     : 0;
 
-    $superUserCount = $user->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = $user->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+ $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
+    $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+$recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     $routingSlips = RoutingSlip::all();
     $offices = Office::all();
@@ -371,7 +374,7 @@ if ($request->hasFile('file_stamp')) {
         'user_id'         => auth()->user()->id,
         'doc_id'          => $document->id,
         'route_id'        => $document->route_id,
-        'action'          => 'Added new destination',
+        'action'          => 'uploaded',
         'status_update'   => $document->doc_stat,
         'prev_file'       => null,
         'new_file'        => $document->file_name,
@@ -448,12 +451,12 @@ public function updateAssign(Request $request, $routeId)
                 ]
             );
 
-            // Log history
-            LogsHistory::create([
-                'doc_id'        => $document->id,
-                'action'        => 'Added new destination',
-                'status_update' => 2,
-            ]);
+            // // Log history
+            // LogsHistory::create([
+            //     'doc_id'        => $document->id,
+            //     'action'        => 're-assigned',
+            //     'status_update' => 2,
+            // ]);
 
             $redirectUrl = $request->input('redirectUrl', route('dashboard'));
 
@@ -510,9 +513,10 @@ public function updateReroute(Request $request, $id)
 
     // Update routed_users column with full names for display (optional)
     $userNames = \App\Models\User::whereIn('id', $selectedUserIds)
-                    ->get()
-                    ->pluck('full_name') // Assuming you have an accessor. Otherwise, use ->map(fn($u) => $u->fname . ' ' . $u->lname)
-                    ->toArray();
+        ->get()
+        ->pluck('full_name') // If accessor exists
+        // ->map(fn($u) => $u->fname . ' ' . $u->lname) // Use this if no accessor
+        ->toArray();
 
     $routingSlip->update([
         'routed_users' => implode(', ', $userNames),
@@ -539,23 +543,33 @@ public function updateReroute(Request $request, $id)
                 ->first();
 
             if (!$existingLog) {
+                // Create log
                 Log::create([
-                    'user_id'         => $user->id,                  // ✅ Save correct user ID
+                    'user_id'         => auth()->user()->id,
                     'doc_id'          => $document->id,
                     'route_id'        => $routingSlip->rslip_id,
-                    'action'          => 'Added new destination',
-                    'new_destination' => $fullName,                  // ✅ Save readable name
+                    'action'          => 're-assigned',
+                    'new_destination' => $fullName,
                     'status_update'   => 2,
                     'new_file'        => $document->file_name,
                     'assigned_to'     => $routingSlip->assigned_to,
                     'created_at'      => now(),
                 ]);
+
+                // // Create corresponding history log
+                // \App\Models\LogsHistory::create([
+                //     'doc_id'        => $document->id,
+                //     'action'        => 're-assigned',
+                //     'status_update' => 2,
+                //     'created_at'    => now(),
+                // ]);
             }
         }
     }
 
     return redirect()->route('viewSlip')->with('success', 'Document rerouted successfully!');
 }
+
 
 
 }

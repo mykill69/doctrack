@@ -140,10 +140,10 @@
                                                             class="badge badge-warning"
                                                             style="font-size:10px;">{{ $document->routingSlip->assign_com ?? '' }}</span>
 
-                                                        <span class="badge badge-warning"
+                                                        {{-- <span class="badge badge-warning"
                                                             style="margin-top: 2px; font-size:10px;">{{ $log->comments ?? '' }}</span>
 
-                                                    </td>
+                                                    </td> --}}
                                                     <td>
                                                         @php
                                                             $documentCreatedAt = \Carbon\Carbon::parse(

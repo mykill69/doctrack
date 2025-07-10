@@ -20,7 +20,7 @@
     <!-- Theme style -->
     <link rel="stylesheet" href="{{ asset('template/dist/css/adminlte.css') }}">
     <!-- Logo for demo purposes -->
-    <link rel="shortcut icon" type="" href="{{ asset('template/img/CPSU_L.png') }}">
+    <link rel="shortcut icon" type="" href="{{ asset('template/img/cpsu_logo.png') }}">
 
     <style type="text/css">
         .login-box {
@@ -86,7 +86,7 @@
                     <div class="col-md-12">
                         <div class="login-logo">
                             <a href="">
-                                <img src="{{ asset('template/img/CPSU_L.png') }}" class="img-circle" width="103px" height="100px">
+                                <img src="{{ asset('template/img/cpsu_logo.png') }}" class="img-circle" width="103px" height="100px">
                             </a>
                             <h4 style="font-family: monospace;">Document Tracking System</h4>
                         </div>

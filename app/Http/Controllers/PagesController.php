@@ -106,30 +106,6 @@ $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('rou
 }
 
 
-
-    // public function pending()
-    // {
-
-    // $userDepartment = auth()->user()->department;
-    // $userId = auth()->user()->id;
-
-    // $logs = Log::where(function ($query) use ($userDepartment, $userId) {
-    // $query->where('new_destination', $userDepartment)
-    // ->orWhere('user_id', $userId); 
-    // })
-    // ->with('document') 
-    // ->orderBy('created_at', 'desc') 
-    // ->get();
-    // $offices = Office::all();
-    
-    // $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
-
-    // $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0; 
-
-    // return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount','superUserCount'));
-    // }
-
-
 public function pending()
 {
     $user = auth()->user();
@@ -209,16 +185,16 @@ public function pending()
     return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount'));
 }
 
-
-    public function viewLogs()
+public function viewLogs() 
 {
     $user = auth()->user();
-    $userDepartment = $user->department;
-    $userId = $user->id;
     $userFullName = $user->fname . ' ' . $user->lname;
+    $userId = $user->id;
     $userRole = $user->role;
 
-    $logsAll = LogsHistory::leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
+    $logsAll = DB::table('logs_history')
+        ->leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
+        ->leftJoin('assign_logs', 'assign_logs.new_user', '=', 'logs.new_user')
         ->leftJoin('users as original_users', function ($join) {
             $join->on('logs.user_id', '=', 'original_users.id')
                  ->where('logs_history.status_update', '=', 2);
@@ -227,27 +203,32 @@ public function pending()
             $join->on('logs.new_user', '=', 'new_users.id')
                  ->where('logs_history.status_update', '=', 3);
         })
+        ->leftJoin('users as assign_users', 'assign_logs.new_user', '=', 'assign_users.id')
         ->select(
             'logs_history.*',
             'logs.new_destination',
             'logs.new_file',
+
+            'assign_logs.assigned_to as assign_to',
+            'assign_users.fname as assign_fname',
+            'assign_users.lname as assign_lname',
+
             'original_users.fname as original_fname',
             'original_users.lname as original_lname',
+            'original_users.department as original_user_department',
+
             'new_users.fname as new_fname',
             'new_users.lname as new_lname',
-            'original_users.department as original_user_department',
             'new_users.department as new_user_department'
         )
-        ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
-            $query->where(function ($subQuery) use ($userId, $userDepartment, $userFullName) {
-                $subQuery->where('logs.user_id', $userId)
-                         ->orWhere('logs.new_user', $userId)
-                         ->orWhere('logs.new_destination', $userDepartment)
-                         ->orWhere('logs.new_destination', $userFullName);
-            });
+        ->where(function ($query) use ($userId, $userFullName) {
+            $query->where('logs.user_id', $userId)
+                  ->orWhere('logs.new_user', $userId)
+                  ->orWhere('logs.new_destination', $userFullName);
         })
+        ->orWhereNull('logs.id') // Show all logs_history even if logs is missing
         ->distinct()
-        ->orderBy('logs_history.updated_at', 'desc')
+        ->orderBy('logs_history.created_at', 'desc')
         ->get();
 
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
@@ -255,10 +236,14 @@ public function pending()
     $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     return view('home.viewLogs', compact(
-        'logsAll', 'userId', 'userDepartment',
+        'logsAll', 'userId', 'userFullName',
         'routingSlipCount', 'superUserCount', 'recordsOfficerCount'
     ));
 }
+
+
+
+
 
 
 

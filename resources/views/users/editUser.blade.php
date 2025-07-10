@@ -36,8 +36,8 @@ border-bottom-left-radius: 0;
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-md-4">
-                                    <label for="username">Username</label>
-                                    <input type="text" name="username" value="{{ $user->username }}" class="form-control">
+                                    <label for="email">Username</label>
+                                    <input type="text" name="email" value="{{ $user->email }}" class="form-control">
                                 </div>
                                 <div class="form-group col-md-4">
                                     <label for="password">New Password</label>

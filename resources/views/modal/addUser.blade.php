@@ -29,7 +29,7 @@
                                         <i class="fa fa-user"></i>
                                     </span>
                                 </div>
-                                <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                                <input type="text" class="form-control" id="email" name="email" placeholder="Email" required>
                             </div>
                         </div>
                         

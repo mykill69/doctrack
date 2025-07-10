@@ -10,7 +10,7 @@
             <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-home"></i>
                 <p>Home
-                    @php
+                    {{-- @php
                         $userId = auth()->user()->id;
                         $userDepartment = auth()->user()->department;
                         $docCountDash = \App\Models\Document::where('user_id', $userId)
@@ -24,7 +24,7 @@
                         <span class="badge badge-danger ml-2">{{ $docCountDash }}</span>
                     @else
                         <span class="badge badge-danger ml-2">0</span>
-                    @endif
+                    @endif --}}
                 </p>
             </a>
         </li>
@@ -188,7 +188,7 @@
                 <p>Logs</p>
             </a>
         </li>
-        @if ($user_role == 'Administrator')
+       @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
                 <a href="{{ route('userView') }}"
                     class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">

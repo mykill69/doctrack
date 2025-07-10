@@ -263,7 +263,7 @@ public function update(Request $request, $id)
     if ($logToUpdate) {
         $logToUpdate->user_id = $request->input('user_id');
         $logToUpdate->new_user = $request->input('new_user');
-        $logToUpdate->action = 'Updated';
+        $logToUpdate->action = 'Acknowledged';
         $logToUpdate->status_update = $request->input('status_update');
         $logToUpdate->prev_file = $logToUpdate->new_file;
         $logToUpdate->comments = $request->input('comments', null);

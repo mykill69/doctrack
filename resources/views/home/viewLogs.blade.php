@@ -33,72 +33,73 @@
                                         <thead>
                                             <tr>
                                                 <th>Logs</th>
-                                                <th>Date Time</th>
+                                                <th>Date</th>
                                             </tr>
                                         </thead>
+
                                         <tbody>
                                             @foreach ($logsAll as $log)
                                                 @php
-                                                    $displayName =
-                                                        $log->status_update == 2
-                                                            ? $log->original_fname . ' ' . $log->original_lname
-                                                            : $log->new_fname . ' ' . $log->new_lname;
+                                                    $isAssignLog = $log->status_update == 2 && $log->assign_to; // Reassigned via assign_logs
 
-                                                    $isMatchOriginal =
-                                                        $log->original_user_department == $log->new_destination;
-                                                    $isMatchNew = $log->new_user_department == $log->new_destination;
-                                                    $shouldSkipRoutingInfo = $isMatchOriginal || $isMatchNew;
+                                                    $displayName = $isAssignLog
+                                                        ? trim($log->assign_fname . ' ' . $log->assign_lname)
+                                                        : ($log->status_update == 2
+                                                            ? trim($log->original_fname . ' ' . $log->original_lname)
+                                                            : trim($log->new_fname . ' ' . $log->new_lname));
 
-                                                    $isVisible =
-                                                        $userRole === 'records_officer' ||
-                                                        $log->user_id == $user->id ||
-                                                        $log->new_user == $user->id ||
-                                                        $log->new_destination === $userDepartment ||
-                                                        $log->new_destination === $userFullName;
+                                                    $badgeClass = match ($log->status_update) {
+                                                        2 => 'badge-warning',
+                                                        3 => 'badge-success',
+                                                        default => 'badge-secondary',
+                                                    };
+
+                                                    $badgeLabel = match ($log->status_update) {
+                                                        2 => 'uploaded',
+                                                        3 => 'acknowledged',
+                                                        default => 'action',
+                                                    };
+
+                                                    $routedTo = $isAssignLog ? $log->assign_to : $log->new_destination;
                                                 @endphp
 
-                                                @if ($isVisible)
-                                                    <tr>
-                                                        <td>
-                                                            <span style="font-weight:bold;">
-                                                                {{ $displayName ?? 'Unknown User' }}
-                                                            </span>
+                                                <tr>
+                                                    <td>
+                                                        <span style="font-weight:bold;">
+                                                            {{ $displayName ?: 'Unknown User' }}
+                                                        </span>
 
-                                                            @if ($log->status_update == 2)
-                                                                <span class="badge badge-warning"
-                                                                    style="font-weight:bold;">uploaded</span>
-                                                            @elseif($log->status_update == 3)
-                                                                <span class="badge badge-success"
-                                                                    style="font-weight:bold;">acknowledged</span>
-                                                            @else
-                                                                <span class="badge badge-secondary"
-                                                                    style="font-weight:bold;">{{ $log->status_update }}</span>
-                                                            @endif
-
-                                                            @if (!$shouldSkipRoutingInfo)
-                                                                the file <span class="text-primary"
-                                                                    style="font-weight:bold;">{{ $log->new_file }}</span>
-                                                                and routed it to <span
-                                                                    style="font-weight:bold;">{{ $log->new_destination }}</span>
-                                                            @else
-                                                                the file <span class="text-primary"
-                                                                    style="font-weight:bold;">{{ $log->new_file }}</span>
-                                                            @endif
-                                                        </td>
-                                                        <td>
-                                                            <span style="font-weight:bold;">
-                                                                {{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i:s A') }}
+                                                        @if ($isAssignLog)
+                                                            <span class="badge bg-info text-dark">re-assigned</span>
+                                                        @else
+                                                            <span class="badge {{ $badgeClass }}"
+                                                                style="font-weight:bold;">
+                                                                {{ $badgeLabel }}
                                                             </span>
-                                                        </td>
-                                                    </tr>
-                                                @endif
+                                                        @endif
+
+                                                        the file
+                                                        <span class="text-primary" style="font-weight:bold;">
+                                                            {{ $log->new_file ?? 'N/A' }}
+                                                        </span>
+
+                                                        @if ($routedTo)
+                                                            and routed it to
+                                                            <span style="font-weight:bold;">{{ $routedTo }}</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        <span style="font-weight:bold;">
+                                                            {{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i:s A') }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
                                             @endforeach
                                         </tbody>
 
-
-
-
                                     </table>
+
+
                                 </div>
                             </div>
                         </div>

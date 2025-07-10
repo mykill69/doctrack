@@ -28,7 +28,7 @@
                                             <th>NO.</th>
                                             <th>FULLNAME</th>
 
-                                            <th>USERNAME</th>
+                                            <th>EMAIL</th>
                                             <th>DEPARTMENT</th>
                                             <th>ROLE</th>
                                             <th>DATE CREATED</th>
@@ -42,7 +42,7 @@
                                                 <td>{{ $no++ }}.</td>
                                                 <td>{{ $user->fname }} {{ $user->mname }} {{ $user->lname }}</td>
 
-                                                <td class="text-bold text-primary">{{ $user->username }}</td>
+                                                <td class="text-bold text-primary">{{ $user->email }}</td>
                                                 <td>{{ $user->department }}</td>
                                                 <td>
                                                     <p class="badge badge-warning" style="font-size: 9px;">
