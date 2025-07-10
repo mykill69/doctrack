@@ -12,11 +12,13 @@ class DocumentRoutedNotification extends Mailable
 
     public $document;
     public $recipientName;
+    public $transRemarks;
 
-    public function __construct($document, $recipientName)
+    public function __construct($document, $recipientName, $transRemarks)
     {
         $this->document = $document;
         $this->recipientName = $recipientName;
+        $this->transRemarks = $transRemarks;
     }
 
     public function build()

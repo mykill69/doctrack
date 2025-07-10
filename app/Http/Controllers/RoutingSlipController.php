@@ -366,32 +366,35 @@ if ($request->hasFile('file_stamp')) {
 
     // ✅ ADD EMAIL & LOGIC HERE
     foreach ($validatedData['routed_to'] as $destination) {
-        // Save to logs table
-        $log = Log::create([
-            'user_id'         => auth()->user()->id,
-            'doc_id'          => $document->id,
-            'route_id'        => $document->route_id,
-            'action'          => 'Added new destination',
-            'status_update'   => $document->doc_stat,
-            'prev_file'       => null,
-            'new_file'        => $document->file_name,
-            'new_destination' => $destination,
-            'created_at'      => now(),
-        ]);
+    // Save log
+    $log = Log::create([
+        'user_id'         => auth()->user()->id,
+        'doc_id'          => $document->id,
+        'route_id'        => $document->route_id,
+        'action'          => 'Added new destination',
+        'status_update'   => $document->doc_stat,
+        'prev_file'       => null,
+        'new_file'        => $document->file_name,
+        'new_destination' => $destination,
+        'created_at'      => now(),
+    ]);
 
-        // Save to logs_history
-        LogsHistory::create([
-            'doc_id'        => $document->id,
-            'action'        => $log->action,
-            'status_update' => $log->status_update
-        ]);
+    LogsHistory::create([
+        'doc_id'        => $document->id,
+        'action'        => $log->action,
+        'status_update' => $log->status_update
+    ]);
 
-        // Email logic
-        $userRecipient = \App\Models\User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
-        if ($userRecipient && $userRecipient->email) {
-            Mail::to($userRecipient->email)->send(new DocumentRoutedNotification($document, $destination));
-        }
+    // Get the user email by full name
+    $userRecipient = \App\Models\User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
+
+    // Send email notification
+    if ($userRecipient && $userRecipient->email) {
+        Mail::to($userRecipient->email)->send(
+            new DocumentRoutedNotification($document, $destination, $routingSlip->trans_remarks)
+        );
     }
+}
 
     return redirect()->route('dashboard')->with('success', 'Document with CTRL#' . $routingSlip->rslip_id . ' was created successfully.');
 }

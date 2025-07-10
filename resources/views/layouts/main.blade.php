@@ -16,7 +16,9 @@
     {{-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback"> --}}
     <!-- Toastr -->
     <link rel="stylesheet" href="{{ asset('template/plugins/toastr/toastr.min.css') }}">
+    
     <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="{{ asset('template/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{{ asset('template/plugins/fontawesome-free/css/all.min.css') }}">
     <!-- Theme style -->
@@ -30,7 +32,7 @@
     <link rel="stylesheet" href="{{ asset('template/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('template/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
     <!-- Logo  -->
-    <link rel="shortcut icon" type="" href="{{ asset('template/img/CPSU_L.png') }}">
+    <link rel="shortcut icon" type="" href="{{ asset('template/img/cpsu_logo.png') }}">
 
 </head>
 
@@ -185,7 +187,7 @@
 
         <aside class="main-sidebar elevation-4" style="background-color: #1F5036;">
             <a href="#" class="brand-link">
-                <img src="{{ asset('template/img/CPSU_L.png') }}" alt="AdminLTE Logo"
+                <img src="{{ asset('template/img/cpsu_logo.png') }}" alt="AdminLTE Logo"
                     class="brand-image img-circle elevation-3" style="opacity: .8">
                 <span class="brand-text" style="font-size:15px;color:#FFFFFF;">Document Tracking System</span>
             </a>

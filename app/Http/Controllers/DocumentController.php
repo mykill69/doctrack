@@ -43,9 +43,17 @@ public function dashboard()
               ->orWhere('new_destination', $userDepartment);
     })->get(); 
 
-    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+        ? RoutingSlip::where('route_status', 3)->count()
+        : 0;
+
+    $superUserCount = auth()->user()->role === 'super_user'
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
+    $recordsOfficerCount = auth()->user()->role === 'records_officer'
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
 
     $offices = Office::all();
     $dpa = auth()->user()->dpa;
@@ -53,68 +61,65 @@ public function dashboard()
     return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa'));
 }
 
-
 public function tracking(Request $request)
 {
-    $userId = auth()->user()->id;
-    $userDepartment = auth()->user()->department;
-
+    $user = auth()->user();
+    $userId = $user->id;
+    $fullName = $user->fname . ' ' . $user->lname;
     $routeId = $request->input('route_id');
 
     $query = Document::query()
-        ->leftJoin('route_documents', 'documents.route_id', '=', 'route_documents.route_id') 
-        ->select('documents.*');
+        ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
+        ->select('documents.*', 'routing_slip.routed_users');
 
     if ($routeId) {
-        $query->where('documents.route_id', $routeId); 
+        $query->where('documents.route_id', $routeId);
     }
 
     $documents = $query->get();
 
-    $filteredDocuments = $documents->filter(function ($document) use ($userDepartment, $userId) {
+    $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
+        // Check routed_users
+        $routedUsers = explode(', ', $document->routed_users ?? '');
+        $matchesRoutedUsers = in_array($fullName, $routedUsers);
 
-        $routeDocument = RouteDocument::where('route_id', $document->route_id)->first();
+        // Check new_destination in logs
+        $matchesLogs = \App\Models\Log::where('doc_id', $document->id)
+            ->where('new_destination', $fullName)
+            ->exists();
 
-        if ($routeDocument) {
-            $destinations = [
-                $routeDocument->destination_1,
-                $routeDocument->destination_2,
-                $routeDocument->destination_3,
-                $routeDocument->destination_4,
-                $routeDocument->destination_5,
-                $routeDocument->destination_6,
-                $routeDocument->destination_7,
-                $routeDocument->destination_8,
-                $routeDocument->destination_9,
-                $routeDocument->destination_10,
-            ];
-
-            return in_array($userDepartment, $destinations) || $document->user_id == $userId;
-        }
-
-        return false; 
+        // Owner or matched
+        return $matchesRoutedUsers || $matchesLogs || $document->user_id == $userId;
     });
 
+    // Routing slip counts
     $logs = Log::where('user_id', $userId)->get();
 
-    // Count routing slips
-    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0; 
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+        ? RoutingSlip::where('route_status', 3)->count()
+        : 0;
+
+    $superUserCount = $user->role === 'super_user'
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
+    $recordsOfficerCount = $user->role === 'records_officer'
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
 
     $offices = Office::all();
 
     return view('track.tracktemp', [
         'documents' => $filteredDocuments,
         'offices' => $offices,
-        'docNumber' => $routeId, 
-        // 'docCount' => $docCount,
+        'docNumber' => $routeId,
         'routingSlipCount' => $routingSlipCount,
         'superUserCount' => $superUserCount,
         'recordsOfficerCount' => $recordsOfficerCount,
-        // 'statusUpdateCount' => $statusUpdateCount
     ]);
 }
+
+
 
 //     public function store(Request $request)
 // {
@@ -316,27 +321,27 @@ public function update(Request $request, $id)
         }
     }
 
-    public function index()
-    {
-        $documents = index::join('statuses', 'statuses.id', '=', 'documents.doc_type')
-            ->select(
-                'document.id as document_id',
-                'documents.user_id',
-                'documents.full_name',
-                'documents.file_name',
-                'documents.subject',
-                'documents.purpose',
-                'documents.department',
-                'documents.doc_stat',
-                'documents.doc_type',
-                // 'documents.destination',
-                'documents.created_at',
-                'documents.updated_at',
-                'statuses.status' 
-            )
-            ->where('documents.doc_stat', '!=', null)
-            ->get();
+    // public function index()
+    // {
+    //     $documents = index::join('statuses', 'statuses.id', '=', 'documents.doc_type')
+    //         ->select(
+    //             'document.id as document_id',
+    //             'documents.user_id',
+    //             'documents.full_name',
+    //             'documents.file_name',
+    //             'documents.subject',
+    //             'documents.purpose',
+    //             'documents.department',
+    //             'documents.doc_stat',
+    //             'documents.doc_type',
+    //             // 'documents.destination',
+    //             'documents.created_at',
+    //             'documents.updated_at',
+    //             'statuses.status' 
+    //         )
+    //         ->where('documents.doc_stat', '!=', null)
+    //         ->get();
 
-        return view('dashboard', compact('documents','statuses')); 
-    }
+    //     return view('dashboard', compact('documents','statuses')); 
+    // }
 }
