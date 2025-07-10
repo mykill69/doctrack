@@ -1,6 +1,10 @@
 @extends('layouts.main')
 @php
-    use App\Models\Log; // Ensure you import your Log model here
+    use App\Models\Log;
+    $user = auth()->user();
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userDepartment = $user->department;
+    $isRecordsOfficer = $user->role === 'records_officer';
 @endphp
 <style>
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
@@ -41,14 +45,13 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @php
-                                                $user = auth()->user();
-                                                $userFullName = $user->fname . ' ' . $user->lname;
-                                            @endphp
-
                                             @foreach ($logs as $docId => $logGroup)
                                                 @foreach ($logGroup as $log)
-                                                    @if (isset($log->new_destination) && trim($log->new_destination) === trim($userFullName))
+                                                    @if (
+                                                        $isRecordsOfficer ||
+                                                            (isset($log->new_destination) &&
+                                                                (trim($log->new_destination) === trim($userFullName) ||
+                                                                    trim($log->new_destination) === trim($userDepartment))))
                                                         <tr>
                                                             <td><a href="{{ route('slipForm', $log->route_id) }}"
                                                                     target="_blank">{{ $log->route_id }}</a></td>
@@ -92,9 +95,7 @@
                                                 @endforeach
                                             @endforeach
                                         </tbody>
-
                                     </table>
-
                                 </div>
                             </div>
                         </div>

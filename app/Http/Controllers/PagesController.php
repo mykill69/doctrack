@@ -138,24 +138,25 @@ public function pending()
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
-    $logs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+    // Base query
+    $query = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
         ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
         ->select('logs.*', 'documents.*', 'routing_slip.*')
-        ->when($userRole !== 'records_officer', function ($query) {
-            return $query->where('logs.status_update', '!=', 3);
-        })
-        ->when($userRole === 'records_officer', function ($query) {
-            return $query->where('logs.status_update', 2);
-        }, function ($query) use ($userDepartment, $userId, $userFullName) {
-            return $query->where(function ($subQuery) use ($userDepartment, $userId, $userFullName) {
-                $subQuery->where('logs.new_destination', $userDepartment)
-                         ->orWhere('logs.user_id', $userId)
-                         ->orWhereRaw("FIND_IN_SET(?, routing_slip.routed_users)", [$userFullName]);
-            });
-        })
-        ->orderBy('logs.created_at', 'desc')
-        ->get()
-        ->groupBy('logs.doc_id');
+        ->orderBy('logs.created_at', 'desc');
+
+    // Role-specific filters
+    if ($userRole === 'records_officer') {
+        $query->where('logs.status_update', 2);
+    } else {
+        $query->where('logs.status_update', '!=', 3)
+              ->where(function ($subQuery) use ($userDepartment, $userId, $userFullName) {
+                  $subQuery->where('logs.new_destination', $userDepartment)
+                           ->orWhere('logs.user_id', $userId)
+                           ->orWhereRaw("FIND_IN_SET(?, routing_slip.routed_users)", [$userFullName]);
+              });
+    }
+
+    $logs = $query->get()->groupBy('logs.doc_id');
 
     $offices = Office::all();
 
@@ -173,27 +174,41 @@ public function pending()
 
 
 
-    public function served()
-    {
-    
-     $user = auth()->user();
-    $userDepartment = $user->department;
+   public function served()
+{
+    $user = auth()->user();
     $userId = $user->id;
+    $userDepartment = $user->department;
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
-    
-    $logs = Log::where(function($query) use ($userId) {
-    $query->where('new_user', $userId)
-    ->orWhere('user_id', $userId);
-    })->whereNotNull('new_user')->get(); 
+
+    $logs = Log::with('document', 'document.routingSlip')
+        ->whereNotNull('new_user')
+        ->when($userRole === 'records_officer', function ($query) {
+            return $query; // records_officer sees all served logs
+        }, function ($query) use ($userId, $userDepartment, $userFullName) {
+            return $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+                $q->where('new_user', $userId)
+                  ->orWhere('user_id', $userId)
+                  ->orWhere('new_destination', $userDepartment)
+                  ->orWhere('new_destination', $userFullName);
+            });
+        })
+        ->get();
+
     $offices = Office::all();
-    
-    $recordsOfficerCount = $userRole->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
 
-    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0; 
+    $recordsOfficerCount = $userRole === 'records_officer'
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
 
-    return view('home.served', compact('logs', 'offices', 'recordsOfficerCount','superUserCount'));
-    }
+    $superUserCount = $userRole === 'super_user'
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
+    return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount'));
+}
+
 
     public function viewLogs()
 {
@@ -220,18 +235,24 @@ public function pending()
             'original_users.lname as original_lname',
             'new_users.fname as new_fname',
             'new_users.lname as new_lname',
-            'new_users.department as new_user_department', 
             'original_users.department as original_user_department',
-'new_users.department as new_user_department'
+            'new_users.department as new_user_department'
         )
+        ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
+            $query->where(function ($subQuery) use ($userId, $userDepartment, $userFullName) {
+                $subQuery->where('logs.user_id', $userId)
+                         ->orWhere('logs.new_user', $userId)
+                         ->orWhere('logs.new_destination', $userDepartment)
+                         ->orWhere('logs.new_destination', $userFullName);
+            });
+        })
         ->distinct()
         ->orderBy('logs_history.updated_at', 'desc')
         ->get();
 
-    // Routing slip counts
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
-    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = $userRole->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     return view('home.viewLogs', compact(
         'logsAll', 'userId', 'userDepartment',
