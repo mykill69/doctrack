@@ -147,7 +147,7 @@
                                 <div class="form-group row">
                                     <label for="routed_to" class="col-md-3 col-form-label">Name of Users:</label>
                                     <div class="col-md-9">
-                                        <select class="form-control select2" name="routed_to[]" id="routed_to"
+                                        <select class="form-control select2" name="routed_users[]" id="routed_users"
                                             data-placeholder="Select users..." multiple required>
                                             @foreach ($users as $user)
                                                 <option value="{{ $user->fname }} {{ $user->lname }}">
@@ -194,7 +194,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            $('#routed_to').select2({
+            $('#routed_users').select2({
                 placeholder: "Select users..."
             });
 

@@ -213,9 +213,9 @@ public function editSlip($id)
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
         ? RoutingSlip::where('route_status', 3)->count()
         : 0;
+ $superUserCount = $userId === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+$recordsOfficerCount = $userId === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
-    $superUserCount = $user->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = $user->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     return view('slip.editSlip', compact(
         'routingSlips',
@@ -337,8 +337,8 @@ if ($request->hasFile('file_stamp')) {
         'doc_stat'     => 'required|integer',
         'user_id'      => 'required|integer',
         'route_id'     => 'required|integer',
-        'routed_to'    => 'required|array',
-        'routed_to.*'  => 'required|string',
+        'routed_users'    => 'required|array',
+        'routed_users.*'  => 'required|string',
     ]);
 
     // Save to documents table
@@ -356,7 +356,7 @@ if ($request->hasFile('file_stamp')) {
     $document->save();
 
     // Save routed users as a string (comma-separated) to routing_slip
-    $routedUsers = implode(', ', $validatedData['routed_to']);
+    $routedUsers = implode(', ', $validatedData['routed_users']);
     $routingSlip = RoutingSlip::where('rslip_id', $validatedData['route_id'])->first();
     if ($routingSlip) {
         $routingSlip->routed_users = $routedUsers;
@@ -365,7 +365,7 @@ if ($request->hasFile('file_stamp')) {
     }
 
     // ✅ ADD EMAIL & LOGIC HERE
-    foreach ($validatedData['routed_to'] as $destination) {
+    foreach ($validatedData['routed_users'] as $destination) {
     // Save log
     $log = Log::create([
         'user_id'         => auth()->user()->id,
@@ -414,51 +414,50 @@ public function updateAssign(Request $request, $routeId)
 
         if ($routingSlip) {
             $assignedTo = $request->input('assigned_to');
-            $assignCom = $request->input('assign_com'); 
+            $assignCom = $request->input('assign_com');
+
             $routingSlip->route_status = 2;
-            $routingSlip->assigned_to = $assignedTo; 
+            $routingSlip->assigned_to = $assignedTo;
             $routingSlip->assign_com = $assignCom;
             $routingSlip->save();
-            
+
+            // Update logs - include assign_com as comments
             Log::where('route_id', $routingSlip->rslip_id)
                 ->where('doc_id', $document->id)
                 ->update([
-                    'assigned_to' => $assignedTo, 
-                    'status_update' => 2, 
+                    'assigned_to'   => $assignedTo,
+                    'status_update' => 2,
+                    'new_user'      => auth()->user()->id,
+                    'comments'      => $assignCom, // <-- add this line
                 ]);
 
+            // Update document status
             Document::where('route_id', $routingSlip->rslip_id)
                 ->update(['assn_code' => 1]);
 
-            $newDestination = $document->destination ?? auth()->user()->department;
-
-            Log::where('route_id', $routingSlip->rslip_id)
-                ->where('doc_id', $document->id)
-                ->update([
-                    'new_destination' => $newDestination,
-                    'new_user' => auth()->user()->id, 
-                ]);
-
+            // Update or create AssignLogs
             AssignLogs::updateOrCreate(
                 [
-                    'doc_id' => $document->id,
-                    'route_id' => $routingSlip->rslip_id, 
+                    'doc_id'    => $document->id,
+                    'route_id'  => $routingSlip->rslip_id,
                 ],
                 [
-                    'new_user' => auth()->user()->id,
-                    'assn_code' => 1,
-                    'assigned_to' => $assignedTo, 
+                    'new_user'     => auth()->user()->id,
+                    'assn_code'    => 1,
+                    'assigned_to'  => $assignedTo,
                 ]
             );
 
-            // Insert into logs_history table
+            // Log history
             LogsHistory::create([
-                'doc_id' => $document->id,
-                'action' => 'Added new destination',
+                'doc_id'        => $document->id,
+                'action'        => 'Added new destination',
                 'status_update' => 2,
             ]);
 
-            return redirect()->route('dashboard')->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
+            $redirectUrl = $request->input('redirectUrl', route('dashboard'));
+
+            return redirect($redirectUrl)->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
         } else {
             return back()->withErrors(['Routing slip not found']);
         }
@@ -468,120 +467,95 @@ public function updateAssign(Request $request, $routeId)
 }
 
 
-    public function editAssign($id)
+
+public function editAssign($id)
 {
     $userId = auth()->user()->id;
     $userDepartment = auth()->user()->department;
 
-    // Find the routing slip based on the ID
     $routingSlips = RoutingSlip::findOrFail($id);
     $offices = Office::all();
+    $users = User::all(); // 👈 Add this
 
-    // Retrieve the document with left joins
     $document = Document::leftJoin('routing_slip', 'routing_slip.rslip_id', '=', 'documents.route_id')
         ->leftJoin('logs', 'logs.route_id', '=', 'documents.route_id')
         ->where('routing_slip.id', $id)
-        ->select('documents.*') // Select only document columns
+        ->select('documents.*')
         ->first();
 
     $logs = Log::where('user_id', $userId)->get();
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = $userId()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = $userId()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $userId === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $recordsOfficerCount = $userId === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
-    return view('slip.editAssign', compact('routingSlips', 'offices', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'document'));
+    return view('slip.editAssign', compact(
+        'routingSlips',
+        'offices',
+        'routingSlipCount',
+        'superUserCount',
+        'recordsOfficerCount',
+        'document',
+        'users' // 👈 Pass the users to the view
+    ));
 }
 
 
-    public function updateReroute(Request $request, $id)
-    {
 
-    $routingSlip = RoutingSlip::find($id);
+public function updateReroute(Request $request, $id)
+{
+    $routingSlip = RoutingSlip::findOrFail($id);
 
-    $destinations = [];
+    // Get selected user IDs from the form
+    $selectedUserIds = $request->input('new_destination', []);
 
-    foreach ($request->all() as $key => $value) {
-    if (Str::startsWith($key, 'destination_') && !empty($value)) {
-    $destinations[] = $value;
-    }
-    }
+    // Update routed_users column with full names for display (optional)
+    $userNames = \App\Models\User::whereIn('id', $selectedUserIds)
+                    ->get()
+                    ->pluck('full_name') // Assuming you have an accessor. Otherwise, use ->map(fn($u) => $u->fname . ' ' . $u->lname)
+                    ->toArray();
 
     $routingSlip->update([
-    'route_status' => 3,
+        'routed_users' => implode(', ', $userNames),
+        'route_status' => 3,
     ]);
 
+    // Find the related document
     $document = Document::where('route_id', $routingSlip->rslip_id)->first();
+
     if ($document) {
+        $document->assn_code = null;
+        $document->save();
 
-    foreach ($destinations as $index => $destination) {
+        // Log each user routed
+        foreach ($selectedUserIds as $userId) {
+            $user = \App\Models\User::find($userId);
+            if (!$user) continue;
 
-    $document->update([
-    'destination_' . ($index + 1) => $destination, 
-    ]);
-    }
+            $fullName = $user->fname . ' ' . $user->lname;
 
-    $document->refresh();
-    $document->assn_code = null; 
-    $document->save();
-    }
+            $existingLog = Log::where('route_id', $routingSlip->rslip_id)
+                ->where('doc_id', $document->id)
+                ->where('new_destination', $fullName)
+                ->first();
 
-    foreach ($destinations as $destination) {
-
-    if (is_array($destination)) {
-    $destination = implode(', ', $destination);
-    }
-
-    $existingLog = Log::where('route_id', $routingSlip->rslip_id)
-    ->where('doc_id', $document->id)
-    ->where('new_destination', $destination)
-    ->first();
-
-    if (!$existingLog) {
-    Log::create([
-    'user_id'       => auth()->id(),
-    'doc_id'        => $document->id,
-    'route_id'      => $routingSlip->rslip_id,
-    'action'        => 'Added new destination',
-    'new_destination' => $destination, 
-    'status_update' => 2,
-    'new_file'      => $document->file_name,
-    'assigned_to'   => $routingSlip->assigned_to,
-    'created_at'    => now(),
-    ]);
-    }
-    }
-
-    $routeDocument = RouteDocument::where('route_id', $routingSlip->rslip_id)->first(); 
-    if ($routeDocument) {
-
-    $existingDestinations = [];
-    for ($i = 1; $i <= 10; $i++) {
-    $existingDestinations[] = $routeDocument->{'destination_' . $i};
-    }
-
-    foreach ($destinations as $destination) {
-
-    if (is_array($destination)) {
-
-    $destination = implode(', ', $destination);
-    }
-
-    $cleanedDestination = trim(str_replace(['[', ']', '"'], '', $destination));
-
-    if (!in_array($cleanedDestination, $existingDestinations)) {
-
-    for ($i = 1; $i <= 10; $i++) {
-    if (empty($routeDocument->{'destination_' . $i})) {
-    $routeDocument->{'destination_' . $i} = $cleanedDestination;
-    break; 
-    }
-    }
-    }
-    }
-
-    $routeDocument->save();
+            if (!$existingLog) {
+                Log::create([
+                    'user_id'         => $user->id,                  // ✅ Save correct user ID
+                    'doc_id'          => $document->id,
+                    'route_id'        => $routingSlip->rslip_id,
+                    'action'          => 'Added new destination',
+                    'new_destination' => $fullName,                  // ✅ Save readable name
+                    'status_update'   => 2,
+                    'new_file'        => $document->file_name,
+                    'assigned_to'     => $routingSlip->assigned_to,
+                    'created_at'      => now(),
+                ]);
+            }
+        }
     }
 
     return redirect()->route('viewSlip')->with('success', 'Document rerouted successfully!');
-    }
+}
+
+
 }

@@ -249,8 +249,6 @@ public function update(Request $request, $id)
         'new_user' => 'required|integer',
     ]);
 
-    $userDepartment = auth()->user()->department;
-
     $document = Document::find($id);
     if (!$document) {
         return redirect()->back()->with('error', 'Document not found.');
@@ -258,24 +256,20 @@ public function update(Request $request, $id)
 
     $routeId = $document->route_id;
 
-    $logToUpdate = Log::where('new_destination', $userDepartment)
-                      ->where('route_id', $routeId)
+    // Match by route_id and optionally user if needed
+    $logToUpdate = Log::where('route_id', $routeId)
                       ->first();
 
     if ($logToUpdate) {
-        // Update the existing log entry
-        $logToUpdate->user_id = $request->input('user_id'); 
-        $logToUpdate->new_user = $request->input('new_user');  
+        $logToUpdate->user_id = $request->input('user_id');
+        $logToUpdate->new_user = $request->input('new_user');
         $logToUpdate->action = 'Updated';
         $logToUpdate->status_update = $request->input('status_update');
         $logToUpdate->prev_file = $logToUpdate->new_file;
-        $logToUpdate->new_file = $logToUpdate->new_file; 
         $logToUpdate->comments = $request->input('comments', null);
-        $logToUpdate->assigned_to = $logToUpdate->assigned_to; 
         $logToUpdate->updated_at = now();
         $logToUpdate->save();
 
-        // If status_update is 3, also create an entry in logs_history
         if ($logToUpdate->status_update == 3) {
             LogsHistory::create([
                 'doc_id' => $logToUpdate->doc_id,
@@ -286,11 +280,13 @@ public function update(Request $request, $id)
             ]);
         }
 
-        return redirect()->back()->with('success', 'The document was acknowledged successfully.');
+       return redirect($request->input('redirectUrl'))->with('success', 'The document was acknowledged successfully.');
+
     } else {
         return redirect()->back()->with('error', 'Log entry not found for the specified route_id.');
     }
 }
+
 
 
 

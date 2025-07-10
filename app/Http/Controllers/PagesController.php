@@ -38,8 +38,8 @@ class PagesController extends Controller
     })->get(); 
 
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = $userRole->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0; 
+    $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+$recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     $offices = Office::all();
 
@@ -62,8 +62,8 @@ public function doctrackSlip()
     })->get(); 
 
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = $userRole->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0; 
+    $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+$recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     $offices = Office::all();
 
