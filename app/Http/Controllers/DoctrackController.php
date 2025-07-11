@@ -25,7 +25,7 @@ class DoctrackController extends Controller
         'doc_type' => 'required|string',
         'doc_title' => 'required|string',
         'user_name' => 'required|string',
-        'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsx,xls|max:20480',
+        'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
     ]);
 
     // Generate a unique 9-character alphanumeric docslip_id
@@ -88,7 +88,7 @@ public function storeDoctrackUpdate(Request $request)
         'doc_type' => 'required|string',
         'doc_title' => 'required|string',
         'user_name' => 'required|string',
-        'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsx,xls|max:20480',
+        'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
     ]);
 
     // Store the document in the database
@@ -150,25 +150,23 @@ public function storeDoctrackUpdate(Request $request)
 
 public function docslipForm($id)
 {
-    // Fetch the document tracking record based on the given ID
     $documentTrack = Doctrack::findOrFail($id);
+    $user = auth()->user(); // ✅ fix: get user object, not just the ID
 
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $recordsOfficerCount = $user->role === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $user->role === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
 
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-
-    return view('slip.docslipForm', compact('documentTrack','recordsOfficerCount','superUserCount'));
+    return view('slip.docslipForm', compact('documentTrack', 'recordsOfficerCount', 'superUserCount'));
 }
 
-// View PDF in the browser
 public function pdfDocSlip($id)
 {
     $documentTrack = DoctrackFile::findOrFail($id);
-
     $filePath = storage_path('app/doc_track/' . $documentTrack->file);
 
     if (file_exists($filePath)) {
-        return response()->file($filePath);
+        // force download with correct extension
+        return response()->download($filePath, $documentTrack->file);
     } else {
         return redirect()->back()->with('error', 'File not found.');
     }
@@ -177,16 +175,21 @@ public function pdfDocSlip($id)
 public function slipMonitoring($docslip_id)
 {
     $documentTrackid = Doctrack::with('doctrackFile')
-    ->where('docslip_id', $docslip_id)
-    ->get();
+        ->where('docslip_id', $docslip_id)
+        ->get();
 
+    $user = auth()->user(); // ✅ get the authenticated user model
 
-    $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    // ✅ Role-based counts
+    $recordsOfficerCount = $user->role === 'records_officer' 
+        ? RoutingSlip::where('route_status', 2)->count() 
+        : 0;
 
-    $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
- 
+    $superUserCount = $user->role === 'super_user' 
+        ? RoutingSlip::where('route_status', 1)->count() 
+        : 0;
 
-    return view('slip.docMonitoring', compact('documentTrackid',  'superUserCount', 'recordsOfficerCount'));
+    return view('slip.docMonitoring', compact('documentTrackid', 'superUserCount', 'recordsOfficerCount'));
 }
 
 public function search(Request $request)

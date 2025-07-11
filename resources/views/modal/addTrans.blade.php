@@ -50,7 +50,7 @@
                                 <i class="fa fa-file"></i>
                             </span>
                         </div>
-                        <input type="file" class="form-control" id="customFile" name="file" accept="pdf/*" onchange="showFileName()">
+                        <input type="file" class="form-control" id="customFile" name="file" onchange="showFileName()">
                     </div>
                     <small id="filePlaceholder" class="form-text text-muted">
                         Attach a file if needed <i class="text-bold text-danger">(optional)</i>

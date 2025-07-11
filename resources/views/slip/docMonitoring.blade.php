@@ -28,221 +28,156 @@
     <link rel="stylesheet" href="{{ asset('template/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('template/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
     <!-- Logo  -->
-    <link rel="shortcut icon" type="" href="{{ asset('template/img/CPSU_L.png') }}">
+    <link rel="shortcut icon" type="" href="{{ asset('template/img/cpsu_logo.png') }}">
 </head>
 
 
-<!-- Main content -->
-<div class="content" style="padding-top: 1%;width:100%;">
+
+
+<div class="content" style="padding-top: 1%; width: 100%;">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="row align-items-center w-100">
-                            {{-- Left Column: Tracking Code --}}
-                            <div class="col-12 col-md-6 mb-2 mb-md-0">
-                                <h3 class="card-title mb-0">
-                                    TRACKING CODE RESULT:
-                                    <span class="badge badge-success" style="font-size: 1rem;">
-                                        @foreach ($documentTrackid as $documentTrack)
-                                            {{ $documentTrack->docslip_id }}
-                                        @break
-                                    @endforeach
+        <div class="card shadow">
+            <!-- Header stays -->
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fas fa-route mr-2"></i>Tracking Code Entries</h4>
+                <button class="btn btn-light btn-sm" data-toggle="modal" data-target="#addLogModal">
+                    <i class="fas fa-plus text-success"></i> Add Entry
+                </button>
+            </div>
+
+            <div class="card-body p-3" style="overflow-y: auto; max-height: 750px;">
+                <div class="timeline timeline-inverse">
+                    @foreach ($documentTrackid as $documentTrack)
+                        @php
+                            $loopIndex = $loop->index;
+                            $currentUserId = auth()->user()->id;
+                            $isFirst = $loop->first;
+                            $isEnabled = ($currentUserId == $documentTrack->user_id && is_null($documentTrack->update_by)) || $currentUserId == $documentTrack->update_by;
+                            $canComment = $documentTrack->update_by === $currentUserId;
+
+                            $person = $isFirst
+                                ? $documentTrack->createdBy->fname . ' ' . $documentTrack->createdBy->lname
+                                : ($documentTrack->updatedBy->fname ?? 'N/A') . ' ' . ($documentTrack->updatedBy->lname ?? '');
+
+                            switch ($documentTrack->doctrack_stat) {
+                                case 1: $statusText = 'CREATED'; $bgColor = 'primary'; $icon = 'fas fa-plus'; break;
+                                case 2: $statusText = 'PENDING'; $bgColor = 'warning'; $icon = 'fas fa-hourglass-half'; break;
+                                case 3: $statusText = 'SIGNED'; $bgColor = 'success'; $icon = 'fas fa-check-circle'; break;
+                                case 4: $statusText = 'RETURNED WITH COMMENT'; $bgColor = 'danger'; $icon = 'fas fa-comment-slash'; break;
+                                default: $statusText = 'UNKNOWN'; $bgColor = 'secondary'; $icon = 'fas fa-question-circle'; break;
+                            }
+                        @endphp
+
+                        <div>
+                            <i class="{{ $icon }} bg-{{ $bgColor }}"></i>
+                            <div class="timeline-item">
+                                <span class="time">
+                                    <i class="far fa-clock"></i> {{ $documentTrack->created_at->format('h:i A') }}
                                 </span>
-                            </h3>
-                        </div>
+                                <h3 class="timeline-header">
+                                    <strong class="text-{{ $bgColor }}">
+                                        {{ $loop->iteration }}.
+                                    </strong>
+                                    <span class="ml-2">
+                                        <i class="fas fa-file-alt mr-1"></i>{{ $documentTrack->doc_title ?? 'N/A' }}
+                                    </span>
+                                </h3>
 
-                        {{-- Right Column: Button aligned right --}}
-                        <div class="col-12 col-md-6 text-md-right">
-                            <button class="btn btn-success w-md-auto" data-toggle="modal"
-                                data-target="#addLogModal">
-                                <i class="fa fa-plus"></i> Entry
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                                <div class="timeline-body">
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <i class="fas fa-user mr-1"></i>
+                                            <strong>Personnel:</strong> {{ $person }}
+                                        </div>
+                                        <div class="col-md-8">
+                                            <i class="fas fa-paperclip text-muted mr-1"></i>
+                                            <strong>File:</strong>
+                                            @if ($documentTrack->doctrackFile)
+                                                <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
+                                                   target="_blank"
+                                                   class="text-danger font-weight-bold">
+                                                    <i class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
+                                                </a>
+                                            @else
+                                                <span class="text-muted">No File</span>
+                                            @endif
+                                        </div>
+                                    </div>
 
-
-                <div class="card-body" style="overflow-y: auto; max-height: calc(750px - 60px);">
-                    <div class="row justify-content-center">
-                        <!-- Loop through each document -->
-                        @foreach ($documentTrackid as $documentTrack)
-                            @php
-                                $currentUserId = auth()->user()->id;
-
-                                $isEnabled =
-                                    ($currentUserId == $documentTrack->user_id && is_null($documentTrack->update_by)) ||
-                                    $currentUserId == $documentTrack->update_by;
-
-                                switch ($documentTrack->doctrack_stat) {
-                                    case 1:
-                                        $bgColor = '#007bff'; // Blue
-                                        $textColor = 'white';
-                                        $statusText = 'CREATED';
-                                        break;
-                                    case 2:
-                                        $bgColor = '#ffc107'; // Yellow
-                                        $textColor = '#212529';
-                                        $statusText = 'PENDING';
-                                        break;
-                                    case 3:
-                                        $bgColor = '#28a745'; // Green
-                                        $textColor = 'white';
-                                        $statusText = 'SIGNED';
-                                        break;
-                                    case 4:
-                                        $bgColor = 'red'; // Red
-                                        $textColor = 'white';
-                                        $statusText = 'RETURNED<br>WITH COMMENTS';
-                                        break;
-                                    default:
-                                        $bgColor = '#6c757d'; // Gray
-                                        $textColor = 'white';
-                                        $statusText = 'UNKNOWN';
-                                        break;
-                                }
-                            @endphp
-
-                            <div class="col-md-2 p-4 rounded shadow mb-3 position-relative"
-                                style="background-color: {{ $loop->first ? 'white' : 'white' }}!important; color: #2b2b2b; border:1px solid green; font-weight: bold; text-align: center;">
-
-                                <!-- Delete "X" Button -->
-                                @if ($isEnabled)
-                                    <form action="{{ route('deleteSlip', $documentTrack->id) }}" method="POST"
-                                        style="position: absolute; top: 5px; right: 10px;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                            onclick="return confirm('Are you sure you want to delete this item?')"
-                                            style="background: transparent; border: none; color: red; font-size: 1rem; margin-top:0;">
-                                            <i class="fa fa-times"></i>
-                                        </button>
-                                    </form>
-                                @endif
-
-                                <!-- Status in the center -->
-                                <div class="mb-4 dropdown">
-                                    <form id="statusForm{{ $loop->index }}"
-                                        action="{{ route('updateSlipStatus', $documentTrack->id) }}"
-                                        method="POST">
+                                    <!-- Status Dropdown -->
+                                    <form id="statusForm{{ $loopIndex }}"
+                                          action="{{ route('updateSlipStatus', $documentTrack->id) }}"
+                                          method="POST"
+                                          class="mb-2">
                                         @csrf
                                         @method('PUT')
-                                        <input type="hidden" name="doctrack_stat"
-                                            id="doctrackStatInput{{ $loop->index }}">
+                                        <input type="hidden" name="doctrack_stat" id="doctrackStatInput{{ $loopIndex }}">
+                                        <div class="dropdown d-inline-block">
+                                            <button class="btn btn-sm btn-{{ $bgColor }} dropdown-toggle"
+                                                    type="button"
+                                                    data-toggle="dropdown"
+                                                    aria-haspopup="true"
+                                                    aria-expanded="false"
+                                                    {{ !$isEnabled ? 'disabled' : '' }}>
+                                                 {{ $statusText }}
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="#" onclick="submitStatus({{ $loopIndex }}, 2)">
+                                                    <i class="fas fa-hourglass-half mr-1"></i> PENDING
+                                                </a>
+                                                <a class="dropdown-item" href="#" onclick="submitStatus({{ $loopIndex }}, 3)">
+                                                    <i class="fas fa-check-circle mr-1"></i> SIGNED
+                                                </a>
+                                                <a class="dropdown-item" href="#" onclick="submitStatus({{ $loopIndex }}, 4)">
+                                                    <i class="fas fa-undo mr-1"></i> RETURN WITH COMMENT
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </form>
 
-                                        <button class="btn dropdown-toggle btn-lg w-100 text-truncate"
-                                            type="button" id="statusDropdown{{ $loop->index }}"
-                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                                            style="font-size: 1.3rem; font-weight: bold; text-transform: uppercase; padding: 8px; background-color: {{ $bgColor }}; color: {{ $textColor }};"
-                                            {{ !$isEnabled ? 'disabled' : '' }}>
-                                            {!! $statusText !!}
-                                        </button>
-
-                                        <div class="dropdown-menu w-100 text-center"
-                                            aria-labelledby="statusDropdown{{ $loop->index }}">
-                                            <span class="dropdown-item disabled">Status Options</span>
-                                            <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item" href="#"
-                                                onclick="submitStatus({{ $loop->index }}, 2)">PENDING</a>
-                                            <a class="dropdown-item" href="#"
-                                                onclick="submitStatus({{ $loop->index }}, 3)">SIGNED</a>
-                                            <a class="dropdown-item" href="#"
-                                                onclick="submitStatus({{ $loop->index }}, 4)">RETURN WITH
-                                                COMMENT</a>
+                                    <!-- Comment Form -->
+                                    <form id="commentForm{{ $loopIndex }}"
+                                          action="{{ route('updateSlipStatus', $documentTrack->id) }}"
+                                          method="POST"
+                                          class="form-inline">
+                                        @csrf
+                                        @method('PUT')
+                                        <div class="form-group w-100">
+                                            <i class="fas fa-comment-dots text-muted mr-2"></i>
+                                            <input type="text"
+                                                   name="comments"
+                                                   class="form-control form-control-sm mr-2 w-75"
+                                                   placeholder="Add comment"
+                                                   value="{{ $documentTrack->comments }}"
+                                                   {{ !$canComment ? 'disabled' : '' }}>
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    {{ !$canComment ? 'disabled' : '' }}>
+                                                <i class="fas fa-paper-plane"></i> Submit
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
 
-                                <!-- Document Details Below -->
-                                <div>
-                                    <!-- First Row: Document Type -->
-                                    <p class="text-lg font-bold mb-2">{{ $documentTrack->doc_type }}</p>
-
-                                    <p class="text-sm mb-2 text-primary">
-                                        @if ($documentTrack->doctrackFile)
-                                            <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
-                                                target="_blank">
-                                                <i class="fas fa-file-pdf text-danger"></i>
-                                                {{ $documentTrack->doctrackFile->file }}
-                                            </a>
-                                        @else
-                                            <span class="text-muted">No file attached</span>
-                                        @endif
-                                    </p>
-
-                                    <!-- Second Row: Created By or Updated By -->
-                                    @if ($loop->first)
-                                        <p class="text-sm mb-0">Created By:</p>
-                                        <p class="mb-1">
-                                            {{ $documentTrack->createdBy->fname ?? 'N/A' }}
-                                            {{ $documentTrack->createdBy->lname ?? '' }}
-                                        </p>
-                                    @else
-                                        <p class="text-sm mb-0">Updated By:</p>
-                                        <p class="mb-1">
-                                            @if (!empty($documentTrack->updatedBy->fname) || !empty($documentTrack->updatedBy->lname))
-                                                {{ $documentTrack->updatedBy->fname }}
-                                                {{ $documentTrack->updatedBy->lname }}
-                                            @else
-                                                N/A
-                                            @endif
-                                        </p>
-                                    @endif
-
-                                    <!-- Third Row: Created At -->
-                                    <p class="text-sm mb-0">Created At:</p>
-                                    <p class="mb-0 bg-warning">
-                                        {{ $documentTrack->created_at ? $documentTrack->created_at->format('F d, Y h:i:s A') : 'N/A' }}
-                                    </p>
+                                <div class="timeline-footer mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt mr-1"></i>
+                                        {{ $documentTrack->created_at->format('F d, Y h:i A') }}
+                                    </small>
                                 </div>
-
-                                @php
-                                    $currentUserId = auth()->user()->id;
-                                    $canComment = $documentTrack->update_by === $currentUserId;
-                                @endphp
-
-                                @if ($documentTrack->update_by !== null)
-                                    <div class="mt-2">
-                                        <h5 class="text-muted">Comments:</h5>
-                                        <form id="commentForm{{ $loop->index }}"
-                                            action="{{ route('updateSlipStatus', $documentTrack->id) }}"
-                                            method="POST" class="comment-form d-flex gap-2">
-                                            @csrf
-                                            @method('PUT')
-
-                                            <textarea class="form-control comment-input" name="comments" rows="3" placeholder="Add a comment"
-                                                {{ !$canComment ? 'disabled' : '' }}>{{ $documentTrack->comments }}</textarea>
-
-                                            <button type="submit" class="btn btn-primary"
-                                                {{ !$canComment ? 'disabled' : '' }}>
-                                                <i class="fa fa-paper-plane"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                @endif
-
                             </div>
+                        </div>
+                    @endforeach
 
-                            <!-- FontAwesome Arrow Icon between the boxes -->
-                            @if (!$loop->last)
-                                <div class="col-md-1 d-flex justify-content-center align-items-center"
-                                    style="font-size: 4rem; line-height: 2rem;">
-                                    <i class="fa fa-arrow-right"></i>
-                                </div>
-                            @endif
-                        @endforeach
+                    <!-- End marker -->
+                    <div>
+                        <i class="fas fa-clock bg-gray"></i>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
-</div>
-
-{{-- @include('modal.docAdd') --}}
-@include('modal.addLog')
 
 <script>
     function submitStatus(index, status) {
@@ -250,6 +185,9 @@
         document.getElementById(`statusForm${index}`).submit();
     }
 </script>
+
+
+
 
 
 
