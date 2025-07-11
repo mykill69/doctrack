@@ -556,20 +556,18 @@ public function updateReroute(Request $request, $id)
                     'created_at'      => now(),
                 ]);
 
-                // // Create corresponding history log
-                // \App\Models\LogsHistory::create([
-                //     'doc_id'        => $document->id,
-                //     'action'        => 're-assigned',
-                //     'status_update' => 2,
-                //     'created_at'    => now(),
-                // ]);
+                   // Send email notification if email is available
+                if (!empty($user->email)) {
+                    Mail::to($user->email)->send(
+                        new DocumentRoutedNotification($document, $fullName, $routingSlip->trans_remarks)
+                    );
+                }
             }
         }
     }
 
     return redirect()->route('viewSlip')->with('success', 'Document rerouted successfully!');
 }
-
 
 
 }

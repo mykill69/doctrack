@@ -23,7 +23,7 @@ class DocumentRoutedNotification extends Mailable
 
     public function build()
     {
-        return $this->subject('New Document Routed to You')
+        return $this->subject('Document Receipt Notification')
                     ->view('emails.routed_notification');
     }
 }

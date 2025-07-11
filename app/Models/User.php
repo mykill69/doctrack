@@ -60,4 +60,8 @@ class User extends Authenticatable
             ? in_array($this->role, $role)
             : $this->role === $role;
     }
+    public function position()
+{
+    return $this->belongsTo(Position::class);
+}
 }

@@ -149,34 +149,50 @@
                                     <div class="col-md-9">
                                         <select class="form-control select2" name="routed_users[]" id="routed_users"
                                             data-placeholder="Select users..." multiple required>
+
+                                            {{-- Static predefined positions --}}
+                                            <option disabled>— Select by Position —</option>
+                                            <option value="President">President</option>
+                                            <option value="VPAA">VPAA</option>
+                                            <option value="VPAF">VPAF</option>
+                                            <option value="Office Heads">Office Heads</option>
+                                            <option value="Deans">Deans</option>
+                                            <option value="Campus Administrators">Campus Administrators</option>
+                                            <option value="Directors">Directors</option>
+
+                                            {{-- Separator --}}
+                                            <option disabled>──────────</option>
+                                            <option disabled>— Select by Individual User —</option>
+
+                                            {{-- Dynamic users --}}
                                             @foreach ($users as $user)
                                                 <option value="{{ $user->fname }} {{ $user->lname }}">
-                                                    {{ $user->fname }} {{ $user->lname }}</option>
+                                                    {{ $user->fname }} {{ $user->lname }}
+                                                </option>
                                             @endforeach
                                         </select>
                                     </div>
-                                </div>
-                                <div id="additional-destinations"></div>
-                                <div class="form-group row">
-                                    <div class="col-md-9">
-                                        <input type="hidden" class="form-control" name="doc_stat" value="2"
-                                            readonly>
+                                    <div id="additional-destinations"></div>
+                                    <div class="form-group row">
+                                        <div class="col-md-9">
+                                            <input type="hidden" class="form-control" name="doc_stat" value="2"
+                                                readonly>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="form-group row">
-                                    <div class="col-md-9">
-                                        <input type="hidden" class="form-control" id="user_id" name="user_id"
-                                            value="{{ $routingSlips->user_id }}" readonly>
+                                    <div class="form-group row">
+                                        <div class="col-md-9">
+                                            <input type="hidden" class="form-control" id="user_id" name="user_id"
+                                                value="{{ $routingSlips->user_id }}" readonly>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div class="form-group row">
-                                    <div class="col-md-3"></div>
-                                    <div class="col-md-9">
-                                        <button type="submit" class="btn btn-primary">Submit Routing Slip</button>
-                                        <a href="{{ route('viewSlip') }}" class="btn btn-danger">Cancel</a>
+                                    <div class="form-group row">
+                                        <div class="col-md-3"></div>
+                                        <div class="col-md-9">
+                                            <button type="submit" class="btn btn-primary">Submit Routing Slip</button>
+                                            <a href="{{ route('viewSlip') }}" class="btn btn-danger">Cancel</a>
+                                        </div>
                                     </div>
-                                </div>
                             </form>
                         </div>
                     </div>

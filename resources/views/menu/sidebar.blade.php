@@ -92,13 +92,20 @@
                     <i class="nav-icon fas fa-receipt"></i>
                     <p>Routing Slip
                         @php
-                            $userCount = \App\Models\RoutingSlip::where('route_status', 2)->count();
+                            $user = auth()->user();
+                            $userRole = $user->role;
+
+                            $userCount =
+                                $userRole === 'super_user'
+                                    ? \App\Models\RoutingSlip::where('route_status', 1)->count()
+                                    : \App\Models\RoutingSlip::where('route_status', 2)->count();
                         @endphp
-                        <span class="badge badge-info ml-2">{{ $userCount ?? 0 }}</span>
+                        <span class="badge badge-info ml-2">{{ $userCount }}</span>
                     </p>
                 </a>
             @endif
         </li>
+
         @php
 
             $user = auth()->user();

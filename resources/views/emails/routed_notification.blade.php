@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>New Routed Document</title>
+    <title>Document Receipt Notification</title>
 </head>
 <body>
+     <p><strong>Subject:</strong> {{ $document->subject }}</p>
+
     <p>Dear {{ $recipientName }},</p>
-    <p>A new document has been routed to you.</p>
+    <p>This is to inform you that a document has been forwarded for your {{ $transRemarks ?? 'N/A' }}.</p>
 
-    <p><strong>Subject:</strong> {{ $document->subject }}</p>
-    <p><strong>From:</strong> {{ $document->full_name }}</p>
+   
+    {{-- <p><strong>From:</strong> {{ $document->full_name }}</p> --}}
     {{-- <p><strong>Document Type:</strong> {{ $document->doc_type }}</p> --}}
-    <p><strong>Remarks:</strong> {{ $transRemarks ?? 'N/A' }}</p>
+    {{-- <p><strong>Remarks:</strong> </p> --}}
 
-    <p>You may now view it in the document tracking system.</p>
 
     <p>
         <a href="{{ url('/') }}" style="color: #1a73e8; text-decoration: none;">
@@ -21,9 +22,11 @@
     </p>
 
     <p style="margin-top: 25px;">
-        Regards,<br>
-        <strong>Records Office Team</strong><br>
-        Central Philippines State University
+        Very truly yours,<br>
+        <br>
+        <strong>Records Office</strong><br>
+        Central Philippines State University<br>
+        Kabankalan City, Negros Occidental
     </p>
 
     <hr style="margin-top: 40px;">
