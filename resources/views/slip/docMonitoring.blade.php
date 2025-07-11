@@ -52,19 +52,43 @@
                             $loopIndex = $loop->index;
                             $currentUserId = auth()->user()->id;
                             $isFirst = $loop->first;
-                            $isEnabled = ($currentUserId == $documentTrack->user_id && is_null($documentTrack->update_by)) || $currentUserId == $documentTrack->update_by;
+                            $isEnabled =
+                                ($currentUserId == $documentTrack->user_id && is_null($documentTrack->update_by)) ||
+                                $currentUserId == $documentTrack->update_by;
                             $canComment = $documentTrack->update_by === $currentUserId;
 
                             $person = $isFirst
                                 ? $documentTrack->createdBy->fname . ' ' . $documentTrack->createdBy->lname
-                                : ($documentTrack->updatedBy->fname ?? 'N/A') . ' ' . ($documentTrack->updatedBy->lname ?? '');
+                                : ($documentTrack->updatedBy->fname ?? 'N/A') .
+                                    ' ' .
+                                    ($documentTrack->updatedBy->lname ?? '');
 
                             switch ($documentTrack->doctrack_stat) {
-                                case 1: $statusText = 'CREATED'; $bgColor = 'primary'; $icon = 'fas fa-plus'; break;
-                                case 2: $statusText = 'PENDING'; $bgColor = 'warning'; $icon = 'fas fa-hourglass-half'; break;
-                                case 3: $statusText = 'SIGNED'; $bgColor = 'success'; $icon = 'fas fa-check-circle'; break;
-                                case 4: $statusText = 'RETURNED WITH COMMENT'; $bgColor = 'danger'; $icon = 'fas fa-comment-slash'; break;
-                                default: $statusText = 'UNKNOWN'; $bgColor = 'secondary'; $icon = 'fas fa-question-circle'; break;
+                                case 1:
+                                    $statusText = 'CREATED';
+                                    $bgColor = 'primary';
+                                    $icon = 'fas fa-plus';
+                                    break;
+                                case 2:
+                                    $statusText = 'PENDING';
+                                    $bgColor = 'warning';
+                                    $icon = 'fas fa-hourglass-half';
+                                    break;
+                                case 3:
+                                    $statusText = 'SIGNED';
+                                    $bgColor = 'success';
+                                    $icon = 'fas fa-check-circle';
+                                    break;
+                                case 4:
+                                    $statusText = 'RETURNED WITH COMMENT';
+                                    $bgColor = 'danger';
+                                    $icon = 'fas fa-comment-slash';
+                                    break;
+                                default:
+                                    $statusText = 'UNKNOWN';
+                                    $bgColor = 'secondary';
+                                    $icon = 'fas fa-question-circle';
+                                    break;
                             }
                         @endphp
 
@@ -94,9 +118,9 @@
                                             <strong>File:</strong>
                                             @if ($documentTrack->doctrackFile)
                                                 <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
-                                                   target="_blank"
-                                                   class="text-danger font-weight-bold">
-                                                    <i class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
+                                                    target="_blank" class="text-danger font-weight-bold">
+                                                    <i
+                                                        class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
                                                 </a>
                                             @else
                                                 <span class="text-muted">No File</span>
@@ -106,29 +130,29 @@
 
                                     <!-- Status Dropdown -->
                                     <form id="statusForm{{ $loopIndex }}"
-                                          action="{{ route('updateSlipStatus', $documentTrack->id) }}"
-                                          method="POST"
-                                          class="mb-2">
+                                        action="{{ route('updateSlipStatus', $documentTrack->id) }}" method="POST"
+                                        class="mb-2">
                                         @csrf
                                         @method('PUT')
-                                        <input type="hidden" name="doctrack_stat" id="doctrackStatInput{{ $loopIndex }}">
+                                        <input type="hidden" name="doctrack_stat"
+                                            id="doctrackStatInput{{ $loopIndex }}">
                                         <div class="dropdown d-inline-block">
                                             <button class="btn btn-sm btn-{{ $bgColor }} dropdown-toggle"
-                                                    type="button"
-                                                    data-toggle="dropdown"
-                                                    aria-haspopup="true"
-                                                    aria-expanded="false"
-                                                    {{ !$isEnabled ? 'disabled' : '' }}>
-                                                 {{ $statusText }}
+                                                type="button" data-toggle="dropdown" aria-haspopup="true"
+                                                aria-expanded="false" {{ !$isEnabled ? 'disabled' : '' }}>
+                                                {{ $statusText }}
                                             </button>
                                             <div class="dropdown-menu">
-                                                <a class="dropdown-item" href="#" onclick="submitStatus({{ $loopIndex }}, 2)">
+                                                <a class="dropdown-item" href="#"
+                                                    onclick="submitStatus({{ $loopIndex }}, 2)">
                                                     <i class="fas fa-hourglass-half mr-1"></i> PENDING
                                                 </a>
-                                                <a class="dropdown-item" href="#" onclick="submitStatus({{ $loopIndex }}, 3)">
+                                                <a class="dropdown-item" href="#"
+                                                    onclick="submitStatus({{ $loopIndex }}, 3)">
                                                     <i class="fas fa-check-circle mr-1"></i> SIGNED
                                                 </a>
-                                                <a class="dropdown-item" href="#" onclick="submitStatus({{ $loopIndex }}, 4)">
+                                                <a class="dropdown-item" href="#"
+                                                    onclick="submitStatus({{ $loopIndex }}, 4)">
                                                     <i class="fas fa-undo mr-1"></i> RETURN WITH COMMENT
                                                 </a>
                                             </div>
@@ -137,22 +161,18 @@
 
                                     <!-- Comment Form -->
                                     <form id="commentForm{{ $loopIndex }}"
-                                          action="{{ route('updateSlipStatus', $documentTrack->id) }}"
-                                          method="POST"
-                                          class="form-inline">
+                                        action="{{ route('updateSlipStatus', $documentTrack->id) }}" method="POST"
+                                        class="form-inline">
                                         @csrf
                                         @method('PUT')
                                         <div class="form-group w-100">
                                             <i class="fas fa-comment-dots text-muted mr-2"></i>
-                                            <input type="text"
-                                                   name="comments"
-                                                   class="form-control form-control-sm mr-2 w-75"
-                                                   placeholder="Add comment"
-                                                   value="{{ $documentTrack->comments }}"
-                                                   {{ !$canComment ? 'disabled' : '' }}>
-                                            <button type="submit"
-                                                    class="btn btn-sm btn-outline-primary"
-                                                    {{ !$canComment ? 'disabled' : '' }}>
+                                            <input type="text" name="comments"
+                                                class="form-control form-control-sm mr-2 w-75" placeholder="Add comment"
+                                                value="{{ $documentTrack->comments }}"
+                                                {{ !$canComment ? 'disabled' : '' }}>
+                                            <button type="submit" class="btn btn-sm btn-outline-primary"
+                                                {{ !$canComment ? 'disabled' : '' }}>
                                                 <i class="fas fa-paper-plane"></i> Submit
                                             </button>
                                         </div>
