@@ -44,14 +44,26 @@
 
                                                 <td class="text-bold text-primary">{{ $user->email }}</td>
                                                 <td>{{ $user->department }}</td>
+                                                @php
+                                                    $positionMap = [
+                                                        1 => 'President',
+                                                        2 => 'VPAA',
+                                                        3 => 'VPAF',
+                                                        4 => 'Office Heads',
+                                                        5 => 'Deans',
+                                                        6 => 'Campus Administrators',
+                                                        7 => 'Directors',
+                                                    ];
+                                                @endphp
+
                                                 <td>
                                                     <span class="badge badge-warning" style="font-size: 9px;">
                                                         {{ $user->role }}
                                                     </span>
 
-                                                    @if (!empty($user->position))
+                                                    @if (!empty($user->position) && isset($positionMap[$user->position]))
                                                         <span class="badge badge-info ml-1" style="font-size: 9px;">
-                                                            {{ $user->position }}
+                                                            {{ $positionMap[$user->position] }}
                                                         </span>
                                                     @endif
                                                 </td>

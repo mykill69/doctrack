@@ -152,13 +152,13 @@
 
                                             {{-- Static predefined positions --}}
                                             <option disabled>— Select by Position —</option>
-                                            <option value="President">President</option>
-                                            <option value="VPAA">VPAA</option>
-                                            <option value="VPAF">VPAF</option>
-                                            <option value="Office Heads">Office Heads</option>
-                                            <option value="Deans">Deans</option>
-                                            <option value="Campus Administrators">Campus Administrators</option>
-                                            <option value="Directors">Directors</option>
+                                            <option value="position:1">President</option>
+                                            <option value="position:2">VPAA</option>
+                                            <option value="position:3">VPAF</option>
+                                            <option value="position:4">Office Heads</option>
+                                            <option value="position:5">Deans</option>
+                                            <option value="position:6">Campus Administrators</option>
+                                            <option value="position:7">Directors</option>
 
                                             {{-- Separator --}}
                                             <option disabled>──────────</option>

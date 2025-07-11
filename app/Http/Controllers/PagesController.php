@@ -109,28 +109,35 @@ $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('rou
 public function pending()
 {
     $user = auth()->user();
-    $userDepartment = $user->department;
-    $userId = $user->id;
     $userFullName = $user->fname . ' ' . $user->lname;
+    $userId = $user->id;
     $userRole = $user->role;
 
-    // Fetch logs with status 2 assigned directly to this user
     $logs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
         ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
         ->select('logs.*', 'documents.*', 'routing_slip.*')
         ->where('logs.status_update', 2)
-        ->where('logs.new_destination', $userFullName)
+        ->where(function ($q) {
+            // Exclude rows where both are NOT NULL
+            $q->whereNull('logs.new_user')
+              ->orWhereNull('logs.assigned_to');
+        })
+        ->where(function ($q) use ($userFullName, $userId) {
+            // Match either destination name or user ID
+            $q->where('logs.new_destination', $userFullName)
+              ->orWhere('logs.user_id', $userId);
+        })
         ->orderBy('logs.created_at', 'desc')
-        ->get()
-        ->groupBy('logs.doc_id');
+        ->distinct('logs.id') // Optional: prevents duplicates
+        ->get();
 
     $offices = Office::all();
-
     $recordsOfficerCount = 0;
     $superUserCount = 0;
 
     return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount'));
 }
+
 
 
 

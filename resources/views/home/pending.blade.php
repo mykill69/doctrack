@@ -44,58 +44,48 @@
                                                 <th>ACTION</th>
                                             </tr>
                                         </thead>
-                                        @php
-                                            $user = auth()->user();
-                                            $userFullName = trim($user->fname . ' ' . $user->lname);
-                                        @endphp
-
                                         <tbody>
-                                            @foreach ($logs as $docId => $logGroup)
-                                                @php $log = $logGroup->first(); @endphp
-                                                <tr>
-                                                    <td>
-                                                        <a href="{{ route('slipForm', $log->route_id) }}" target="_blank">
-                                                            {{ $log->route_id }}
-                                                        </a>
-                                                    </td>
-                                                    <td>{{ $log->date_received ? \Carbon\Carbon::parse($log->date_received)->format('F d, Y') : 'N/A' }}
-                                                    </td>
-                                                    <td>{{ $log->source ?? 'N/A' }}</td>
-                                                    <td>{{ $log->subject ?? 'N/A' }}</td>
-                                                    <td>
-                                                        <a href="{{ route('documents.viewPdf', $log->id) }}"
-                                                            target="_blank">
-                                                            <i class="fas fa-file-pdf text-danger"></i>
-                                                            {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
-                                                        </a>
-                                                    </td>
-                                                    <td>{{ $log->pres_dept ?? 'N/A' }}</td>
-                                                    <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
-                                                    </td>
-                                                    <td>
-                                                        <strong class="text-danger">{{ $log->for_to }}</strong>
-                                                        @if ($log->assigned_to)
-                                                            , was re-rerouted to <strong
-                                                                class="text-danger">{{ $log->assigned_to }}</strong>
-                                                        @endif
-                                                    </td>
-                                                    <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
-                                                    <td style="font-size:10px;">
-                                                        <span
-                                                            class="badge badge-success">{{ $log->trans_remarks ?? 'N/A' }}</span>
-                                                        <span
-                                                            class="badge badge-warning">{{ $log->assign_com ?? '' }}</span>
-                                                    </td>
-                                                    <td>{{ $log->new_destination }}</td>
-                                                    <td>
-                                                        <a href="{{ route('tracking', ['route_id' => $log->route_id]) }}"
-                                                            class="btn btn-primary" style="text-decoration:none;">
-                                                            <i class="fas fa-pen"></i>
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
+    @foreach ($logs as $log)
+        <tr>
+            <td><a href="{{ route('slipForm', $log->route_id) }}" target="_blank">{{ $log->route_id }}</a></td>
+            <td>{{ $log->date_received ? \Carbon\Carbon::parse($log->date_received)->format('F d, Y') : 'N/A' }}</td>
+            <td>{{ $log->source ?? 'N/A' }}</td>
+            <td>{{ $log->subject ?? 'N/A' }}</td>
+            <td>
+                <a href="{{ route('documents.viewPdf', $log->id) }}" target="_blank">
+                    <i class="fas fa-file-pdf text-danger"></i>
+                    {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
+                </a>
+            </td>
+            <td>{{ $log->pres_dept ?? 'N/A' }}</td>
+            <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}</td>
+            <td>
+                <strong class="text-danger">{{ $log->for_to }}</strong>
+                @if ($log->assigned_to)
+                    , was re-rerouted to <strong class="text-danger">{{ $log->assigned_to }}</strong>
+                @endif
+            </td>
+            <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
+            <td style="font-size:10px;">
+                <span class="badge badge-success">{{ $log->trans_remarks ?? 'N/A' }}</span>
+                <span class="badge badge-warning">{{ $log->assign_com ?? '' }}</span>
+            </td>
+            <td>{{ $log->new_destination }}</td>
+            <td>
+                <a href="{{ route('tracking', ['route_id' => $log->route_id]) }}" class="btn btn-primary">
+                    <i class="fas fa-pen"></i>
+                </a>
+            </td>
+        </tr>
+    @endforeach
+</tbody>
+
+
+
+
+
+
+
 
                                     </table>
                                 </div>

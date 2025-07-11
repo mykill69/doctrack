@@ -87,13 +87,13 @@
                                         <select class="form-control" id="position" name="position"
                                             data-placeholder="Select position">
                                             <option value="{{ $user->position }}" selected>{{ $user->position }}</option>
-                                            <option value="President">President</option>
-                                            <option value="VPAA">VPAA</option>
-                                            <option value="VPAF">VPAF</option>
-                                            <option value="Office Heads">Office Heads</option>
-                                            <option value="Deans">Deans</option>
-                                            <option value="Campus Administrators">Campus Administrators</option>
-                                            <option value="Directors">Directors</option>
+                                            <option value="1">President</option>
+                                            <option value="2">VPAA</option>
+                                            <option value="3">VPAF</option>
+                                            <option value="4">Office Heads</option>
+                                            <option value="5">Deans</option>
+                                            <option value="6">Campus Administrators</option>
+                                            <option value="7">Directors</option>
                                         </select>
                                     </div>
                                 </div>

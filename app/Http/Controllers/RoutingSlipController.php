@@ -330,16 +330,16 @@ if ($request->hasFile('file_stamp')) {
     public function storeRouteDoc(Request $request)
 {
     $validatedData = $request->validate([
-        'doc_type'     => 'required|string',
-        'full_name'    => 'required|string',
-        'subject'      => 'required|string',
-        'file_name'    => 'required|string',
-        'purpose'      => 'nullable|string',
-        'department'   => 'required|string',
-        'for_to'       => 'required|string',
-        'doc_stat'     => 'required|integer',
-        'user_id'      => 'required|integer',
-        'route_id'     => 'required|integer',
+        'doc_type'        => 'required|string',
+        'full_name'       => 'required|string',
+        'subject'         => 'required|string',
+        'file_name'       => 'required|string',
+        'purpose'         => 'nullable|string',
+        'department'      => 'required|string',
+        'for_to'          => 'required|string',
+        'doc_stat'        => 'required|integer',
+        'user_id'         => 'required|integer',
+        'route_id'        => 'required|integer',
         'routed_users'    => 'required|array',
         'routed_users.*'  => 'required|string',
     ]);
@@ -358,46 +358,92 @@ if ($request->hasFile('file_stamp')) {
     $document->route_id   = $validatedData['route_id'];
     $document->save();
 
-    // Save routed users as a string (comma-separated) to routing_slip
-    $routedUsers = implode(', ', $validatedData['routed_users']);
+    // Update routed_users in routing_slip
     $routingSlip = RoutingSlip::where('rslip_id', $validatedData['route_id'])->first();
+    $finalDestinations = [];
+
+    foreach ($validatedData['routed_users'] as $destination) {
+        if (Str::startsWith($destination, 'position:')) {
+            // Handle group by position
+            $positionId = (int) Str::after($destination, 'position:');
+
+            $positionUsers = User::where('position', $positionId)->get();
+
+            foreach ($positionUsers as $user) {
+                $fullName = $user->fname . ' ' . $user->lname;
+
+                if (!in_array($fullName, $finalDestinations)) {
+                    $finalDestinations[] = $fullName;
+
+                    // Save log
+                    $log = Log::create([
+                        'user_id'         => auth()->user()->id,
+                        'doc_id'          => $document->id,
+                        'route_id'        => $document->route_id,
+                        'action'          => 'uploaded',
+                        'status_update'   => $document->doc_stat,
+                        'prev_file'       => null,
+                        'new_file'        => $document->file_name,
+                        'new_destination' => $fullName,
+                        'created_at'      => now(),
+                    ]);
+
+                    LogsHistory::create([
+                        'doc_id'        => $document->id,
+                        'action'        => $log->action,
+                        'status_update' => $log->status_update
+                    ]);
+
+                    // Send email
+                    if ($user->email) {
+                        Mail::to($user->email)->send(
+                            new DocumentRoutedNotification($document, $fullName, $routingSlip->trans_remarks)
+                        );
+                    }
+                }
+            }
+        } else {
+            // Handle individual user
+            if (!in_array($destination, $finalDestinations)) {
+                $finalDestinations[] = $destination;
+
+                // Save log
+                $log = Log::create([
+                    'user_id'         => auth()->user()->id,
+                    'doc_id'          => $document->id,
+                    'route_id'        => $document->route_id,
+                    'action'          => 'uploaded',
+                    'status_update'   => $document->doc_stat,
+                    'prev_file'       => null,
+                    'new_file'        => $document->file_name,
+                    'new_destination' => $destination,
+                    'created_at'      => now(),
+                ]);
+
+                LogsHistory::create([
+                    'doc_id'        => $document->id,
+                    'action'        => $log->action,
+                    'status_update' => $log->status_update
+                ]);
+
+                // Send email
+                $userRecipient = User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
+
+                if ($userRecipient && $userRecipient->email) {
+                    Mail::to($userRecipient->email)->send(
+                        new DocumentRoutedNotification($document, $destination, $routingSlip->trans_remarks)
+                    );
+                }
+            }
+        }
+    }
+
+    // Update routed_users field in routing_slip
     if ($routingSlip) {
-        $routingSlip->routed_users = $routedUsers;
+        $routingSlip->routed_users = implode(', ', $finalDestinations);
         $routingSlip->route_status = 3;
         $routingSlip->save();
     }
-
-    // ✅ ADD EMAIL & LOGIC HERE
-    foreach ($validatedData['routed_users'] as $destination) {
-    // Save log
-    $log = Log::create([
-        'user_id'         => auth()->user()->id,
-        'doc_id'          => $document->id,
-        'route_id'        => $document->route_id,
-        'action'          => 'uploaded',
-        'status_update'   => $document->doc_stat,
-        'prev_file'       => null,
-        'new_file'        => $document->file_name,
-        'new_destination' => $destination,
-        'created_at'      => now(),
-    ]);
-
-    LogsHistory::create([
-        'doc_id'        => $document->id,
-        'action'        => $log->action,
-        'status_update' => $log->status_update
-    ]);
-
-    // Get the user email by full name
-    $userRecipient = \App\Models\User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
-
-    // Send email notification
-    if ($userRecipient && $userRecipient->email) {
-        Mail::to($userRecipient->email)->send(
-            new DocumentRoutedNotification($document, $destination, $routingSlip->trans_remarks)
-        );
-    }
-}
 
     return redirect()->route('dashboard')->with('success', 'Document with CTRL#' . $routingSlip->rslip_id . ' was created successfully.');
 }
