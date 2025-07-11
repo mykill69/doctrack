@@ -16,7 +16,7 @@
     {{-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback"> --}}
     <!-- Toastr -->
     <link rel="stylesheet" href="{{ asset('template/plugins/toastr/toastr.min.css') }}">
-    
+
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="{{ asset('template/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
     <!-- Font Awesome -->
@@ -31,6 +31,8 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('template/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('template/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+
+
     <!-- Logo  -->
     <link rel="shortcut icon" type="" href="{{ asset('template/img/cpsu_logo.png') }}">
 
@@ -48,6 +50,11 @@
         color: white !important;
         background-color: black;
         /* optional hover background */
+    }
+
+    .select2-container {
+        z-index: 999999 !important;
+        /* ensures dropdown appears inside SweetAlert */
     }
 
     /* Active menu item */
@@ -69,10 +76,90 @@
     a {
         color: #000000;
     }
+
+    .swal-wide {
+        width: 650px !important;
+        max-width: 90%;
+    }
+
+    .no-left-radius {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .select2-selection__choice {
+        background-color: #007bff !important;
+        /* Blue background */
+        color: #fff !important;
+        /* White text */
+        border: none !important;
+        padding: 2px 10px;
+        border-radius: 0.2rem;
+        margin-top: 4px;
+    }
+
+    #page-loader {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .progress-loader {
+        width: 200px;
+        height: 10px;
+        background-color: #dee2e6;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .progress-bar {
+        width: 0%;
+        height: 100%;
+        background-color: #0d6efd;
+        transition: width 0.5s ease;
+    }
+
+    #page-loader p {
+        margin-top: 1.5rem;
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #343a40;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 
 <body
     class="hold-transition sidebar-mini  {{-- sidebar-collapse --}} layout-fixed layout-navbar-fixed layout-footer-fixed text-sm">
+
+    <div id="page-loader"
+        class="position-fixed top-0 start-0 w-100 h-100 flex-column justify-content-center align-items-center"
+        style="z-index:1055; display:none; background:linear-gradient(135deg,#f8f9fa,#e9ecef); font-family:'Segoe UI',Tahoma,sans-serif">
+
+        <img src="{{ asset('template/img/cpsu_logo.png') }}" alt="MIS logo"
+            style="width:110px;height:auto;margin-bottom:28px">
+
+        <div class="progress-loader"
+            style="width:220px;height:12px;background:#dee2e6;border-radius:6px;overflow:hidden">
+            <div id="progress-bar" style="width:0;height:100%;background:#0d6efd;transition:width .4s ease"></div>
+        </div>
+
+        <p style="margin-top:1.3rem;font-size:1.15rem;font-weight:500;color:#343a40">
+            Sending notification, please wait...
+        </p>
+    </div>
+
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand" style="background-color: #1F5036;">
@@ -97,8 +184,8 @@
                                     <ul class="dropdown-menu">
                                         <li class="dropdown-item" data-toggle="modal" data-target="#routslip"><a
                                                 href="#">Create Routing Slip</a></li>
-                                        <li class="dropdown-item" data-toggle="modal" data-target="#exampleModalTrans">
-                                            <a href="#">Document Tracking Slip</a>
+                                        <li class="dropdown-item">
+                                            <a href="#" onclick="openDoctrackForm()">Document Tracking Slip</a>
                                         </li>
                                     </ul>
                                 </div>
@@ -110,8 +197,8 @@
                                         <span class="d-none d-sm-inline text-bold"> Transaction</span>
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li class="dropdown-item" data-toggle="modal" data-target="#exampleModalTrans">
-                                            <a href="#">Document Tracking Slip</a>
+                                        <li class="dropdown-item">
+                                            <a href="#" onclick="openDoctrackForm()">Document Tracking Slip</a>
                                         </li>
                                     </ul>
                                 </div>
@@ -141,44 +228,44 @@
                 {{-- <li class="nav-item dropdown" style="background-color: #FFFFFF; border-radius: 5px;">
                     <a href="{{ route('logout') }}" class="nav-link"
                         style="border: 1px solid grey; border-radius: 3px; color: black;"> --}}
-                        
-                        {{-- <span class="d-none d-sm-inline"> Sign out</span> --}}
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-default dropdown-toggle"
-                                data-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-cogs"></i>
-                                <span class="d-none d-sm-inline"> Settings</span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                @if (auth()->check() && auth()->user()->role !== 'Administrator')
-                                <li class="dropdown-item">
-                                    <a href="{{ route('userPassword', ['id' => Auth::user()->id]) }}">
+
+                {{-- <span class="d-none d-sm-inline"> Sign out</span> --}}
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"
+                        aria-expanded="false">
+                        <i class="fas fa-cogs"></i>
+                        <span class="d-none d-sm-inline"> Settings</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        @if (auth()->check() && auth()->user()->role !== 'Administrator')
+                            <li class="dropdown-item">
+                                <a href="{{ route('userPassword', ['id' => Auth::user()->id]) }}">
                                     <i class="fas fa-user-edit nav-icon"></i>
                                     Edit Account</a>
-                                </li>
-                                @endif
-                                <li class="dropdown-item">
-                                    <a href="#">
-                                    <i class="fa fa-info-circle nav-icon"></i>
-                                    About</a>
-                                </li>
-                                <li class="dropdown-item">
-                                    <a href="{{ route('logout') }}">
-                                    <i class="fas fa-sign-out-alt nav-icon"></i>
-                                    Logout</a>
-                                </li>
-                                <li class="dropdown-item" data-toggle="modal" data-target="#dataP">
-                                    <a href="#">
-                                    <i class="fa fa-scroll nav-icon"></i>
-                                    Terms & Conditions</a>
-                                    </li>
-                                <li class="dropdown-item">
-                                <i class="fas fa-code-branch nav-icon"></i>
-                                <a href="#">System Version 1.0</a>
-                                </li>
-                            </ul>
-                        </div>
-               
+                            </li>
+                        @endif
+                        <li class="dropdown-item">
+                            <a href="#">
+                                <i class="fa fa-info-circle nav-icon"></i>
+                                About</a>
+                        </li>
+                        <li class="dropdown-item">
+                            <a href="{{ route('logout') }}">
+                                <i class="fas fa-sign-out-alt nav-icon"></i>
+                                Logout</a>
+                        </li>
+                        <li class="dropdown-item" data-toggle="modal" data-target="#dataP">
+                            <a href="#">
+                                <i class="fa fa-scroll nav-icon"></i>
+                                Terms & Conditions</a>
+                        </li>
+                        <li class="dropdown-item">
+                            <i class="fas fa-code-branch nav-icon"></i>
+                            <a href="#">System Version 1.0</a>
+                        </li>
+                    </ul>
+                </div>
+
             </ul>
 
         </nav>
@@ -228,12 +315,11 @@
 
 
     </div>
-    
+
     <!-- ./wrapper -->
     <script src="{{ asset('template/plugins/jquery/jquery.min.js') }}"></script>
-    <!-- Bootstrap 4 -->
-    <script src="{{ asset('template/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    
+
+
     <!-- AdminLTE App -->
     <script src="{{ asset('template/dist/js/adminlte.min.js') }}"></script>
     <!-- Toastr -->
@@ -253,8 +339,13 @@
     <script src="{{ asset('template/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
     <!-- Select2 -->
     <script src="{{ asset('template/plugins/select2/js/select2.full.min.js') }}"></script>
+    <!-- SweetAlert2 -->
+    <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+    <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="{{ asset('template/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 
     <script>
         function scanQRCode(input) {
@@ -267,21 +358,21 @@
 
                 const reader = new FileReader();
 
-                reader.onerror = function (e) {
+                reader.onerror = function(e) {
                     console.error("FileReader error:", e);
                     alert("Failed to read the file.");
                 };
 
-                reader.onload = function (e) {
+                reader.onload = function(e) {
                     try {
                         const img = new Image();
 
-                        img.onerror = function (err) {
+                        img.onerror = function(err) {
                             console.error("Image load error:", err);
                             alert("Could not load the image.");
                         };
 
-                        img.onload = function () {
+                        img.onload = function() {
                             try {
                                 const canvas = document.createElement('canvas');
                                 const scale = 500 / img.width;
@@ -445,6 +536,121 @@
             });
         });
     </script>
+
+
+    @php
+        $users = \App\Models\User::orderBy('fname')->get();
+    @endphp
+<script>
+    function openDoctrackForm() {
+        Swal.fire({
+            title: 'Document Tracking Slip',
+            html: `
+                <form id="docForm" enctype="multipart/form-data">
+                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+
+                    <div class="form-group text-left">
+                        <label>Document Type</label>
+                        <select name="doc_type" class="form-control" required>
+                            <option value="">Select</option>
+                            <option value="DPCR/IPCR">DPCR/IPCR</option>
+                            <option value="Reimbursement">Reimbursement</option>
+                            <option value="Travel Authority">Travel Authority</option>
+                            <option value="Other Document">Other Document</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group text-left">
+                        <label>Document Title</label>
+                        <textarea name="doc_title" class="form-control" rows="2" required></textarea>
+                    </div>
+
+                    <div class="form-group text-left">
+                        <label>Select Personnels</label>
+                        <select name="update_by[]" id="user_name_select" class="form-control" multiple required>
+                            @foreach ($users as $user)
+                                <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group text-left">
+                        <label>Attach File (optional)</label>
+                        <input type="file" name="file" class="form-control" id="docFile">
+                    </div>
+                </form>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Submit',
+            didOpen: () => {
+                setTimeout(() => {
+                    $('#user_name_select').select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        placeholder: 'Select users...',
+                        dropdownParent: $('.swal2-popup')
+                    });
+                }, 10);
+            },
+            preConfirm: () => {
+                const form = document.getElementById('docForm');
+                const formData = new FormData(form);
+                const fileInput = document.getElementById('docFile');
+
+                if (fileInput.files.length > 0) {
+                    formData.append('file', fileInput.files[0]);
+                }
+
+                const loader = document.getElementById('page-loader');
+                const bar = document.getElementById('progress-bar');
+
+                // ✅ Close the modal so the loader becomes visible
+                Swal.close();
+
+                // ✅ Start loader animation
+                if (loader && bar) {
+                    loader.style.display = 'flex';
+                    animateBarTo(bar, 90, 8000);
+                }
+
+                return fetch("{{ route('storeDoctrack') }}", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(async response => {
+                    if (!response.ok) {
+                        const text = await response.text();
+                        console.error("Error response:", response.status, text);
+                        throw new Error(`HTTP ${response.status}: ${text}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (loader) loader.style.display = 'none';
+                    window.location.href = "{{ route('docslipForm', ['id' => '__REPLACE__']) }}"
+                        .replace('__REPLACE__', data.id || '');
+                })
+                .catch(error => {
+                    if (loader) loader.style.display = 'none';
+                    Swal.fire('Error', error.message, 'error');
+                });
+            }
+        });
+
+        function animateBarTo(bar, target, duration) {
+            const start = parseFloat(bar.style.width) || 0;
+            const diff = target - start;
+            const startTs = performance.now();
+            requestAnimationFrame(function step(now) {
+                const pct = Math.min(1, (now - startTs) / duration);
+                bar.style.width = (start + diff * pct) + '%';
+                if (pct < 1) requestAnimationFrame(step);
+            });
+        }
+    }
+</script>
+
 
 
 

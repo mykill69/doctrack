@@ -102,9 +102,22 @@
                                     <strong class="text-{{ $bgColor }}">
                                         {{ $loop->iteration }}.
                                     </strong>
-                                    <span class="ml-2">
-                                        <i class="fas fa-file-alt mr-1"></i>{{ $documentTrack->doc_title ?? 'N/A' }}
+                                    <span class="ml-2 mr-4">
+                                        <i class="fas fa-file-alt mr-2"></i>{{ $documentTrack->doc_title ?? 'N/A' }}
                                     </span>
+
+                                    <i class="fas fa-paperclip text-muted mr-1"></i>
+
+                                    @if ($documentTrack->doctrackFile)
+                                        <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
+                                            target="_blank" class="text-danger font-weight-bold">
+                                            <i
+                                                class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
+                                        </a>
+                                    @else
+                                        <span class="text-muted">No File</span>
+                                    @endif
+
                                 </h3>
 
                                 <div class="timeline-body">
@@ -113,19 +126,7 @@
                                             <i class="fas fa-user mr-1"></i>
                                             <strong>Personnel:</strong> {{ $person }}
                                         </div>
-                                        <div class="col-md-8">
-                                            <i class="fas fa-paperclip text-muted mr-1"></i>
-                                            <strong>File:</strong>
-                                            @if ($documentTrack->doctrackFile)
-                                                <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
-                                                    target="_blank" class="text-danger font-weight-bold">
-                                                    <i
-                                                        class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
-                                                </a>
-                                            @else
-                                                <span class="text-muted">No File</span>
-                                            @endif
-                                        </div>
+
                                     </div>
 
                                     <!-- Status Dropdown -->
@@ -173,7 +174,7 @@
                                                 {{ !$canComment ? 'disabled' : '' }}>
                                             <button type="submit" class="btn btn-sm btn-outline-primary"
                                                 {{ !$canComment ? 'disabled' : '' }}>
-                                                <i class="fas fa-paper-plane"></i> Submit
+                                                Submit
                                             </button>
                                         </div>
                                     </form>
@@ -199,13 +200,14 @@
     </div>
 </div>
 
+@include('modal.addLog')
+
 <script>
     function submitStatus(index, status) {
         document.getElementById(`doctrackStatInput${index}`).value = status;
         document.getElementById(`statusForm${index}`).submit();
     }
 </script>
-
 
 
 

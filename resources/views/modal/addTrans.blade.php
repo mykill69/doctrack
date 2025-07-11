@@ -2,7 +2,7 @@
     <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header bg-success text-center">
-                <h3 class="modal-title w-100">Create Document Tracking Slip</h3>
+                <h3 class="modal-title w-100">Document Tracking Slip</h3>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>

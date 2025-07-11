@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Document;
 use App\Models\Office;
 use App\Models\Log;
+use App\Models\User;
 use App\Models\LogsHistory;
 use App\Models\RoutingSlip;
 use App\Models\RouteDocument;
@@ -57,8 +58,9 @@ public function dashboard()
 
     $offices = Office::all();
     $dpa = auth()->user()->dpa;
+    $users = User::all();
 
-    return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa'));
+    return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users'));
 }
 
 public function tracking(Request $request)
