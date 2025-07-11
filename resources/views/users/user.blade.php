@@ -30,7 +30,7 @@
 
                                             <th>EMAIL</th>
                                             <th>DEPARTMENT</th>
-                                            <th>ROLE</th>
+                                            <th>ROLE & POSITION</th>
                                             <th>DATE CREATED</th>
                                             <th>ACTION</th>
                                         </tr>
@@ -45,9 +45,17 @@
                                                 <td class="text-bold text-primary">{{ $user->email }}</td>
                                                 <td>{{ $user->department }}</td>
                                                 <td>
-                                                    <p class="badge badge-warning" style="font-size: 9px;">
-                                                        {{ $user->role }}</p>
+                                                    <span class="badge badge-warning" style="font-size: 9px;">
+                                                        {{ $user->role }}
+                                                    </span>
+
+                                                    @if (!empty($user->position))
+                                                        <span class="badge badge-info ml-1" style="font-size: 9px;">
+                                                            {{ $user->position }}
+                                                        </span>
+                                                    @endif
                                                 </td>
+
                                                 <td>{{ $user->updated_at }}</td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">

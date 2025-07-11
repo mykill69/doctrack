@@ -50,7 +50,7 @@ public function userView()
         'role' => 'required|string|max:255',
         'password' => 'required|string|min:8', // Minimum length changed to 8
     ], [
-        'username.unique' => 'This username is already taken. Please choose another one.', // Custom error message
+        'email.unique' => 'This email address is already taken. Please choose another one.', // Custom error message
     ]);
 
     // Create a new user
@@ -110,6 +110,7 @@ public function userUpdate(Request $request, $id)
     $user->email = $request->input('email');
     $user->department = $request->input('department');
     $user->role = $request->input('role');
+    $user->position = $request->input('position');
 
     // Only update the password if it's provided and not empty
     if (!empty($request->input('password'))) {

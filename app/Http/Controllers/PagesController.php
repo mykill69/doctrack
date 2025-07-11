@@ -114,38 +114,24 @@ public function pending()
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
-    // Base query
-    $query = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+    // Fetch logs with status 2 assigned directly to this user
+    $logs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
         ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
         ->select('logs.*', 'documents.*', 'routing_slip.*')
-        ->orderBy('logs.created_at', 'desc');
-
-    // Role-specific filters
-    if ($userRole === 'records_officer') {
-        $query->where('logs.status_update', 2);
-    } else {
-        $query->where('logs.status_update', '!=', 3)
-              ->where(function ($subQuery) use ($userDepartment, $userId, $userFullName) {
-                  $subQuery->where('logs.new_destination', $userDepartment)
-                           ->orWhere('logs.user_id', $userId)
-                           ->orWhereRaw("FIND_IN_SET(?, routing_slip.routed_users)", [$userFullName]);
-              });
-    }
-
-    $logs = $query->get()->groupBy('logs.doc_id');
+        ->where('logs.status_update', 2)
+        ->where('logs.new_destination', $userFullName)
+        ->orderBy('logs.created_at', 'desc')
+        ->get()
+        ->groupBy('logs.doc_id');
 
     $offices = Office::all();
 
-    $recordsOfficerCount = ($userRole === 'records_officer') 
-        ? RoutingSlip::where('route_status', 2)->count() 
-        : 0;
-
-    $superUserCount = ($userRole === 'super_user') 
-        ? RoutingSlip::where('route_status', 1)->count() 
-        : 0;
+    $recordsOfficerCount = 0;
+    $superUserCount = 0;
 
     return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount'));
 }
+
 
 
 

@@ -91,11 +91,10 @@
                     class="nav-link {{ request()->routeIs('viewSlip') || request()->routeIs('editDest') || request()->routeIs('editSlip') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-receipt"></i>
                     <p>Routing Slip
-                        @if (auth()->user()->hasRole('records_officer'))
-                            <span class="badge badge-info ml-2">{{ $recordsOfficerCount }}</span>
-                        @elseif (auth()->user()->hasRole('super_user'))
-                            <span class="badge badge-info ml-2">{{ $superUserCount }}</span>
-                        @endif
+                        @php
+                            $userCount = \App\Models\RoutingSlip::where('route_status', 2)->count();
+                        @endphp
+                        <span class="badge badge-info ml-2">{{ $userCount ?? 0 }}</span>
                     </p>
                 </a>
             @endif
@@ -123,16 +122,38 @@
             }
 
             // Count only unique documents
-            $statusUpdateCount1 = $query->distinct('logs.doc_id')->count();
-        @endphp
 
+            $user = auth()->user();
+            $userId = $user->id;
+            $userDepartment = $user->department;
+            $userFullName = $user->fname . ' ' . $user->lname;
+            $userRole = $user->role;
+
+            $query = Log::where('status_update', 2)->where(function ($q) {
+                // This ensures: only exclude if BOTH new_user AND assigned_to are NOT NULL
+                $q->whereNull('new_user')->orWhereNull('assigned_to');
+            });
+
+            // Access control for non-records_officer
+            if ($userRole !== 'records_officer') {
+                $query->where(function ($q) use ($userDepartment, $userId, $userFullName) {
+                    $q->where('new_destination', $userDepartment)
+                        ->orWhere('new_destination', $userFullName)
+                        ->orWhere('user_id', $userId);
+                });
+            }
+
+            // Now count all matching logs (including duplicates if needed)
+            $statusUpdateCount1 = $query->count();
+
+        @endphp
         <li class="nav-item">
             <a href="{{ route('pending') }}" class="nav-link {{ request()->routeIs('pending') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-exclamation"></i>
                 <p>
                     Pending
                     <span class="badge badge-warning ml-2">
-                        {{ $statusUpdateCount1 > 0 ? $statusUpdateCount1 : '0' }}
+                        {{ $statusUpdateCount1 }}
                     </span>
                 </p>
             </a>
@@ -188,7 +209,7 @@
                 <p>Logs</p>
             </a>
         </li>
-       @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
                 <a href="{{ route('userView') }}"
                     class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">
