@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\RoutingSlip;
-use App\Models\RouteDocument;
+use App\Models\Esig;
 use App\Models\Office;
 use App\Models\Document;
 use App\Models\Log;
@@ -73,7 +73,7 @@ $stampFile->storeAs('stamps', $stampName); // this will overwrite if file alread
 
 
     
-    return redirect()->route('viewSlip')->with('success', 'PDF and stamp uploaded successfully.');
+    return redirect()->route('viewSlip')->with('success', 'Routing slip was created successfully.');
 }
 
 
@@ -155,19 +155,16 @@ public function slipForm($id)
 
 public function pdfSlip($id)
 {
-    // Fetch the routing slip record based on the given ID
     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
-
-    // Fetch all remarks from the remarks table
     $remarks = Remark::all();
-
-    // Fetch other related data if needed (e.g., document info, users, etc.)
     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
-    // Render the PDF content using the Blade view
-    $pdf = Pdf::loadView('slip.pdfSlip', compact('remarks', 'routingSlip', 'relatedDocuments'));
+    // 👇 Get e-signature of user_id 38
+    $esig = Esig::where('user_id', 38)->first();
 
-    // Return the PDF as a stream (to view in the browser)
+    // Send all data to view
+    $pdf = Pdf::loadView('slip.pdfSlip', compact('remarks', 'routingSlip', 'relatedDocuments', 'esig'));
+
     return $pdf->stream('routing-slip.pdf');
 }
 
@@ -240,7 +237,7 @@ $recordsOfficerCount = $userId === 'records_officer' ? RoutingSlip::where('route
         'other_remarks'   => 'nullable|string',
         'r_destination'   => 'nullable|string',
         'route_status'    => 'required|string',
-        'esig'            => 'nullable|file|mimes:pdf,doc,docx,jpeg,png,jpg,gif',
+        // 'esig'            => 'nullable|file|mimes:pdf,doc,docx,jpeg,png,jpg,gif',
         'file_stamp'      => 'nullable|file|mimes:jpg,jpeg,png',
         'received_name'   => 'required|array',
         'received_name.*' => 'required|string',
@@ -249,16 +246,16 @@ $recordsOfficerCount = $userId === 'records_officer' ? RoutingSlip::where('route
     $routingSlip = RoutingSlip::findOrFail($id);
 
     // Handle new e-signature upload
-    if ($request->hasFile('esig')) {
-        if ($routingSlip->esig && Storage::exists('documents/' . $routingSlip->esig)) {
-            Storage::delete('documents/' . $routingSlip->esig);
-        }
+    // if ($request->hasFile('esig')) {
+    //     if ($routingSlip->esig && Storage::exists('documents/' . $routingSlip->esig)) {
+    //         Storage::delete('documents/' . $routingSlip->esig);
+    //     }
 
-        $esig = $request->file('esig');
-        $esigName = $esig->getClientOriginalName();
-        $esig->storeAs('documents', $esigName);
-        $routingSlip->esig = $esigName;
-    }
+    //     $esig = $request->file('esig');
+    //     $esigName = $esig->getClientOriginalName();
+    //     $esig->storeAs('documents', $esigName);
+    //     $routingSlip->esig = $esigName;
+    // }
 // Handle file stamp upload (no renaming, replace if already exists)
 if ($request->hasFile('file_stamp')) {
     $stampFile = $request->file('file_stamp');

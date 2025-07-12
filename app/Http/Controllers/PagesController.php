@@ -13,9 +13,11 @@ use App\Models\Log;
 use App\Models\LogsHistory;
 use App\Models\AssignLogs;
 use App\Models\User;
+use App\Models\Esig;
 use App\Models\Doctrack;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\File;
 
 
 
@@ -235,43 +237,45 @@ public function viewLogs()
 }
 
 
-
-    public function userPassword($id)
+public function userPassword($id)
 {
-
     if (auth()->user()->role === 'Administrator') {
         return redirect()->back()->with('error', 'Administrators do not have access to this page.');
     }
 
-    $user = User::find($id);
-$user = auth()->user();
-    $userDepartment = $user->department;
-    $userId = $user->id;
-    $userFullName = $user->fname . ' ' . $user->lname;
-    $userRole = $user->role;
+    $user = auth()->user(); // override User::find($id) to always use logged-in user
+    $userEsig = Esig::where('user_id', $user->id)->first(); // get user's esig record
+
     if (!$user) {
         return redirect()->back()->with('error', 'User not found');
     }
 
-    $recordsOfficerCount = $userRole === ('records_officer') 
-        ? RoutingSlip::where('route_status', 2)->count() 
+    $recordsOfficerCount = $user->role === 'records_officer'
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
+
+    $superUserCount = $user->role === 'super_user'
+        ? RoutingSlip::where('route_status', 1)->count()
         : 0;
 
     $offices = Office::all();
-    $office = $user->department;
-    $superUserCount = $userRole === ('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
 
-    return view('home.changepass', compact('user', 'offices', 'office', 'recordsOfficerCount','superUserCount'));
+    return view('home.changepass', compact(
+        'user',
+        'offices',
+        'recordsOfficerCount',
+        'superUserCount',
+        'userEsig' // pass it to the view
+    ));
 }
 
 public function passChange(Request $request, $id)
 {
-
     $validator = Validator::make($request->all(), [
-        'username' => 'required|string|max:255|unique:users,username,' . $id . ',id',
+        'email' => 'nullable|string|max:255|unique:users,email,' . $id,
         'password' => 'nullable|string|min:8|confirmed',
-        'department' => 'required|string|max:255',
-
+        'department' => 'nullable|string|max:255',
+        'esig_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf',
     ]);
 
     if ($validator->fails()) {
@@ -283,20 +287,49 @@ public function passChange(Request $request, $id)
         return redirect()->back()->with('error', 'User not found');
     }
 
-    $user->fname = $request->input('fname');
-    $user->mname = $request->input('mname');
-    $user->lname = $request->input('lname');
-    $user->username = $request->input('username');
-    $user->department = $request->input('department');
-
-    if (!empty($request->input('password'))) {
-        $user->password = Hash::make($request->input('password'));
-    }
+    // Update only fields that were filled
+    if ($request->filled('fname')) $user->fname = $request->input('fname');
+    if ($request->filled('mname')) $user->mname = $request->input('mname');
+    if ($request->filled('lname')) $user->lname = $request->input('lname');
+    if ($request->filled('email')) $user->email = $request->input('email');
+    if ($request->filled('department')) $user->department = $request->input('department');
+    if ($request->filled('password')) $user->password = Hash::make($request->input('password'));
 
     $user->save();
 
-    return redirect()->route('userPassword', ['id' => $id])->with('success', 'User updated successfully.');
+    // ✅ Handle E-signature upload
+    if ($request->hasFile('esig_file')) {
+        $file = $request->file('esig_file');
+        $filename = $user->fname . '_' . $file->getClientOriginalName();
+        $destinationPath = public_path('esignature');
+
+        // Ensure destination folder exists
+        if (!File::exists($destinationPath)) {
+            File::makeDirectory($destinationPath, 0755, true);
+        }
+
+        // Retrieve existing esig row
+        $existingEsig = Esig::where('user_id', $user->id)->first();
+
+        // If exists, delete old file before replacing
+        if ($existingEsig && $existingEsig->esig_file) {
+            $oldFilePath = $destinationPath . '/' . $existingEsig->esig_file;
+            if (File::exists($oldFilePath)) {
+                File::delete($oldFilePath);
+            }
+        }
+
+        // Move the new file
+        $file->move($destinationPath, $filename);
+
+        // Update or create the Esig row
+        Esig::updateOrCreate(
+            ['user_id' => $user->id],
+            ['esig_file' => $filename]
+        );
+    }
+
+    return redirect()->route('userPassword', ['id' => $id])
+        ->with('success', 'User updated successfully.');
 }
-
-
 }

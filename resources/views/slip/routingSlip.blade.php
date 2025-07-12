@@ -60,7 +60,7 @@
                                             <tr>
                                                 <td>
                                                     <a href="{{ route('slipForm', $slip->rslip_id) }}"
-                                                        target="_blank">{{ $slip->rslip_id }}</a>
+                                                        target="_blank" style="color: #007bff;">{{ $slip->rslip_id }}</a>
 
 
 

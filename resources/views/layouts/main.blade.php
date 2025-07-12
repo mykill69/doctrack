@@ -244,10 +244,10 @@
                                     Edit Account</a>
                             </li>
                         @endif
-                        <li class="dropdown-item">
+                        <li class="dropdown-item" data-toggle="modal" data-target="#aboutDts">
                             <a href="#">
                                 <i class="fa fa-info-circle nav-icon"></i>
-                                About</a>
+                                About DTS</a>
                         </li>
                         <li class="dropdown-item">
                             <a href="{{ route('logout') }}">
@@ -658,3 +658,4 @@
 </html>
 @include('modal.dataP')
 @include('modal.dpaPopup')
+@include('modal.aboutDts')

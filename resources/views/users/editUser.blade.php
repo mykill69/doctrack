@@ -84,17 +84,28 @@
                                     </div>
                                     <div class="form-group col-md-4">
                                         <label for="role">Position/Designation</label>
-                                        <select class="form-control" id="position" name="position"
-                                            data-placeholder="Select position">
-                                            <option value="{{ $user->position }}" selected>{{ $user->position }}</option>
-                                            <option value="1">President</option>
-                                            <option value="2">VPAA</option>
-                                            <option value="3">VPAF</option>
-                                            <option value="4">Office Heads</option>
-                                            <option value="5">Deans</option>
-                                            <option value="6">Campus Administrators</option>
-                                            <option value="7">Directors</option>
+                                        @php
+                                            $positions = [
+                                                1 => 'President',
+                                                2 => 'VPAA',
+                                                3 => 'VPAF',
+                                                4 => 'Office Heads',
+                                                5 => 'Deans',
+                                                6 => 'Campus Administrators',
+                                                7 => 'Directors',
+                                            ];
+                                        @endphp
+
+                                        <select name="position" class="form-control">
+                                            <option value="" disabled selected>Select Position</option>
+                                            @foreach ($positions as $key => $label)
+                                                <option value="{{ $key }}"
+                                                    {{ $user->position == $key ? 'selected' : '' }}>
+                                                    {{ $label }}
+                                                </option>
+                                            @endforeach
                                         </select>
+
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">Update User</button>
