@@ -249,15 +249,16 @@
                                 <i class="fa fa-info-circle nav-icon"></i>
                                 About DTS</a>
                         </li>
-                        <li class="dropdown-item">
-                            <a href="{{ route('logout') }}">
-                                <i class="fas fa-sign-out-alt nav-icon"></i>
-                                Logout</a>
-                        </li>
+
                         <li class="dropdown-item" data-toggle="modal" data-target="#dataP">
                             <a href="#">
                                 <i class="fa fa-scroll nav-icon"></i>
                                 Terms & Conditions</a>
+                        </li>
+                        <li class="dropdown-item">
+                            <a href="{{ route('logout') }}">
+                                <i class="fas fa-sign-out-alt nav-icon"></i>
+                                Logout</a>
                         </li>
                         <li class="dropdown-item">
                             <i class="fas fa-code-branch nav-icon"></i>

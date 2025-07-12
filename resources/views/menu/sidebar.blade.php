@@ -32,7 +32,7 @@
             <a href="#" class="nav-link">
                 <i class="nav-icon fas fa-route"></i>
                 <p>
-                    Tracking
+                    Tracking Documents
                     <i class="right fas fa-angle-left"></i>
                 </p>
             </a>
@@ -41,7 +41,7 @@
                     <a href="{{ route('doctrackSlip') }}"
                         class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : '' }}">
                         <i class="fas fa-map-marker-alt nav-icon"></i>
-                        <p>Tracking List</p>
+                        <p>Tracking Code List</p>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -156,7 +156,7 @@
         @endphp
         <li class="nav-item">
             <a href="{{ route('pending') }}" class="nav-link {{ request()->routeIs('pending') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-exclamation"></i>
+                <i class="nav-icon fas fa-hourglass"></i>
                 <p>
                     Pending
                     <span class="badge badge-warning ml-2">
