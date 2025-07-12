@@ -236,13 +236,6 @@ public function viewLogs()
 
 
 
-
-
-
-
-
-
-
     public function userPassword($id)
 {
 
@@ -260,13 +253,13 @@ $user = auth()->user();
         return redirect()->back()->with('error', 'User not found');
     }
 
-    $recordsOfficerCount = $userRole->hasRole('records_officer') 
+    $recordsOfficerCount = $userRole === ('records_officer') 
         ? RoutingSlip::where('route_status', 2)->count() 
         : 0;
 
     $offices = Office::all();
     $office = $user->department;
-    $superUserCount = $userRole->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
+    $superUserCount = $userRole === ('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
 
     return view('home.changepass', compact('user', 'offices', 'office', 'recordsOfficerCount','superUserCount'));
 }

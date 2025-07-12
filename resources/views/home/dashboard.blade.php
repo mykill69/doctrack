@@ -210,7 +210,7 @@
 
                                                 </tr>
                                             @endforeach
-                                           
+
                                         </tbody>
                                     </table>
                                 </div>
@@ -222,23 +222,30 @@
         </div>
     </div>
     @if (!$dpa)
-    <script>
-        window.onload = function () {
-            console.log("Modal trigger running");
-            $('#dpaPopup').modal({
-                backdrop: 'static',
-                keyboard: false
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                console.log("DPA modal trigger running");
+
+                // Wait until Bootstrap modal is available
+                if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
+                    $('#dpaPopupAuto').modal({
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                } else {
+                    console.error("Modal cannot open because Bootstrap/jQuery is not loaded.");
+                }
             });
-        };
-    </script>
+        </script>
     @endif
-    
+
+
 
     @include('modal.docAdd')
     @include('modal.docEdit')
     @include('modal.addTrans')
     @include('modal.addRoutslip')
     {{-- @include('modal.dpaPopup') --}}
-    
+
     {{-- @include('modal.addIncoming') --}}
 @endsection

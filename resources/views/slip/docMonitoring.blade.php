@@ -34,171 +34,270 @@
 
 
 
-<div class="content" style="padding-top: 1%; width: 100%;">
-    <div class="container-fluid">
-        <div class="card shadow">
-            <!-- Header stays -->
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <h4 class="mb-0"><i class="fas fa-route mr-2"></i>Tracking Code Entries</h4>
-                <button class="btn btn-light btn-sm" data-toggle="modal" data-target="#addLogModal">
-                    <i class="fas fa-plus text-success"></i> Add Entry
-                </button>
-            </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-sm-10 col-md-8 col-lg-10">
+            <div class="content py-3">
+                <div class="container-fluid">
+                    <div class="card shadow">
+                        <div
+                            class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0"><i class="fas fa-route mr-2"></i>Tracking Code Entries:
+                                {{ $docslip_id }}</h4>
 
-            <div class="card-body p-3" style="overflow-y: auto; max-height: 750px;">
-                <div class="timeline timeline-inverse">
-                    @foreach ($documentTrackid as $documentTrack)
-                        @php
-                            $loopIndex = $loop->index;
-                            $currentUserId = auth()->user()->id;
-                            $isFirst = $loop->first;
-                            $isEnabled =
-                                ($currentUserId == $documentTrack->user_id && is_null($documentTrack->update_by)) ||
-                                $currentUserId == $documentTrack->update_by;
-                            $canComment = $documentTrack->update_by === $currentUserId;
+                            @if (auth()->id() === $creatorId)
+                                <div class="col-12 col-md-6 text-md-right">
+                                    <button class="btn btn-primary w-md-auto" data-toggle="modal"
+                                        data-target="#addLogModal">
+                                        <i class="fa fa-plus"></i> Entry
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
 
-                            $person = $isFirst
-                                ? $documentTrack->createdBy->fname . ' ' . $documentTrack->createdBy->lname
-                                : ($documentTrack->updatedBy->fname ?? 'N/A') .
-                                    ' ' .
-                                    ($documentTrack->updatedBy->lname ?? '');
+                        <div class="card-body p-3" id="accordion">
+                            @foreach ($documentTrackid as $documentTrack)
+                                @php
+                                    $loopIndex = $loop->index;
+                                    $collapseId = 'collapseTrack' . $loopIndex;
+                                    $currentUserId = auth()->user()->id;
+                                    $isFirst = $loop->first;
+                                    $isEnabled =
+                                        ($currentUserId == $documentTrack->user_id &&
+                                            is_null($documentTrack->update_by)) ||
+                                        $currentUserId == $documentTrack->update_by;
+                                    $canComment = $documentTrack->update_by === $currentUserId;
 
-                            switch ($documentTrack->doctrack_stat) {
-                                case 1:
-                                    $statusText = 'CREATED';
-                                    $bgColor = 'primary';
-                                    $icon = 'fas fa-plus';
-                                    break;
-                                case 2:
-                                    $statusText = 'PENDING';
-                                    $bgColor = 'warning';
-                                    $icon = 'fas fa-hourglass-half';
-                                    break;
-                                case 3:
-                                    $statusText = 'SIGNED';
-                                    $bgColor = 'success';
-                                    $icon = 'fas fa-check-circle';
-                                    break;
-                                case 4:
-                                    $statusText = 'RETURNED WITH COMMENT';
-                                    $bgColor = 'danger';
-                                    $icon = 'fas fa-comment-slash';
-                                    break;
-                                default:
-                                    $statusText = 'UNKNOWN';
-                                    $bgColor = 'secondary';
-                                    $icon = 'fas fa-question-circle';
-                                    break;
-                            }
-                        @endphp
+                                    $person = $isFirst
+                                        ? $documentTrack->createdBy->fname . ' ' . $documentTrack->createdBy->lname
+                                        : ($documentTrack->updatedBy->fname ?? 'N/A') .
+                                            ' ' .
+                                            ($documentTrack->updatedBy->lname ?? '');
 
-                        <div>
-                            <i class="{{ $icon }} bg-{{ $bgColor }}"></i>
-                            <div class="timeline-item">
-                                <span class="time">
-                                    <i class="far fa-clock"></i> {{ $documentTrack->created_at->format('h:i A') }}
-                                </span>
-                                <h3 class="timeline-header">
-                                    <strong class="text-{{ $bgColor }}">
-                                        {{ $loop->iteration }}.
-                                    </strong>
-                                    <span class="ml-2 mr-4">
-                                        <i class="fas fa-file-alt mr-2"></i>{{ $documentTrack->doc_title ?? 'N/A' }}
-                                    </span>
+                                    switch ($documentTrack->doctrack_stat) {
+                                        case 1:
+                                            $statusText = 'CREATED';
+                                            $bgColor = 'primary';
+                                            $icon = 'fas fa-plus';
+                                            break;
+                                        case 2:
+                                            $statusText = 'PENDING';
+                                            $bgColor = 'warning';
+                                            $icon = 'fas fa-hourglass-half';
+                                            break;
+                                        case 3:
+                                            $statusText = 'SIGNED';
+                                            $bgColor = 'success';
+                                            $icon = 'fas fa-check-circle';
+                                            break;
+                                        case 4:
+                                            $statusText = 'RETURNED WITH COMMENT';
+                                            $bgColor = 'danger';
+                                            $icon = 'fas fa-comment-slash';
+                                            break;
+                                        default:
+                                            $statusText = 'UNKNOWN';
+                                            $bgColor = 'secondary';
+                                            $icon = 'fas fa-question-circle';
+                                            break;
+                                    }
+                                @endphp
 
-                                    <i class="fas fa-paperclip text-muted mr-1"></i>
+                                <div class="card card-{{ $bgColor }} card-outline">
+                                    <a class="d-block w-100 collapsed" data-toggle="collapse"
+                                        href="#{{ $collapseId }}">
+                                        <div class="card-header">
+                                            <div class="row w-100 align-items-left">
+                                                <!-- Icon Column -->
+                                                <div class="col-auto text-center mr-3"> {{-- or me-3 if using Bootstrap 5 --}}
+                                                    <div class="icon-box bg-{{ $bgColor }} text-white d-flex align-items-center justify-content-center"
+                                                        style="width: 48px; height: 48px; border-radius: 8px;">
+                                                        <i class="{{ $icon }}"></i>
+                                                    </div>
+                                                </div>
 
-                                    @if ($documentTrack->doctrackFile)
-                                        <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
-                                            target="_blank" class="text-danger font-weight-bold">
-                                            <i
-                                                class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
-                                        </a>
-                                    @else
-                                        <span class="text-muted">No File</span>
-                                    @endif
+                                                <!-- Text Column -->
+                                                <div class="col pl-0">
+                                                    <h5 class="card-title mb-0">
+                                                        <span
+                                                            class="font-weight-bold text-dark">{{ $person }}</span>
+                                                        <br>
+                                                        <span>
+                                                            {{ $documentTrack->doc_title ?? 'N/A' }}
+                                                            <small class="text-muted"><em>(click to view)</em></small>
+                                                        </span>
+                                                    </h5>
+                                                </div>
 
-                                </h3>
-
-                                <div class="timeline-body">
-                                    <div class="row mb-2">
-                                        <div class="col-md-4">
-                                            <i class="fas fa-user mr-1"></i>
-                                            <strong>Personnel:</strong> {{ $person }}
-                                        </div>
-
-                                    </div>
-
-                                    <!-- Status Dropdown -->
-                                    <form id="statusForm{{ $loopIndex }}"
-                                        action="{{ route('updateSlipStatus', $documentTrack->id) }}" method="POST"
-                                        class="mb-2">
-                                        @csrf
-                                        @method('PUT')
-                                        <input type="hidden" name="doctrack_stat"
-                                            id="doctrackStatInput{{ $loopIndex }}">
-                                        <div class="dropdown d-inline-block">
-                                            <button class="btn btn-sm btn-{{ $bgColor }} dropdown-toggle"
-                                                type="button" data-toggle="dropdown" aria-haspopup="true"
-                                                aria-expanded="false" {{ !$isEnabled ? 'disabled' : '' }}>
-                                                {{ $statusText }}
-                                            </button>
-                                            <div class="dropdown-menu">
-                                                <a class="dropdown-item" href="#"
-                                                    onclick="submitStatus({{ $loopIndex }}, 2)">
-                                                    <i class="fas fa-hourglass-half mr-1"></i> PENDING
-                                                </a>
-                                                <a class="dropdown-item" href="#"
-                                                    onclick="submitStatus({{ $loopIndex }}, 3)">
-                                                    <i class="fas fa-check-circle mr-1"></i> SIGNED
-                                                </a>
-                                                <a class="dropdown-item" href="#"
-                                                    onclick="submitStatus({{ $loopIndex }}, 4)">
-                                                    <i class="fas fa-undo mr-1"></i> RETURN WITH COMMENT
-                                                </a>
+                                                <!-- Right: Timestamp -->
+                                                <div class="col-md-3 col-12 text-md-right text-left mt-2 mt-md-0">
+                                                    <small class="text-muted">
+                                                        <i class="far fa-clock mr-1"></i>
+                                                        {{ $documentTrack->updated_at->format('F d, Y h:i A') }}
+                                                    </small>
+                                                </div>
                                             </div>
                                         </div>
-                                    </form>
 
-                                    <!-- Comment Form -->
-                                    <form id="commentForm{{ $loopIndex }}"
-                                        action="{{ route('updateSlipStatus', $documentTrack->id) }}" method="POST"
-                                        class="form-inline">
-                                        @csrf
-                                        @method('PUT')
-                                        <div class="form-group w-100">
-                                            <i class="fas fa-comment-dots text-muted mr-2"></i>
-                                            <input type="text" name="comments"
-                                                class="form-control form-control-sm mr-2 w-75" placeholder="Add comment"
-                                                value="{{ $documentTrack->comments }}"
-                                                {{ !$canComment ? 'disabled' : '' }}>
-                                            <button type="submit" class="btn btn-sm btn-outline-primary"
-                                                {{ !$canComment ? 'disabled' : '' }}>
-                                                Submit
-                                            </button>
+                                    </a>
+                                    <div id="{{ $collapseId }}" class="collapse" data-parent="#accordion">
+                                        <div class="card-body">
+
+                                            <!-- Attached File Section -->
+                                            <div class="mb-3 d-flex align-items-center">
+                                                <i class="fas fa-paperclip text-muted mr-2"></i>
+                                                @if ($documentTrack->doctrackFile)
+                                                    <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
+                                                        target="_blank" class="text-danger font-weight-bold">
+                                                        <i
+                                                            class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
+                                                    </a>
+                                                @else
+                                                    <span class="text-muted">No File Attached</span>
+                                                @endif
+                                            </div>
+
+                                            <!-- Status Update Dropdown -->
+                                            <form id="statusForm{{ $loopIndex }}"
+                                                action="{{ route('updateSlipStatus', $documentTrack->id) }}"
+                                                method="POST" class="mb-3">
+                                                @csrf
+                                                @method('PUT')
+                                                <input type="hidden" name="doctrack_stat"
+                                                    id="doctrackStatInput{{ $loopIndex }}">
+
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="btn btn-sm dropdown-toggle font-weight-bold px-4 py-2 
+                   {{ $isEnabled ? 'btn-' . $bgColor : 'btn-outline-secondary text-muted' }}"
+                                                        type="button" data-toggle="dropdown"
+                                                        {{ !$isEnabled ? 'disabled' : '' }}
+                                                        style="{{ $isEnabled ? 'box-shadow: 0 0 10px rgba(0,123,255,0.3);' : '' }}">
+                                                        <i class="fas fa-sync-alt mr-1"></i> {{ $statusText }}
+                                                    </button>
+
+                                                    @if ($isEnabled)
+                                                        <div class="dropdown-menu">
+                                                            <a class="dropdown-item" href="#"
+                                                                onclick="submitStatus({{ $loopIndex }}, 2)">
+                                                                <i class="fas fa-hourglass-half mr-1"></i> Pending
+                                                            </a>
+                                                            <a class="dropdown-item" href="#"
+                                                                onclick="submitStatus({{ $loopIndex }}, 3)">
+                                                                <i class="fas fa-check-circle mr-1"></i> Signed
+                                                            </a>
+                                                            <a class="dropdown-item" href="#"
+                                                                onclick="submitStatus({{ $loopIndex }}, 4)">
+                                                                <i class="fas fa-undo mr-1"></i> Return with Comment
+                                                            </a>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </form>
+
+                                            <!-- Comment Box -->
+                                            <form id="commentForm{{ $loopIndex }}"
+                                                action="{{ route('updateSlipStatus', $documentTrack->id) }}"
+                                                method="POST" class="w-100">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="input-group input-group-sm">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text bg-white border-right-0">
+                                                            <i class="fas fa-comment-dots text-muted"></i>
+                                                        </span>
+                                                    </div>
+                                                    <input type="text" name="comments"
+                                                        class="form-control border-left-0" placeholder="Add comment"
+                                                        value="{{ $documentTrack->comments }}"
+                                                        {{ !$canComment ? 'disabled' : '' }}>
+                                                    <div class="input-group-append">
+                                                        <button type="submit" class="btn btn-outline-primary"
+                                                            {{ !$canComment ? 'disabled' : '' }}>
+                                                            Submit
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+
                                         </div>
-                                    </form>
+                                    </div>
+
                                 </div>
 
-                                <div class="timeline-footer mt-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-calendar-alt mr-1"></i>
-                                        {{ $documentTrack->created_at->format('F d, Y h:i A') }}
-                                    </small>
-                                </div>
-                            </div>
+                                {{-- ↓ Add Arrow After Each Card (except last) --}}
+                                @if (!$loop->last)
+                                    <div class="text-center my-3">
+                                        <div class="chevron-stack">
+                                            <svg class="chevron chevron1" viewBox="0 0 24 24" width="28"
+                                                height="28" stroke="#007bff" fill="none" stroke-width="4"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="6 9 12 15 18 9" />
+                                            </svg>
+                                            <svg class="chevron chevron2" viewBox="0 0 24 24" width="28"
+                                                height="28" stroke="#007bff" fill="none" stroke-width="4"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="6 9 12 15 18 9" />
+                                            </svg>
+
+                                        </div>
+                                    </div>
+
+                                    <style>
+                                        .chevron-stack {
+                                            display: flex;
+                                            flex-direction: column;
+                                            align-items: center;
+                                            gap: 2px;
+                                            /* ↓ Reduced from 4px to 2px for tighter spacing */
+
+                                        }
+
+                                        .chevron {
+                                            animation: bounceChevron 1.2s infinite;
+                                            opacity: 0.6;
+                                        }
+
+                                        .chevron1 {
+                                            animation-delay: 0s;
+                                        }
+
+                                        .chevron2 {
+                                            animation-delay: 0.2s;
+                                        }
+
+                                        @keyframes bounceChevron {
+                                            0% {
+                                                transform: translateY(0);
+                                                opacity: 0.6;
+                                            }
+
+                                            50% {
+                                                transform: translateY(6px);
+                                                opacity: 1;
+                                            }
+
+                                            100% {
+                                                transform: translateY(0);
+                                                opacity: 0.6;
+                                            }
+                                        }
+
+                                        .icon-box {
+                                            font-size: 20px;
+                                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+                                        }
+                                    </style>
+                                @endif
+                            @endforeach
                         </div>
-                    @endforeach
-
-                    <!-- End marker -->
-                    <div>
-                        <i class="fas fa-clock bg-gray"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 
 @include('modal.addLog')
 

@@ -1,4 +1,4 @@
-<div class="modal fade" id="dpaPopup">
+<div class="modal fade" id="dpaPopupAuto">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
             <div class="modal-header justify-content-center border-bottom-0">
@@ -83,9 +83,10 @@
             },
             body: JSON.stringify({ dpa: status }),
         }).then(response => {
-            if (response.ok) {
-                $('#dpaPopup').modal('hide');
-            }
+           if (response.ok) {
+    $('#dpaPopupAuto').modal('hide');
+    location.reload(); // reload to update session-based UI if needed
+}
         });
     }
 </script>

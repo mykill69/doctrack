@@ -233,7 +233,10 @@ public function slipMonitoring($docslip_id)
         ->where('docslip_id', $docslip_id)
         ->get();
 
-    $user = auth()->user(); // ✅ get the authenticated user model
+    $user = auth()->user(); // authenticated user
+
+    // ✅ Get the creator's user_id (first entry assumes the creator)
+    $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
 
     // ✅ Role-based counts
     $recordsOfficerCount = $user->role === 'records_officer' 
@@ -244,8 +247,15 @@ public function slipMonitoring($docslip_id)
         ? RoutingSlip::where('route_status', 1)->count() 
         : 0;
 
-    return view('slip.docMonitoring', compact('documentTrackid', 'superUserCount', 'recordsOfficerCount'));
+    return view('slip.docMonitoring', compact(
+        'documentTrackid',
+        'superUserCount',
+        'recordsOfficerCount',
+        'docslip_id',
+        'creatorId' // 👈 pass to the blade
+    ));
 }
+
 
 public function search(Request $request)
 {

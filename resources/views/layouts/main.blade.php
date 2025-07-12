@@ -541,11 +541,11 @@
     @php
         $users = \App\Models\User::orderBy('fname')->get();
     @endphp
-<script>
-    function openDoctrackForm() {
-        Swal.fire({
-            title: 'Document Tracking Slip',
-            html: `
+    <script>
+        function openDoctrackForm() {
+            Swal.fire({
+                title: 'Document Tracking Slip',
+                html: `
                 <form id="docForm" enctype="multipart/form-data">
                     <input type="hidden" name="_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
@@ -581,76 +581,75 @@
                     </div>
                 </form>
             `,
-            showCancelButton: true,
-            confirmButtonText: 'Submit',
-            didOpen: () => {
-                setTimeout(() => {
-                    $('#user_name_select').select2({
-                        theme: 'bootstrap4',
-                        width: '100%',
-                        placeholder: 'Select users...',
-                        dropdownParent: $('.swal2-popup')
-                    });
-                }, 10);
-            },
-            preConfirm: () => {
-                const form = document.getElementById('docForm');
-                const formData = new FormData(form);
-                const fileInput = document.getElementById('docFile');
+                showCancelButton: true,
+                confirmButtonText: 'Submit',
+                didOpen: () => {
+                    setTimeout(() => {
+                        $('#user_name_select').select2({
+                            theme: 'bootstrap4',
+                            width: '100%',
+                            placeholder: 'Select users...',
+                            dropdownParent: $('.swal2-popup')
+                        });
+                    }, 10);
+                },
+                preConfirm: () => {
+                    const form = document.getElementById('docForm');
+                    const formData = new FormData(form);
+                    const fileInput = document.getElementById('docFile');
 
-                if (fileInput.files.length > 0) {
-                    formData.append('file', fileInput.files[0]);
-                }
-
-                const loader = document.getElementById('page-loader');
-                const bar = document.getElementById('progress-bar');
-
-                // ✅ Close the modal so the loader becomes visible
-                Swal.close();
-
-                // ✅ Start loader animation
-                if (loader && bar) {
-                    loader.style.display = 'flex';
-                    animateBarTo(bar, 90, 8000);
-                }
-
-                return fetch("{{ route('storeDoctrack') }}", {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(async response => {
-                    if (!response.ok) {
-                        const text = await response.text();
-                        console.error("Error response:", response.status, text);
-                        throw new Error(`HTTP ${response.status}: ${text}`);
+                    if (fileInput.files.length > 0) {
+                        formData.append('file', fileInput.files[0]);
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    if (loader) loader.style.display = 'none';
-                    window.location.href = "{{ route('docslipForm', ['id' => '__REPLACE__']) }}"
-                        .replace('__REPLACE__', data.id || '');
-                })
-                .catch(error => {
-                    if (loader) loader.style.display = 'none';
-                    Swal.fire('Error', error.message, 'error');
+
+                    const loader = document.getElementById('page-loader');
+                    const bar = document.getElementById('progress-bar');
+
+                    // ✅ Close the modal so the loader becomes visible
+                    Swal.close();
+
+                    // ✅ Start loader animation
+                    if (loader && bar) {
+                        loader.style.display = 'flex';
+                        animateBarTo(bar, 90, 8000);
+                    }
+
+                    return fetch("{{ route('storeDoctrack') }}", {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(async response => {
+                            if (!response.ok) {
+                                const text = await response.text();
+                                console.error("Error response:", response.status, text);
+                                throw new Error(`HTTP ${response.status}: ${text}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (loader) loader.style.display = 'none';
+                            window.location.href = "{{ route('docslipForm', ['id' => '__REPLACE__']) }}"
+                                .replace('__REPLACE__', data.id || '');
+                        })
+                        .catch(error => {
+                            if (loader) loader.style.display = 'none';
+                            Swal.fire('Error', error.message, 'error');
+                        });
+                }
+            });
+
+            function animateBarTo(bar, target, duration) {
+                const start = parseFloat(bar.style.width) || 0;
+                const diff = target - start;
+                const startTs = performance.now();
+                requestAnimationFrame(function step(now) {
+                    const pct = Math.min(1, (now - startTs) / duration);
+                    bar.style.width = (start + diff * pct) + '%';
+                    if (pct < 1) requestAnimationFrame(step);
                 });
             }
-        });
-
-        function animateBarTo(bar, target, duration) {
-            const start = parseFloat(bar.style.width) || 0;
-            const diff = target - start;
-            const startTs = performance.now();
-            requestAnimationFrame(function step(now) {
-                const pct = Math.min(1, (now - startTs) / duration);
-                bar.style.width = (start + diff * pct) + '%';
-                if (pct < 1) requestAnimationFrame(step);
-            });
         }
-    }
-</script>
-
+    </script>
 
 
 
