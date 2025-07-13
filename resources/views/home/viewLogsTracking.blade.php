@@ -25,7 +25,7 @@
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">Routed Documents Logs</h3>
+                                <h3 class="card-title">Tracking Documnets Logs</h3>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">

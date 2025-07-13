@@ -28,7 +28,11 @@
                 </p>
             </a>
         </li>
-        <li class="nav-item menu-open">
+        @php
+            $trackingActive = request()->routeIs('doctrackSlip', 'incoming');
+        @endphp
+
+        <li class="nav-item {{ $trackingActive ? 'menu-open menu-is-opening' : '' }}">
             <a href="#" class="nav-link">
                 <i class="nav-icon fas fa-route"></i>
                 <p>
@@ -36,7 +40,7 @@
                     <i class="right fas fa-angle-left"></i>
                 </p>
             </a>
-            <ul class="nav nav-treeview" style="display: none;">
+            <ul class="nav nav-treeview" style="{{ $trackingActive ? 'display: block;' : 'display: none;' }}">
                 <li class="nav-item">
                     <a href="{{ route('doctrackSlip') }}"
                         class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : '' }}">
@@ -51,9 +55,9 @@
                         <p>Search Tracking Code</p>
                     </a>
                 </li>
-
             </ul>
         </li>
+
         {{-- <li class="nav-item">
            
             <a href="{{ route('doctrackSlip') }}" class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : ''  }}">
@@ -210,12 +214,35 @@
             </a>
         </li>
 
+        <li class="nav-item {{ request()->routeIs('viewLogs', 'viewLogsTracking') ? 'menu-is-opening menu-open' : '' }}">
+    <a href="#" class="nav-link">
+        <i class="fa fa-history nav-icon"></i>
+        <p>
+            Logs
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview" style="{{ request()->routeIs('viewLogs', 'viewLogsTracking') ? 'display: block;' : 'display: none;' }}">
         <li class="nav-item">
-            <a href="{{ route('viewLogs') }}" class="nav-link {{ request()->routeIs('viewLogs') ? 'active' : '' }}">
-                <i class="fa fa-history nav-icon"></i>
-                <p>Logs</p>
+            <a href="{{ route('viewLogs') }}"
+                class="nav-link {{ request()->routeIs('viewLogs') ? 'active' : '' }}">
+                <i class="fas fa-file-alt nav-icon text-primary"></i>
+                <p>Tracking Logs</p>
             </a>
         </li>
+        <li class="nav-item">
+            <a href="{{ route('viewLogsTracking') }}"
+                class="nav-link {{ request()->routeIs('viewLogsTracking') ? 'active' : '' }}">
+                <i class="fas fa-route nav-icon text-success"></i>
+                <p>Route Logs</p>
+            </a>
+        </li>
+    </ul>
+</li>
+
+
+
+
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
                 <a href="{{ route('userView') }}"
