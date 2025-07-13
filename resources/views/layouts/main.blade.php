@@ -296,7 +296,7 @@
                         @csrf
                         <div class="input-group" data-widget="sidebar">
                             <input class="form-control form-control-sidebar text-sm" type="search" name="route_id"
-                                id="route_id" placeholder="Control number here..." aria-label="Search"
+                                id="route_id" placeholder="Routed Docs CTRL #" aria-label="Search"
                                 value="{{ request()->get('route_id') }}">
                             <div class="input-group-append">
                                 <button class="btn btn-sidebar" type="submit" style="background-color: #1F5036">
