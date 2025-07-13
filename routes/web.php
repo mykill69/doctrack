@@ -112,5 +112,7 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::delete('/doc-slip/{id}', [DoctrackController::class, 'deleteSlip'])->name('deleteSlip');
     Route::put('/update-slip-status/{id}', [DoctrackController::class, 'updateSlipStatus'])->name('updateSlipStatus');
 
+    Route::post('/upload-doc-file', [DoctrackController::class, 'uploadFile'])->name('uploadDoctrackFile');
+
 
 });

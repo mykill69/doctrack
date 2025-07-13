@@ -203,6 +203,61 @@ public function storeDoctrackUpdate(Request $request)
         ->with('success', 'New entry with tracking # ' . $documentTrack->docslip_id . ' was added successfully!');
 }
 
+public function uploadFile(Request $request)
+{
+    try {
+        // Corrected table name from 'doctracks' to 'doctrack_slip'
+        $request->validate([
+            'docslip_id' => 'required|string|exists:doctrack_slip,docslip_id',
+            'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+        ]);
+
+        $docslip_id = $request->docslip_id;
+        $file = $request->file('file');
+        $storagePath = storage_path('app/doc_track');
+
+        // Make sure the folder exists
+        if (!file_exists($storagePath)) {
+            mkdir($storagePath, 0755, true);
+        }
+
+        $originalName = $file->getClientOriginalName();
+        $filePath = $storagePath . '/' . $originalName;
+
+        // Delete old file from DB and disk
+        $existingFile = DoctrackFile::where('docslip_id', $docslip_id)->first();
+        if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
+            unlink($storagePath . '/' . $existingFile->file);
+        }
+
+        // Save new file
+        $file->storeAs('doc_track', $originalName);
+
+        // Insert or update file info in DB
+        DoctrackFile::updateOrCreate(
+            ['docslip_id' => $docslip_id],
+            ['file' => $originalName]
+        );
+
+        return response()->json(['success' => true]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->validator->errors()->first()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Upload error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Server error: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
 public function docslipForm($id)
 {
     $documentTrack = Doctrack::findOrFail($id);

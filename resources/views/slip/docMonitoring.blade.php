@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<!DOCTYPE html>
-<html lang="en">
 
 <head>
     <meta charset="utf-8">
@@ -15,6 +13,7 @@
     <!-- Toastr -->
     <link rel="stylesheet" href="{{ asset('template/plugins/toastr/toastr.min.css') }}">
     <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="{{ asset('template/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{{ asset('template/plugins/fontawesome-free/css/all.min.css') }}">
     <!-- Theme style -->
@@ -31,7 +30,17 @@
     <link rel="shortcut icon" type="" href="{{ asset('template/img/cpsu_logo.png') }}">
 </head>
 
+<style>
+    .swal-wide {
+        width: 650px !important;
+        max-width: 90%;
+    }
 
+    .no-left-radius {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+</style>
 
 
 <div class="container">
@@ -142,19 +151,31 @@
                                     </a>
                                     <div id="{{ $collapseId }}" class="collapse" data-parent="#accordion">
                                         <div class="card-body">
+                                            <div class="row">
+                                                <!-- Attached File Section -->
+                                                <div
+                                                    class="col-md-12 d-flex justify-content-between align-items-center flex-wrap mb-3">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-paperclip text-muted mr-2"></i>
+                                                        @if ($documentTrack->doctrackFile)
+                                                            <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
+                                                                target="_blank" class="text-danger font-weight-bold">
+                                                                <i
+                                                                    class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
+                                                            </a>
+                                                        @else
+                                                            <span class="text-muted">No File Attached</span>
+                                                        @endif
+                                                    </div>
 
-                                            <!-- Attached File Section -->
-                                            <div class="mb-3 d-flex align-items-center">
-                                                <i class="fas fa-paperclip text-muted mr-2"></i>
-                                                @if ($documentTrack->doctrackFile)
-                                                    <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
-                                                        target="_blank" class="text-danger font-weight-bold">
-                                                        <i
-                                                            class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
-                                                    </a>
-                                                @else
-                                                    <span class="text-muted">No File Attached</span>
-                                                @endif
+                                                    <!-- Upload Button -->
+                                                    <button
+                                                        onclick="openFileUpload('{{ $documentTrack->docslip_id }}')"
+                                                        class="btn btn-sm btn-outline-primary ml-auto"
+                                                        {{ !$isEnabled ? 'disabled' : '' }}>
+                                                        <i class="fas fa-upload mr-1"></i>Upload File
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <!-- Status Update Dropdown -->
@@ -169,7 +190,7 @@
                                                 <div class="dropdown">
                                                     <button
                                                         class="btn btn-sm dropdown-toggle font-weight-bold px-4 py-2 
-                   {{ $isEnabled ? 'btn-' . $bgColor : 'btn-outline-secondary text-muted' }}"
+                                                         {{ $isEnabled ? 'btn-' . $bgColor : 'btn-outline-secondary text-muted' }}"
                                                         type="button" data-toggle="dropdown"
                                                         {{ !$isEnabled ? 'disabled' : '' }}
                                                         style="{{ $isEnabled ? 'box-shadow: 0 0 10px rgba(0,123,255,0.3);' : '' }}">
@@ -334,3 +355,90 @@
 <script src="{{ asset('template/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
 <!-- Select2 -->
 <script src="{{ asset('template/plugins/select2/js/select2.full.min.js') }}"></script>
+
+<!-- SweetAlert2 -->
+<script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+<script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
+
+<script src="{{ asset('template/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function openFileUpload(doctrackId) {
+        Swal.fire({
+            title: 'Upload File',
+            html: `
+            
+                    <input type="hidden" value="${doctrackId}" name="docslip_id">
+                
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <input type="file" name="file" id="fileInput"
+                        class="form-control border border-secondary rounded" required>
+                    <small class="form-text text-muted">Accepted: pdf, doc(x), jpg, png, xls(x), max 20MB</small>
+                </form>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-upload mr-1"></i> Upload',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-secondary ml-2'
+            },
+            buttonsStyling: false,
+            focusConfirm: false,
+            preConfirm: () => {
+                const fileInput = document.getElementById('fileInput');
+                const formData = new FormData();
+                const token = '{{ csrf_token() }}';
+
+                if (fileInput.files.length === 0) {
+                    Swal.showValidationMessage('Please select a file.');
+                    return false;
+                }
+
+                formData.append('_token', token);
+                formData.append('docslip_id', doctrackId);
+                formData.append('file', fileInput.files[0]);
+
+                Swal.close();
+
+                return fetch("{{ route('uploadDoctrackFile') }}", {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(async response => {
+                        const contentType = response.headers.get('content-type');
+                        if (!response.ok) {
+                            const text = await response.text();
+                            throw new Error(`Upload failed:\n\n${text}`);
+                        }
+
+                        if (contentType && contentType.includes('application/json')) {
+                            return response.json();
+                        } else {
+                            throw new Error('Invalid server response (not JSON)');
+                        }
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'File uploaded successfully.',
+                                confirmButtonText: 'OK',
+                                customClass: {
+                                    confirmButton: 'btn btn-success'
+                                },
+                                buttonsStyling: false
+                            }).then(() => location.reload());
+                        } else {
+                            throw new Error(data.message || 'Something went wrong');
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire('Upload Error', error.message, 'error');
+                    });
+            }
+        });
+    }
+</script>
