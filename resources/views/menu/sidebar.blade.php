@@ -10,21 +10,6 @@
             <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-home"></i>
                 <p>Home
-                    {{-- @php
-                        $userId = auth()->user()->id;
-                        $userDepartment = auth()->user()->department;
-                        $docCountDash = \App\Models\Document::where('user_id', $userId)
-                            ->orWhereHas('logs', function ($query) use ($userDepartment) {
-                                $query->where('new_destination', $userDepartment);
-                            })
-                            ->count();
-                    @endphp
-
-                    @if ($docCountDash > 0)
-                        <span class="badge badge-danger ml-2">{{ $docCountDash }}</span>
-                    @else
-                        <span class="badge badge-danger ml-2">0</span>
-                    @endif --}}
                 </p>
             </a>
         </li>
@@ -57,35 +42,6 @@
                 </li>
             </ul>
         </li>
-
-        {{-- <li class="nav-item">
-           
-            <a href="{{ route('doctrackSlip') }}" class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : ''  }}">
-                <i class="nav-icon fa fa-map-marker"></i>
-                <p>Tracking List
-                    
-                    <span class="badge badge-info ml-2"></span>
-                    
-                    <span class="badge badge-info ml-2"></span> 
-                  
-                </p>
-            </a>
-           
-        </li> --}}
-        {{-- <li class="nav-item">
-           
-            <a href="{{ route('incoming') }}" class="nav-link {{ request()->routeIs('incoming') ? 'active' : ''  }}">
-                <i class="nav-icon fa fa-search"></i>
-                <p>Tracking Code
-                    
-                    <span class="badge badge-info ml-2"></span>
-                    
-                    <span class="badge badge-info ml-2"></span> 
-                  
-                </p>
-            </a>
-           
-        </li> --}}
         <li class="nav-item">
             @if (auth()->check() &&
                     (auth()->user()->hasRole('Administrator') ||
