@@ -54,7 +54,7 @@
                                                     <td>{{ $log->source ?? 'N/A' }}</td>
                                                     <td>{{ $log->subject ?? 'N/A' }}</td>
                                                     <td>
-                                                        <a href="{{ route('documents.viewPdf', $log->id) }}" target="_blank"
+                                                        <a href="{{ route('documents.viewPdf', $log->doc_id) }}" target="_blank"
                                                             style="color: #007bff;">
                                                             <i class="fas fa-file-pdf text-danger"></i>
                                                             {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
