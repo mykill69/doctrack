@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Document Receipt Notification</title>
 </head>
+
 <body>
     <p><strong>Subject:</strong> {{ $document->doc_title }}</p>
 
     <p>Dear <span style="font-weight: bold;">{{ $recipientName }}</span>,</p>
 
-    <p>This is to notify you that a document has been recorded in the tracking system, and is now available for your reference.</p>
+    <p>This is to notify you that a document has been recorded in the tracking system, and is now available for your
+        reference.</p>
 
 
     <p>
-        <a href="{{ url('/') }}" style="color: #1a73e8; text-decoration: none;">
+        <a href="{{ url('slip-monitoring/' . $document->docslip_id) }}" style="color: #1a73e8; text-decoration: none;">
             Click here to view the document
         </a>
     </p>
@@ -29,4 +32,5 @@
         This is an automated message. Please do not reply to this email.
     </p>
 </body>
+
 </html>

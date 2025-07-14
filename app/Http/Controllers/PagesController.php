@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\File;
 
 
 
-
 class PagesController extends Controller
 {
    
@@ -42,7 +41,7 @@ class PagesController extends Controller
 
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
-$recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     $offices = Office::all();
 
@@ -64,9 +63,18 @@ public function doctrackSlip()
               ->orWhere('new_destination', $userDepartment);
     })->get(); 
 
+    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userDepartment) {
+    $query->where('update_by', $userId)
+          ->orWhere('user_id', $userId)
+          ->orWhere('doctrack_stat', 2)
+          ->orWhereHas('createdBy', function ($q) use ($userDepartment) {
+              $q->where('department', $userDepartment);
+          });
+    })->distinct('docslip_id')->count();
+
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
-$recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     $offices = Office::all();
 
@@ -104,9 +112,9 @@ $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('rou
 
     return view('home.doctrackSlip', compact(
         'documentTrack', 'groupedTrack', 'offices',
-        'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount'
+        'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount','doctrackCount'
     ));
-}
+    }
 
 
 public function pending()
@@ -115,6 +123,7 @@ public function pending()
     $userFullName = $user->fname . ' ' . $user->lname;
     $userId = $user->id;
     $userRole = $user->role;
+    $userDepartment = $user->department;
 
     $logs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
         ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
@@ -138,13 +147,18 @@ public function pending()
     $recordsOfficerCount = 0;
     $superUserCount = 0;
 
-    return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount'));
+    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userDepartment) {
+    $query->where('update_by', $userId)
+          ->orWhere('user_id', $userId)
+          ->orWhere('doctrack_stat', 2)
+          ->orWhereHas('createdBy', function ($q) use ($userDepartment) {
+              $q->where('department', $userDepartment);
+          });
+    })->distinct('docslip_id')->count();
+
+
+    return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount'));
 }
-
-
-
-
-
 
    public function served()
 {
@@ -168,6 +182,15 @@ public function pending()
         })
         ->get();
 
+         $doctrackCount = Doctrack::where(function ($query) use ($userId, $userDepartment) {
+    $query->where('update_by', $userId)
+          ->orWhere('user_id', $userId)
+          ->orWhere('doctrack_stat', 2)
+          ->orWhereHas('createdBy', function ($q) use ($userDepartment) {
+              $q->where('department', $userDepartment);
+          });
+    })->distinct('docslip_id')->count();
+
     $offices = Office::all();
 
     $recordsOfficerCount = $userRole === 'records_officer'
@@ -178,8 +201,8 @@ public function pending()
         ? RoutingSlip::where('route_status', 1)->count()
         : 0;
 
-    return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount'));
-}
+    return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount'));
+    }
 
 public function viewLogs() 
 {

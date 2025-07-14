@@ -34,7 +34,7 @@
                                                 <th>TRACKING CODE</th>
                                                 <th>DOCUMENT TYPE</th>
                                                 <th>DOCUMENT TITLE</th>
-                                                <th>NAME ON THE DOCUMENT</th>
+                                                {{-- <th>NAME ON THE DOCUMENT</th> --}}
                                                 <th>FILE NAME</th>
                                                 <th>STATUS</th>
                                                 <th>CREATED BY</th>
@@ -57,7 +57,7 @@
                                                             </td>
                                                             <td>{{ $documentTrackslip->doc_type }}</td>
                                                             <td>{{ $documentTrackslip->doc_title }}</td>
-                                                            <td>{{ $documentTrackslip->user_name }}</td>
+                                                            {{-- <td>{{ $documentTrackslip->user_name }}</td> --}}
                                                             <td>
                                                                 @if ($documentTrackslip->doctrackFile)
                                                                     <a href="{{ route('pdfDocSlip', $documentTrackslip->doctrackFile->id) }}"

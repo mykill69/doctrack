@@ -13,35 +13,7 @@
                 </p>
             </a>
         </li>
-        @php
-            $trackingActive = request()->routeIs('doctrackSlip', 'incoming');
-        @endphp
 
-        <li class="nav-item {{ $trackingActive ? 'menu-open menu-is-opening' : '' }}">
-            <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-route"></i>
-                <p>
-                    Tracking Documents
-                    <i class="right fas fa-angle-left"></i>
-                </p>
-            </a>
-            <ul class="nav nav-treeview" style="{{ $trackingActive ? 'display: block;' : 'display: none;' }}">
-                <li class="nav-item">
-                    <a href="{{ route('doctrackSlip') }}"
-                        class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : '' }}">
-                        <i class="fas fa-map-marker-alt nav-icon"></i>
-                        <p>Tracking Code List</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ route('incoming') }}"
-                        class="nav-link {{ request()->routeIs('incoming') ? 'active' : '' }}">
-                        <i class="fa fa-search nav-icon"></i>
-                        <p>Search Tracking Code</p>
-                    </a>
-                </li>
-            </ul>
-        </li>
         <li class="nav-item">
             @if (auth()->check() &&
                     (auth()->user()->hasRole('Administrator') ||
@@ -169,6 +141,42 @@
                 </p>
             </a>
         </li>
+
+        @php
+            $trackingActive = request()->routeIs('doctrackSlip', 'incoming');
+        @endphp
+
+        <li class="nav-item {{ $trackingActive ? 'menu-open menu-is-opening' : '' }}">
+            <a href="#" class="nav-link">
+                <i class="nav-icon fas fa-route"></i>
+                <p>
+                    Tracking Documents
+                    <i class="right fas fa-angle-left"></i>
+                </p>
+            </a>
+            <ul class="nav nav-treeview" style="{{ $trackingActive ? 'display: block;' : 'display: none;' }}">
+                <li class="nav-item">
+                    <a href="{{ route('doctrackSlip') }}"
+                        class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : '' }}">
+                        <i class="fas fa-map-marker-alt nav-icon"></i>
+                        <p>
+                            Tracking Code List
+                            @if (isset($doctrackCount) && $doctrackCount > 0)
+                                <span class="right badge badge-primary">{{ $doctrackCount }}</span>
+                            @endif
+                        </p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('incoming') }}"
+                        class="nav-link {{ request()->routeIs('incoming') ? 'active' : '' }}">
+                        <i class="fa fa-search nav-icon"></i>
+                        <p>Search Tracking Code</p>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
 
         <li
             class="nav-item {{ request()->routeIs('viewLogs', 'viewLogsTracking') ? 'menu-is-opening menu-open' : '' }}">

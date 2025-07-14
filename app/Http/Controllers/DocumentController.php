@@ -8,31 +8,14 @@ use App\Models\Document;
 use App\Models\Office;
 use App\Models\Log;
 use App\Models\User;
+use App\Models\Doctrack;
 use App\Models\LogsHistory;
 use App\Models\RoutingSlip;
 use App\Models\RouteDocument;
 
 class DocumentController extends Controller
 {
-//     public function dashboard()
-// {
-//     $userDepartment = auth()->user()->department;
-//     $userId = auth()->user()->id;
 
-//     $logs = Log::where(function ($query) use ($userId, $userDepartment) {
-//         $query->where('new_user', $userId)
-//               ->orWhere('user_id', $userId)
-//               ->orWhere('new_destination', $userDepartment);
-//     })->get(); 
-
-//     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-//     $superUserCount = auth()->user()->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
-//     $recordsOfficerCount = auth()->user()->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0; 
-
-//     $offices = Office::all();
-
-//     return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount'));
-// }
 public function dashboard()
 {
     $userDepartment = auth()->user()->department;
@@ -60,7 +43,16 @@ public function dashboard()
     $dpa = auth()->user()->dpa;
     $users = User::all();
 
-    return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users'));
+    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userDepartment) {
+    $query->where('update_by', $userId)
+          ->orWhere('user_id', $userId)
+          ->orWhere('doctrack_stat', 2)
+          ->orWhereHas('createdBy', function ($q) use ($userDepartment) {
+              $q->where('department', $userDepartment);
+          });
+})->distinct('docslip_id')->count();
+
+    return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount'));
 }
 
 public function tracking(Request $request)
@@ -122,56 +114,6 @@ public function tracking(Request $request)
 }
 
 
-
-//     public function store(Request $request)
-// {
-//     $request->validate([
-//         'user_id' => 'required|integer', 
-//         'full_name' => 'required|string|max:255',
-//         'subject' => 'required|string',
-//         'doc_type' => 'required|string',
-//         'document' => 'required|file|mimes:pdf', 
-//         'purpose' => 'required|string',
-//         'department' => 'required|string',
-//         'doc_stat' => 'required|integer',
-//     ]);
-
-//     $fileName = null;
-//     if ($request->hasFile('document')) {
-
-//         do {
-//             $randomNumber = mt_rand(10000000, 99999999);
-//         } while (Document::where('file_name', 'like', "%$randomNumber%")->exists()); 
-
-//         $originalFileName = $request->file('document')->getClientOriginalName();
-//         $fileName = $randomNumber . '_' . $originalFileName;
-
-//         $filePath = $request->file('document')->storeAs('documents', $fileName, 'public');
-//     }
-
-//     $document = Document::create([
-//         'user_id' => $request->user_id, 
-//         'full_name' => $request->full_name,
-//         'file_name' => $fileName,
-//         'subject' => $request->subject,
-//         'purpose' => $request->purpose,
-//         'department' => $request->department,
-//         'doc_stat' => $request->doc_stat,
-//         'doc_type' => $request->doc_type,
-//     ]);
-
-//     Log::create([
-//         'user_id' => $document->user_id,
-//         'new_user' => auth()->user()->id,
-//         'doc_id' => $document->id,
-//         'action' => 1, 
-//         'prev_file' => $document->file_name,
-//         'new_file' => null,
-//         'new_destination' => $document->destination,
-//     ]);
-
-//     return redirect()->back()->with('success', 'Document submitted successfully!');
-// }
 public function storeDoc(Request $request)
 {
     $request->validate([
@@ -319,27 +261,4 @@ public function update(Request $request, $id)
         }
     }
 
-    // public function index()
-    // {
-    //     $documents = index::join('statuses', 'statuses.id', '=', 'documents.doc_type')
-    //         ->select(
-    //             'document.id as document_id',
-    //             'documents.user_id',
-    //             'documents.full_name',
-    //             'documents.file_name',
-    //             'documents.subject',
-    //             'documents.purpose',
-    //             'documents.department',
-    //             'documents.doc_stat',
-    //             'documents.doc_type',
-    //             // 'documents.destination',
-    //             'documents.created_at',
-    //             'documents.updated_at',
-    //             'statuses.status' 
-    //         )
-    //         ->where('documents.doc_stat', '!=', null)
-    //         ->get();
-
-    //     return view('dashboard', compact('documents','statuses')); 
-    // }
 }
