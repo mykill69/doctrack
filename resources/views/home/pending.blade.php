@@ -47,15 +47,15 @@
                                         <tbody>
                                             @foreach ($logs as $log)
                                                 <tr>
-                                                    <td><a href="{{ route('slipForm', $log->route_id) }}"
-                                                            target="_blank">{{ $log->route_id }}</a></td>
+                                                    <td><a href="{{ route('slipForm', $log->route_id) }}" target="_blank"
+                                                            style="color: #007bff;">{{ $log->route_id }}</a></td>
                                                     <td>{{ $log->date_received ? \Carbon\Carbon::parse($log->date_received)->format('F d, Y') : 'N/A' }}
                                                     </td>
                                                     <td>{{ $log->source ?? 'N/A' }}</td>
                                                     <td>{{ $log->subject ?? 'N/A' }}</td>
                                                     <td>
-                                                        <a href="{{ route('documents.viewPdf', $log->id) }}"
-                                                            target="_blank">
+                                                        <a href="{{ route('documents.viewPdf', $log->id) }}" target="_blank"
+                                                            style="color: #007bff;">
                                                             <i class="fas fa-file-pdf text-danger"></i>
                                                             {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
                                                         </a>

@@ -42,7 +42,7 @@ public function storeSlip(Request $request)
         'route_status' => 'required|string',
         'received_name' => 'required|string',
         'document' => 'required|file|mimes:pdf',
-        'file_stamp' => 'required|file|mimes:jpg,jpeg,png',
+        // 'file_stamp' => 'required|file|mimes:jpg,jpeg,png',
         'date_received' => 'required|string',
     ]);
 
@@ -51,10 +51,10 @@ public function storeSlip(Request $request)
     $pdfName = $pdfFile->getClientOriginalName();
     $pdfFile->storeAs('documents', $pdfName);
 
-    // Store the uploaded stamp image
-$stampFile = $request->file('file_stamp');
-$stampName = $stampFile->getClientOriginalName(); // keep the original filename
-$stampFile->storeAs('stamps', $stampName); // this will overwrite if file already exists
+//     // Store the uploaded stamp image
+// $stampFile = $request->file('file_stamp');
+// $stampName = $stampFile->getClientOriginalName(); // keep the original filename
+// $stampFile->storeAs('stamps', $stampName); // this will overwrite if file already exists
 
     // Save to DB without modifying PDF
     RoutingSlip::create([
@@ -238,7 +238,7 @@ $recordsOfficerCount = $userId === 'records_officer' ? RoutingSlip::where('route
         'r_destination'   => 'nullable|string',
         'route_status'    => 'required|string',
         // 'esig'            => 'nullable|file|mimes:pdf,doc,docx,jpeg,png,jpg,gif',
-        'file_stamp'      => 'nullable|file|mimes:jpg,jpeg,png',
+        // 'file_stamp'      => 'nullable|file|mimes:jpg,jpeg,png',
         'received_name'   => 'required|array',
         'received_name.*' => 'required|string',
     ]);
@@ -257,18 +257,18 @@ $recordsOfficerCount = $userId === 'records_officer' ? RoutingSlip::where('route
     //     $routingSlip->esig = $esigName;
     // }
 // Handle file stamp upload (no renaming, replace if already exists)
-if ($request->hasFile('file_stamp')) {
-    $stampFile = $request->file('file_stamp');
-    $stampName = $stampFile->getClientOriginalName();
+// if ($request->hasFile('file_stamp')) {
+//     $stampFile = $request->file('file_stamp');
+//     $stampName = $stampFile->getClientOriginalName();
 
-    // Delete if it already exists
-    if (Storage::exists('stamps/' . $stampName)) {
-        Storage::delete('stamps/' . $stampName);
-    }
+//     // Delete if it already exists
+//     if (Storage::exists('stamps/' . $stampName)) {
+//         Storage::delete('stamps/' . $stampName);
+//     }
 
-    // Save the new stamp (replace old one with same name)
-    $stampFile->storeAs('stamps', $stampName);
-}
+//     // Save the new stamp (replace old one with same name)
+//     $stampFile->storeAs('stamps', $stampName);
+// }
 
     // Update other fields
     $routingSlip->op_ctrl        = $request->input('op_ctrl');

@@ -94,7 +94,7 @@
                             </div> --}}
 
                                 {{-- File Stamp --}}
-                                <div class="form-group row">
+                                {{-- <div class="form-group row">
                                     <label class="col-md-3 col-form-label">Upload File Stamp:</label>
                                     <div class="col-md-9">
                                         <div class="custom-file">
@@ -103,7 +103,7 @@
                                             <label class="custom-file-label" for="file_stamp">Choose stamp image</label>
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
 
                                 {{-- Received Name --}}
                                 <div class="form-group row">

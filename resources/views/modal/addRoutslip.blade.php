@@ -103,13 +103,13 @@
                                 name="received_name" placeholder="Name on the Received stamp" required>
                         </div>
                         <!-- Upload File Stamp -->
-                        <div class="input-group mb-3">
+                        {{-- <div class="input-group mb-3">
                             <div class="custom-file">
                                 <input type="file" class="custom-file-input" id="uploadStamp" name="file_stamp"
                                     required>
                                 <label class="custom-file-label" for="uploadStamp">Upload file stamp</label>
                             </div>
-                        </div>
+                        </div> --}}
 
 
 
