@@ -8,7 +8,7 @@
 
     <p>Dear <span style="font-weight: bold;">{{ $recipientName }}</span>,</p>
 
-    <p>This is to notify you that a document has been recorded in the tracking system and is now available for your reference.</p>
+    <p>This is to notify you that a document has been recorded in the tracking system, and is now available for your reference.</p>
 
 
     <p>
