@@ -8,21 +8,41 @@
         border-bottom-left-radius: 0;
     }
 
-    .select2-selection__choice {
-        background-color: #007bff !important;
-        /* Blue background */
-        color: #fff !important;
-        /* White text */
-        border: none !important;
-        padding: 2px 10px;
-        border-radius: 0.2rem;
-        margin-top: 4px;
+    /* Align Select2 to match Bootstrap form-control */
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        height: auto;
+        min-height: 38px;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    /* Fix dropdown to appear above loader */
+    .select2-dropdown {
+        z-index: 9999 !important;
     }
 
     #page-loader {
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+    z-index: 99999 !important;
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
 
     .progress-loader {
         width: 200px;
@@ -144,7 +164,7 @@
                                             rows="3" value="{{ $routingSlips->r_destination }}" readonly>
                                     </div>
                                 </div>
-                                <div class="form-group row">
+                                <div id="user-select-container" class="form-group row align-items-center">
                                     <label for="routed_to" class="col-md-3 col-form-label">Name of Users:</label>
                                     <div class="col-md-9">
                                         <select class="form-control select2" name="routed_users[]" id="routed_users"
@@ -209,32 +229,50 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            $('#routed_users').select2({
-                placeholder: "Select users..."
-            });
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('route-form');
+        const loader = document.getElementById('page-loader');
+        const bar = document.getElementById('progress-bar');
+        const card = document.querySelector('.card'); // Target the card container to hide
 
-            const form = document.getElementById('route-form');
-            const loader = document.getElementById('page-loader');
-            const bar = document.getElementById('progress-bar');
-
-            form.addEventListener('submit', function() {
-                loader.style.display = 'flex'; // show loader
-                animateBarTo(90, 8000); // simulate slow progress
-            });
-
-            function animateBarTo(target, duration) {
-                const start = parseFloat(bar.style.width) || 0;
-                const diff = target - start;
-                const startTs = performance.now();
-                requestAnimationFrame(function step(now) {
-                    const pct = Math.min(1, (now - startTs) / duration);
-                    bar.style.width = (start + diff * pct) + '%';
-                    if (pct < 1) requestAnimationFrame(step);
-                });
-            }
+        // Initialize Select2 properly
+        $('#routed_users').select2({
+            placeholder: "Select users...",
+            width: '100%',
+            dropdownParent: $('#user-select-container')
         });
-    </script>
+
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                // Optional: hide form/card so only loader is shown
+                if (card) {
+                    card.style.display = 'none';
+                }
+
+                // Delay to let select2 dropdown close properly before showing loader
+                setTimeout(() => {
+                    loader.style.display = 'flex';
+                }, 100);
+
+                // Start progress animation
+                animateBarTo(90, 8000);
+            });
+        }
+
+        function animateBarTo(target, duration) {
+            const start = parseFloat(bar.style.width) || 0;
+            const diff = target - start;
+            const startTs = performance.now();
+            requestAnimationFrame(function step(now) {
+                const pct = Math.min(1, (now - startTs) / duration);
+                bar.style.width = (start + diff * pct) + '%';
+                if (pct < 1) requestAnimationFrame(step);
+            });
+        }
+    });
+</script>
+
+
 
 
 
