@@ -18,8 +18,11 @@ class DocumentController extends Controller
 
 public function dashboard()
 {
-    $userDepartment = auth()->user()->department;
-    $userId = auth()->user()->id;
+   $user = auth()->user();
+    $userId = $user->id;
+    $userDepartment = $user->department;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
 
     $logs = Log::where(function ($query) use ($userId, $userDepartment) {
         $query->where('new_user', $userId)
@@ -43,13 +46,10 @@ public function dashboard()
     $dpa = auth()->user()->dpa;
     $users = User::all();
 
-    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userDepartment) {
-    $query->where('update_by', $userId)
-          ->orWhere('user_id', $userId)
-          ->orWhere('doctrack_stat', 2)
-          ->orWhereHas('createdBy', function ($q) use ($userDepartment) {
-              $q->where('department', $userDepartment);
-          });
+   $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+    $query->where('user_id', $userId)
+          ->orWhere('update_by', $userId)
+          ->orWhere('user_name', $userFullName);
 })->distinct('docslip_id')->count();
 
     return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount'));

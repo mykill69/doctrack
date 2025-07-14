@@ -63,14 +63,11 @@ public function doctrackSlip()
               ->orWhere('new_destination', $userDepartment);
     })->get(); 
 
-    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userDepartment) {
-    $query->where('update_by', $userId)
-          ->orWhere('user_id', $userId)
-          ->orWhere('doctrack_stat', 2)
-          ->orWhereHas('createdBy', function ($q) use ($userDepartment) {
-              $q->where('department', $userDepartment);
-          });
-    })->distinct('docslip_id')->count();
+    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+    $query->where('user_id', $userId)
+          ->orWhere('update_by', $userId)
+          ->orWhere('user_name', $userFullName);
+})->distinct('docslip_id')->count();
 
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
@@ -147,14 +144,11 @@ public function pending()
     $recordsOfficerCount = 0;
     $superUserCount = 0;
 
-    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userDepartment) {
-    $query->where('update_by', $userId)
-          ->orWhere('user_id', $userId)
-          ->orWhere('doctrack_stat', 2)
-          ->orWhereHas('createdBy', function ($q) use ($userDepartment) {
-              $q->where('department', $userDepartment);
-          });
-    })->distinct('docslip_id')->count();
+    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+    $query->where('user_id', $userId)
+          ->orWhere('update_by', $userId)
+          ->orWhere('user_name', $userFullName);
+})->distinct('docslip_id')->count();
 
 
     return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount'));
@@ -182,14 +176,11 @@ public function pending()
         })
         ->get();
 
-         $doctrackCount = Doctrack::where(function ($query) use ($userId, $userDepartment) {
-    $query->where('update_by', $userId)
-          ->orWhere('user_id', $userId)
-          ->orWhere('doctrack_stat', 2)
-          ->orWhereHas('createdBy', function ($q) use ($userDepartment) {
-              $q->where('department', $userDepartment);
-          });
-    })->distinct('docslip_id')->count();
+        $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+    $query->where('user_id', $userId)
+          ->orWhere('update_by', $userId)
+          ->orWhere('user_name', $userFullName);
+})->distinct('docslip_id')->count();
 
     $offices = Office::all();
 
@@ -265,6 +256,8 @@ public function viewLogsTracking()
 {
     $user = auth()->user();
     $userId = $user->id;
+    $userDepartment = $user->department;
+    $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
     // First, get all docslip_ids where the user is involved (either creator or recipient)
@@ -277,14 +270,18 @@ public function viewLogsTracking()
         ->whereIn('docslip_id', $relatedDocslipIds)
         ->orderByDesc('created_at')
         ->get();
-
+$doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+    $query->where('user_id', $userId)
+          ->orWhere('update_by', $userId)
+          ->orWhere('user_name', $userFullName);
+})->distinct('docslip_id')->count();
     // Count logic
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
     $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
 
     return view('home.viewLogsTracking', compact(
-        'logsAll', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount'
+        'logsAll', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount','doctrackCount'
     ));
 }
 

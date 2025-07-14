@@ -161,9 +161,9 @@
                         <i class="fas fa-map-marker-alt nav-icon"></i>
                         <p>
                             Tracking Code List
-                            @if (isset($doctrackCount) && $doctrackCount > 0)
-                                <span class="right badge badge-primary">{{ $doctrackCount }}</span>
-                            @endif
+                            <span class="right badge badge-primary">
+                                {{ $doctrackCount ?? 0 }}
+                            </span>
                         </p>
                     </a>
                 </li>
