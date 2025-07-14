@@ -12,6 +12,7 @@ use App\Models\RoutingSlip;
 use App\Models\Log;
 use App\Models\LogsHistory;
 use App\Models\AssignLogs;
+use App\Models\LogsTracking;
 use App\Models\Doctrack;
 use App\Models\DoctrackFile;
 use App\Models\User;
@@ -68,6 +69,17 @@ class DoctrackController extends Controller
         'doctrack_stat' => 1,
     ]);
 
+     // 🔹 Add to logs_tracking for creator
+    LogsTracking::create([
+        'docslip_id' => $docslip_id,
+        'user_id'    => $request->user_id,
+        'update_by'  => null,
+        'doc_title'  => $request->doc_title,
+        'file_logs'  => $fileName,
+        'logs_status'=> 1,
+        'comments'   => null,
+    ]);
+
     // ✅ Prepare email data
     $docInfo = (object)[
         'docslip_id' => $docslip_id,
@@ -101,6 +113,16 @@ class DoctrackController extends Controller
                 'doc_title'     => $request->doc_title,
                 'user_name'     => $creatorFullName,
                 'doctrack_stat' => 2,
+            ]);
+
+              LogsTracking::create([
+                'docslip_id' => $docslip_id,
+                'user_id'    => $request->user_id,
+                'update_by'  => $userId,
+                'doc_title'  => $request->doc_title,
+                'file_logs'  => $fileName,
+                'logs_status'=> 2,
+                'comments'   => null,
             ]);
 
             if (!empty($recipient->email)) {
@@ -333,11 +355,34 @@ public function search(Request $request)
     
 //     return back()->with('success', 'Status updated successfully!');
 // }
+// public function updateSlipStatus(Request $request, $id)
+// {
+//     $document = Doctrack::findOrFail($id);
+
+//     // Save status and comment if provided
+//     if ($request->has('comments')) {
+//         $document->comments = $request->comments;
+//     }
+
+//     if ($request->has('doctrack_stat')) {
+//         $document->doctrack_stat = $request->doctrack_stat;
+//     }
+
+//     $document->save();
+
+//     return back()->with('success', 'Comment saved successfully!');
+// }
+
+
 public function updateSlipStatus(Request $request, $id)
 {
     $document = Doctrack::findOrFail($id);
 
-    // Save status and comment if provided
+    // Save old values for logging
+    $oldStatus = $document->doctrack_stat;
+    $oldComment = $document->comments;
+
+    // Update status and/or comment if present
     if ($request->has('comments')) {
         $document->comments = $request->comments;
     }
@@ -348,9 +393,19 @@ public function updateSlipStatus(Request $request, $id)
 
     $document->save();
 
-    return back()->with('success', 'Comment saved successfully!');
-}
+    // 🔽 Insert into logs_tracking
+    LogsTracking::create([
+    'docslip_id'  => $document->docslip_id,
+    'user_id'     => $document->user_id,         // creator
+    'update_by'   => auth()->id(),               // updater (e.g., GMAR PALMA)
+    'doc_title'   => $document->doc_title,
+    'file_logs'   => optional($document->doctrackFile)->file ?? null,
+    'logs_status' => $document->doctrack_stat,   // 3 = acknowledged, etc.
+    'comments'    => $request->comments ?? null,
+]);
 
+    return back()->with('success', 'Status and comment saved successfully!');
+}
 
 public function deleteSlip($id)
 {

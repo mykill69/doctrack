@@ -23,85 +23,88 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-md-12">
-                        <div class="card">
+                        <div class="card shadow">
                             <div class="card-header">
-                                <h3 class="card-title">Tracking Documnets Logs</h3>
+                                <h3 class="card-title">Tracking Documents Logs</h3>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table dataTable no-footer" style="font-size:11px;">
+                                    <table id="example1" class="table dataTable no-footer" style="font-size: 11px;">
                                         <thead>
                                             <tr>
-                                                <th>Logs</th>
+                                                <th>Log Entry</th>
                                                 <th>Date</th>
                                             </tr>
                                         </thead>
-
                                         <tbody>
-                                            @foreach ($logsAll as $log)
+                                            @forelse ($logsAll as $log)
                                                 @php
-                                                    $isAssignLog = $log->status_update == 2 && $log->assign_to; // Reassigned via assign_logs
-
-                                                    $displayName = $isAssignLog
-                                                        ? trim($log->assign_fname . ' ' . $log->assign_lname)
-                                                        : ($log->status_update == 2
-                                                            ? trim($log->original_fname . ' ' . $log->original_lname)
-                                                            : trim($log->new_fname . ' ' . $log->new_lname));
-
-                                                    $badgeClass = match ($log->status_update) {
-                                                        2 => 'badge-warning',
-                                                        3 => 'badge-success',
-                                                        default => 'badge-secondary',
+                                                    // Determine actor and target
+                                                    $actor = match ($log->logs_status) {
+                                                        3 => $log->updatedBy, // Acknowledged by recipient
+                                                        default => $log->createdBy,
                                                     };
 
-                                                    $badgeLabel = match ($log->status_update) {
-                                                        2 => 'uploaded',
-                                                        3 => 'acknowledged',
-                                                        default => 'action',
+                                                    $target = match ($log->logs_status) {
+                                                        1 => $log->updatedBy, // For "Created", show routed-to (if any)
+                                                        2 => $log->updatedBy, // Routed to
+                                                        default => null,
                                                     };
 
-                                                    $routedTo = $isAssignLog ? $log->assign_to : $log->new_destination;
+                                                    $fileName = $log->file_logs ?? 'N/A';
+
+                                                    $statusBadge = match ($log->logs_status) {
+                                                        1 => ['label' => 'Created', 'class' => 'badge-primary'],
+                                                        2 => ['label' => 'Forwarded', 'class' => 'badge-warning'],
+                                                        3 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
+                                                        4 => ['label' => 'Returned', 'class' => 'badge-danger'],
+                                                        default => [
+                                                            'label' => 'Updated',
+                                                            'class' => 'badge-secondary',
+                                                        ],
+                                                    };
                                                 @endphp
 
                                                 <tr>
                                                     <td>
-                                                        <span style="font-weight:bold;">
-                                                            {{ $displayName ?: 'Unknown User' }}
-                                                        </span>
+                                                        <strong>{{ $actor->fname ?? 'N/A' }}
+                                                            {{ $actor->lname ?? '' }}</strong>
+                                                        <span
+                                                            class="badge {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>
 
-                                                        @if ($isAssignLog)
-                                                            <span class="badge bg-info text-dark">re-assigned</span>
-                                                        @else
-                                                            <span class="badge {{ $badgeClass }}"
-                                                                style="font-weight:bold;">
-                                                                {{ $badgeLabel }}
-                                                            </span>
+                                                        file:
+                                                        <span
+                                                            class="text-primary font-weight-bold">{{ $fileName }}</span>
+
+                                                        @if ($target)
+                                                            → Routed to <strong>{{ $target->fname }}
+                                                                {{ $target->lname }} </strong>and status is
+
+                                                            @if ($log->logs_status == 2)
+                                                                <span class="badge badge-warning">Pending</span>
+                                                            @endif
                                                         @endif
 
-                                                        the file
-                                                        <span class="text-primary" style="font-weight:bold;">
-                                                            {{ $log->new_file ?? 'N/A' }}
-                                                        </span>
-
-                                                        @if ($routedTo)
-                                                            and routed it to
-                                                            <span style="font-weight:bold;">{{ $routedTo }}</span>
+                                                        @if ($log->comments)
+                                                            <br><em class="text-muted">Comment: "{{ $log->comments }}"</em>
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        <span style="font-weight:bold;">
-                                                            {{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i:s A') }}
-                                                        </span>
+                                                        <strong>{{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i A') }}</strong>
                                                     </td>
                                                 </tr>
-                                            @endforeach
+
+
+                                            @empty
+                                                <tr>
+                                                    <td colspan="2" class="text-center text-muted">No logs found.</td>
+                                                </tr>
+                                            @endforelse
                                         </tbody>
 
                                     </table>
-
-
                                 </div>
-                            </div>
+                            </div> <!-- /.card-body -->
                         </div>
                     </div>
                 </div>
