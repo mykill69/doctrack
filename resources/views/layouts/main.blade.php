@@ -556,6 +556,8 @@
                         <select name="doc_type" class="form-control" required>
                             <option value="">Select</option>
                             <option value="DPCR/IPCR">DPCR/IPCR</option>
+                            <option value="PAPS-PRE">PAPS-PRE</option>
+                            <option value="PPMP">PPMP</option>
                             <option value="Reimbursement">Reimbursement</option>
                             <option value="Travel Authority">Travel Authority</option>
                             <option value="Other Document">Other Document</option>
