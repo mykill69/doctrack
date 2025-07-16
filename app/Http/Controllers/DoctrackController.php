@@ -34,7 +34,7 @@ class DoctrackController extends Controller
     ]);
 
     // ✅ Generate docslip ID
-    $docslip_id = Str::upper(Str::random(9));
+    $docslip_id = 'CPSU' . mt_rand(10000000, 99999999);
 
     // ✅ Handle optional file upload
     $fileName = null;
