@@ -18,6 +18,7 @@
                         </div>
                         <select class="form-control" id="doc_type" name="doc_type" required>
                             <option value="">Document Type</option>
+                            <option value="PAPS-PRE">PAPS-PRE</option>
                             <option value="DPCR/IPCR">DPCR/IPCR</option>
                             <option value="Reimbursement">Reimbursement</option>
                             <option value="Travel Autority">Travel Autority</option>
