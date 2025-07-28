@@ -31,18 +31,19 @@
     }
 
     #page-loader {
-    z-index: 99999 !important;
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.95);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-}
+        z-index: 99999 !important;
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
 
     .progress-loader {
         width: 200px;
@@ -180,6 +181,14 @@
                                             <option value="position:6">Campus Administrators</option>
                                             <option value="position:7">Directors</option>
 
+                                            {{-- Group list --}}
+                                            <option disabled>──────────</option>
+                                            <option disabled>— Select by Group —</option>
+                                            @foreach ($groups as $group)
+                                                <option value="group:{{ $group->group_name }}">{{ $group->group_name }}
+                                                </option>
+                                            @endforeach
+
                                             {{-- Separator --}}
                                             <option disabled>──────────</option>
                                             <option disabled>— Select by Individual User —</option>
@@ -191,6 +200,7 @@
                                                 </option>
                                             @endforeach
                                         </select>
+
                                     </div>
                                     <div id="additional-destinations"></div>
                                     <div class="form-group row">
@@ -229,48 +239,48 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('route-form');
-        const loader = document.getElementById('page-loader');
-        const bar = document.getElementById('progress-bar');
-        const card = document.querySelector('.card'); // Target the card container to hide
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('route-form');
+            const loader = document.getElementById('page-loader');
+            const bar = document.getElementById('progress-bar');
+            const card = document.querySelector('.card'); // Target the card container to hide
 
-        // Initialize Select2 properly
-        $('#routed_users').select2({
-            placeholder: "Select users...",
-            width: '100%',
-            dropdownParent: $('#user-select-container')
+            // Initialize Select2 properly
+            $('#routed_users').select2({
+                placeholder: "Select users...",
+                width: '100%',
+                dropdownParent: $('#user-select-container')
+            });
+
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Optional: hide form/card so only loader is shown
+                    if (card) {
+                        card.style.display = 'none';
+                    }
+
+                    // Delay to let select2 dropdown close properly before showing loader
+                    setTimeout(() => {
+                        loader.style.display = 'flex';
+                    }, 100);
+
+                    // Start progress animation
+                    animateBarTo(90, 8000);
+                });
+            }
+
+            function animateBarTo(target, duration) {
+                const start = parseFloat(bar.style.width) || 0;
+                const diff = target - start;
+                const startTs = performance.now();
+                requestAnimationFrame(function step(now) {
+                    const pct = Math.min(1, (now - startTs) / duration);
+                    bar.style.width = (start + diff * pct) + '%';
+                    if (pct < 1) requestAnimationFrame(step);
+                });
+            }
         });
-
-        if (form) {
-            form.addEventListener('submit', function (e) {
-                // Optional: hide form/card so only loader is shown
-                if (card) {
-                    card.style.display = 'none';
-                }
-
-                // Delay to let select2 dropdown close properly before showing loader
-                setTimeout(() => {
-                    loader.style.display = 'flex';
-                }, 100);
-
-                // Start progress animation
-                animateBarTo(90, 8000);
-            });
-        }
-
-        function animateBarTo(target, duration) {
-            const start = parseFloat(bar.style.width) || 0;
-            const diff = target - start;
-            const startTs = performance.now();
-            requestAnimationFrame(function step(now) {
-                const pct = Math.min(1, (now - startTs) / duration);
-                bar.style.width = (start + diff * pct) + '%';
-                if (pct < 1) requestAnimationFrame(step);
-            });
-        }
-    });
-</script>
+    </script>
 
 
 

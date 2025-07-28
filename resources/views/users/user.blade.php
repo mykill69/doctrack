@@ -19,6 +19,10 @@
                                 data-target="#exampleModalUser" style="margin-left: auto; margin-right: 20px;">
                                 <i class="fa fa-plus"></i> Add User
                             </button>
+                            <button type="button" class="btn btn-success" data-toggle="modal"
+                                data-target="#exampleModalGroup">
+                                <i class="fa fa-plus"></i> Add Group
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -31,6 +35,7 @@
                                             <th>EMAIL</th>
                                             <th>DEPARTMENT</th>
                                             <th>ROLE & POSITION</th>
+                                            <th>GROUP</th>
                                             <th>DATE CREATED</th>
                                             <th>ACTION</th>
                                         </tr>
@@ -66,6 +71,19 @@
                                                             {{ $positionMap[$user->position] }}
                                                         </span>
                                                     @endif
+                                                </td>
+                                                <td>
+                                                    @if ($user->groups && $user->groups->isNotEmpty())
+                                                        @foreach ($user->groups as $group)
+                                                            <span class="badge badge-secondary" style="font-size: 9px;">
+                                                                {{ $group->group_name }}
+                                                            </span>
+                                                        @endforeach
+                                                    @else
+                                                        <span class="badge badge-danger" style="font-size: 9px;">No
+                                                            Group</span>
+                                                    @endif
+
                                                 </td>
 
                                                 <td>{{ $user->updated_at }}</td>
@@ -146,4 +164,5 @@
         }
     </script>
     @include('modal.addUser')
+    @include('modal.addGroup')
 @endsection

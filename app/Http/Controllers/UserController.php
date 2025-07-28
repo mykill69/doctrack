@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\RoutingSlip;
+use App\Models\Group;
 
 class UserController extends Controller
 {
@@ -73,24 +74,28 @@ public function userView()
 
 public function userEdit($id)
 {
-    $user = User::find($id); // Find the user by ID
+    $user = User::with('groups')->find($id);
     $offices = Office::all();
-    $office = $user->department;
+    $groups = Group::all(); // Get all groups, not overwrite with User
+
     if ($user) {
-        return view('users.editUser', compact('user','offices', 'office')); // Pass the user data to the edit view
+        return view('users.editUser', compact('user', 'offices', 'groups'));
     }
 
     return redirect()->back()->with('error', 'User not found');
 }
 
+
 public function userUpdate(Request $request, $id)
 {
     // Validate the incoming request
     $validator = Validator::make($request->all(), [
-        'email' => 'required|string|max:255|unique:users,email,' . $id . ',id',
-        'password' => 'nullable|string|min:8|confirmed', // Make password nullable and use 'confirmed' for password confirmation
-        'department' => 'required|string|max:255',
-        'role' => 'required|string|max:255',
+        'email' => 'required|string|max:255|unique:users,email,' . $id,
+    'password' => 'nullable|string|min:8|confirmed',
+    'department' => 'required|string|max:255',
+    'role' => 'required|string|max:255',
+    'group_id' => 'nullable|array',
+    'group_id.*' => 'exists:groups,id',
     ]);
 
     if ($validator->fails()) {
@@ -111,6 +116,8 @@ public function userUpdate(Request $request, $id)
     $user->department = $request->input('department');
     $user->role = $request->input('role');
     $user->position = $request->input('position');
+    $user->groups()->sync($request->input('group_id', []));
+
 
     // Only update the password if it's provided and not empty
     if (!empty($request->input('password'))) {
@@ -133,6 +140,8 @@ public function userUpdate(Request $request, $id)
     // Delete the user
     $user->delete();
 
+    
+
     // Redirect back with a success message
     return redirect()->route('userView')->with('success', 'User deleted successfully.');
 }
@@ -152,12 +161,19 @@ public function updateDpa(Request $request)
     return response()->json(['message' => 'DPA status updated.']);
 }
 
+public function addGroup(Request $request)
+{
+    // Validate input
+    $request->validate([
+        'group_name' => 'required|string|max:255|unique:groups,group_name',
+    ]);
+
+    // Save to the database
+    Group::create([
+        'group_name' => $request->group_name,
+    ]);
+
+    return back()->with('success', 'Group added successfully.');
 }
 
-
-
-
-
-
-
-
+}

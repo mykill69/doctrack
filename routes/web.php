@@ -70,6 +70,7 @@ Route::group(['middleware'=>['login_auth']],function(){
     //users
     Route::get('/users', [UserController::class, 'userView'])->name('userView');
     Route::post('/users', [UserController::class, 'addUser'])->name('users.addUser');
+    Route::post('/users/Group', [UserController::class, 'addGroup'])->name('users.addGroup');
     Route::get('/users/edit/{id}', [UserController::class, 'userEdit'])->name('userEdit');
     Route::put('/users/update/{id}', [UserController::class, 'userUpdate'])->name('userUpdate');
     Route::post('/update-dpa', [UserController::class, 'updateDpa'])->name('update.dpa');

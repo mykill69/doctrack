@@ -7,6 +7,27 @@
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
         }
+
+        /* Ensure Select2 matches Bootstrap input height */
+.select2-container--default .select2-selection--multiple {
+    height: auto !important;
+    min-height: 38px !important;
+    padding: 0.2rem 0.75rem !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 0.25rem !important;
+    line-height: 1.5 !important;
+    font-size: 1rem !important;
+    box-sizing: border-box;
+}
+
+/* Fix vertical alignment of tags inside the selection box */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0 !important;
+}
+
     </style>
     <div class="content-wrapper">
         <div class="content" style="padding-top: 1%;">
@@ -58,32 +79,40 @@
                                     </div>
                                 </div>
                                 <div class="form-row">
-                                    <div class="form-group col-md-4">
+                                    {{-- Department --}}
+                                    <div class="form-group col-md-3">
                                         <label for="department">Department</label>
-                                        <select class="form-control" id="department" name="department"
-                                            data-placeholder="Select Offices">
-                                            <option value="" disabled>Select Office</option> <!-- Default option -->
+                                        <select class="form-control" id="department" name="department">
+                                            <option value="" disabled
+                                                {{ empty($user->department) ? 'selected' : '' }}>Select Office</option>
                                             @foreach ($offices as $office)
                                                 <option value="{{ $office->office_name }}"
-                                                    {{ isset($user) && $user->department == $office->office_name ? 'selected' : '' }}>
+                                                    {{ $user->department == $office->office_name ? 'selected' : '' }}>
                                                     {{ $office->office_name }}
                                                 </option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="form-group col-md-4">
+
+                                    {{-- Role --}}
+                                    <div class="form-group col-md-3">
                                         <label for="role">Role</label>
-                                        <select class="form-control" id="role" name="role"
-                                            data-placeholder="Select Role">
-                                            <option value="{{ $user->role }}" selected>{{ $user->role }}</option>
-                                            <option value="Administrator">Administrator</option>
-                                            <option value="super_user">Super User</option>
-                                            <option value="records_officer">Records Officer</option>
-                                            <option value="staff">Staff</option>
+                                        <select class="form-control" id="role" name="role">
+                                            <option value="" disabled {{ empty($user->role) ? 'selected' : '' }}>
+                                                Select Role</option>
+                                            <option value="super_user" {{ $user->role == 'super_user' ? 'selected' : '' }}>
+                                                Super User</option>
+                                            <option value="records_officer"
+                                                {{ $user->role == 'records_officer' ? 'selected' : '' }}>Records Officer
+                                            </option>
+                                            <option value="staff" {{ $user->role == 'staff' ? 'selected' : '' }}>Staff
+                                            </option>
                                         </select>
                                     </div>
-                                    <div class="form-group col-md-4">
-                                        <label for="role">Position/Designation</label>
+
+                                    {{-- Position --}}
+                                    <div class="form-group col-md-3">
+                                        <label for="position">Position/Designation</label>
                                         @php
                                             $positions = [
                                                 1 => 'President',
@@ -95,19 +124,32 @@
                                                 7 => 'Directors',
                                             ];
                                         @endphp
-
                                         <select name="position" class="form-control">
-                                            <option value="" disabled selected>Select Position</option>
+                                            <option value="" disabled {{ empty($user->position) ? 'selected' : '' }}>
+                                                Select Position</option>
                                             @foreach ($positions as $key => $label)
                                                 <option value="{{ $key }}"
-                                                    {{ $user->position == $key ? 'selected' : '' }}>
-                                                    {{ $label }}
+                                                    {{ $user->position == $key ? 'selected' : '' }}>{{ $label }}
                                                 </option>
                                             @endforeach
                                         </select>
+                                    </div>
 
+                                    {{-- Groups --}}
+                                    <div class="form-group col-md-3">
+                                        <label for="group">Group(s)</label>
+                                        <select class="form-control select2" name="group_id[]" id="group" multiple>
+                                            @foreach ($groups as $group)
+                                                <option value="{{ $group->id }}"
+                                                    {{ $user->groups->contains('id', $group->id) ? 'selected' : '' }}>
+                                                    {{ $group->group_name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div>
+
+
                                 <button type="submit" class="btn btn-primary">Update User</button>
                             </form>
                         </div>
@@ -116,6 +158,11 @@
             </div>
         </div>
     </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         function checkPasswordMatch() {
             const password = document.getElementById('password').value;
@@ -128,5 +175,17 @@
                 message.style.display = 'none';
             }
         }
+    </script>
+
+
+    <script>
+        $(document).ready(function() {
+            $('#group').select2({
+                theme: 'bootstrap4',
+                placeholder: 'Select Group(s)',
+                allowClear: true,
+                width: '100%'
+            });
+        });
     </script>
 @endsection

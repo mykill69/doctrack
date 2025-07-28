@@ -27,6 +27,7 @@ class User extends Authenticatable
         'role',
         'position',
         'dpa',
+        
     ];
 
     /**
@@ -64,4 +65,10 @@ class User extends Authenticatable
 {
     return $this->belongsTo(Position::class);
 }
+public function groups()
+{
+    return $this->belongsToMany(Group::class, 'group_user', 'user_id', 'group_id');
+}
+
+
 }
