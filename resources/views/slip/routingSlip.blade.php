@@ -60,11 +60,15 @@
                                             <tr>
                                                 <td>
                                                     <a href="{{ route('slipForm', $slip->rslip_id) }}" target="_blank"
-                                                        style="color: #007bff;">{{ $slip->rslip_id }}</a>
-
-
-
+                                                        style="color: #007bff;">
+                                                        @if (auth()->user()->role === 'super_user')
+                                                            {{ $slip->op_ctrl }}
+                                                        @else
+                                                            {{ $slip->rslip_id }}
+                                                        @endif
+                                                    </a>
                                                 </td>
+
                                                 <td>{{ \Carbon\Carbon::parse($slip->date_received)->format('F j, Y') }}</td>
                                                 <td>{{ $slip->source }}</td>
                                                 <td>{{ $slip->subject }}</td>
