@@ -195,10 +195,10 @@ letter-spacing: 5px;
                     <tr>
                         <td colspan="4" style="padding: 0; margin: 0;">
 
-                            @if ($esig && $esig->esig_file)
+                            @if ($esig && $esig->esig_file && isset($routingSlip) && $routingSlip->route_status != 1)
                                 <img src="{{ public_path('esignature/' . $esig->esig_file) }}"
                                     alt="Electronic Signature"
-                                    style="width: 150px; height: auto; margin-bottom: -40px;margin-top:10%;">
+                                    style="width: 150px; height: auto; margin-bottom: -40px; margin-top: 10%;">
                             @endif
 
                             <p style="font-weight:bold; font-size: 22px;font-family: Verdana, sans-serif;"><u>ALADINO C.
