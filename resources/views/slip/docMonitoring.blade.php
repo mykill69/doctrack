@@ -104,6 +104,11 @@
                                             $bgColor = 'danger';
                                             $icon = 'fas fa-comment-slash';
                                             break;
+                                        case 5:
+                                            $statusText = 'CHECKED';
+                                            $bgColor = 'info';
+                                            $icon = 'fas fa-user-check'; // or any appropriate icon
+                                            break;
                                         default:
                                             $statusText = 'UNKNOWN';
                                             $bgColor = 'secondary';
@@ -211,8 +216,13 @@
                                                                 onclick="submitStatus({{ $loopIndex }}, 4)">
                                                                 <i class="fas fa-undo mr-1"></i> Return with Comment
                                                             </a>
+                                                            <a class="dropdown-item" href="#"
+                                                                onclick="submitStatus({{ $loopIndex }}, 5)">
+                                                                <i class="fas fa-user-check mr-1"></i> Checked
+                                                            </a>
                                                         </div>
                                                     @endif
+
                                                 </div>
                                             </form>
 
