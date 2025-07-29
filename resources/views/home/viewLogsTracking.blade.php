@@ -58,11 +58,13 @@
                                                         2 => ['label' => 'Forwarded', 'class' => 'badge-warning'],
                                                         3 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
                                                         4 => ['label' => 'Returned', 'class' => 'badge-danger'],
+                                                        5 => ['label' => 'Checked', 'class' => 'badge-info'],
                                                         default => [
                                                             'label' => 'Updated',
                                                             'class' => 'badge-secondary',
                                                         ],
                                                     };
+
                                                 @endphp
 
                                                 <tr>
@@ -82,6 +84,8 @@
 
                                                             @if ($log->logs_status == 2)
                                                                 <span class="badge badge-warning">Pending</span>
+                                                            @elseif ($log->logs_status == 5)
+                                                                <span class="badge badge-info">Checked</span>
                                                             @endif
                                                         @endif
 
