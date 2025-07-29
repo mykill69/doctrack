@@ -59,8 +59,8 @@
                                         @foreach ($routingSlips as $slip)
                                             <tr>
                                                 <td>
-                                                    <a href="{{ route('slipForm', $slip->rslip_id) }}"
-                                                        target="_blank" style="color: #007bff;">{{ $slip->rslip_id }}</a>
+                                                    <a href="{{ route('slipForm', $slip->rslip_id) }}" target="_blank"
+                                                        style="color: #007bff;">{{ $slip->rslip_id }}</a>
 
 
 
@@ -70,7 +70,7 @@
                                                 <td>{{ $slip->subject }}</td>
                                                 <td>
                                                     <a href="{{ route('viewPdfslip', $slip->id) }}" target="_blank"
-                                                        style="color: #007bff;">
+                                                        title="{{ $slip->document }}" style="color: #007bff;">
                                                         {{ \Illuminate\Support\Str::limit($slip->document, 22) }}
                                                     </a>
 
@@ -108,12 +108,14 @@
                                                     @switch($slip->route_status)
                                                         @case(1)
                                                             <p class="badge badge-warning" style="font-size:9px;">Routed to
-                                                                <br>President</p>
+                                                                <br>President
+                                                            </p>
                                                         @break
 
                                                         @case(2)
                                                             <p class="badge badge-info" style="font-size:9px;">Routed back to
-                                                                <br>Records Office</p>
+                                                                <br>Records Office
+                                                            </p>
                                                         @break
 
                                                         @case(3)
@@ -197,7 +199,7 @@
                                                             </button>
                                                         @endif
 
-                                                      
+
                                                         <form action="{{ route('routingSlip.destroy', $slip->id) }}"
                                                             method="POST"
                                                             onsubmit="return confirm('Are you sure you want to delete this routing slip?');">

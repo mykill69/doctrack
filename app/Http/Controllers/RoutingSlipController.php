@@ -109,17 +109,15 @@ $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('rou
         'recordsOfficerCount'
     ));
 }
-public function viewPdfslip($id)
-    {
-    $document = RoutingSlip::findOrFail($id);
-    $routingSlips = RoutingSlip::all();
-    $filePath = storage_path('app/documents/' . $document->document);
-    if (file_exists($filePath)) {
-        // Set filename in download
-        $filename = $document->document; // This should be the original file name stored
 
+public function viewPdfslip($id)
+{
+    $document = RoutingSlip::findOrFail($id);
+    $filePath = storage_path('app/documents/' . $document->document);
+
+    if (file_exists($filePath)) {
         return response()->file($filePath, [
-            'Content-Disposition' => 'inline; filename="' . $filename . '"'
+            'Content-Disposition' => 'inline; filename="' . $document->document . '"'
         ]);
     } else {
         return redirect()->back()->with('error', 'File not found.');
@@ -238,38 +236,25 @@ $recordsOfficerCount = $userId === 'records_officer' ? RoutingSlip::where('route
         'other_remarks'   => 'nullable|string',
         'r_destination'   => 'nullable|string',
         'route_status'    => 'required|string',
-        // 'esig'            => 'nullable|file|mimes:pdf,doc,docx,jpeg,png,jpg,gif',
-        // 'file_stamp'      => 'nullable|file|mimes:jpg,jpeg,png',
         'received_name'   => 'required|array',
         'received_name.*' => 'required|string',
+        'document'        => 'nullable|file|mimes:pdf',
     ]);
 
     $routingSlip = RoutingSlip::findOrFail($id);
 
-    // Handle new e-signature upload
-    // if ($request->hasFile('esig')) {
-    //     if ($routingSlip->esig && Storage::exists('documents/' . $routingSlip->esig)) {
-    //         Storage::delete('documents/' . $routingSlip->esig);
-    //     }
+    // Handle document update
+    if ($request->hasFile('document')) {
+        // Delete old document if exists
+        if ($routingSlip->document && Storage::exists('documents/' . $routingSlip->document)) {
+            Storage::delete('documents/' . $routingSlip->document);
+        }
 
-    //     $esig = $request->file('esig');
-    //     $esigName = $esig->getClientOriginalName();
-    //     $esig->storeAs('documents', $esigName);
-    //     $routingSlip->esig = $esigName;
-    // }
-// Handle file stamp upload (no renaming, replace if already exists)
-// if ($request->hasFile('file_stamp')) {
-//     $stampFile = $request->file('file_stamp');
-//     $stampName = $stampFile->getClientOriginalName();
-
-//     // Delete if it already exists
-//     if (Storage::exists('stamps/' . $stampName)) {
-//         Storage::delete('stamps/' . $stampName);
-//     }
-
-//     // Save the new stamp (replace old one with same name)
-//     $stampFile->storeAs('stamps', $stampName);
-// }
+        $pdfFile = $request->file('document');
+        $pdfName = $pdfFile->getClientOriginalName();
+        $pdfFile->storeAs('documents', $pdfName);
+        $routingSlip->document = $pdfName;
+    }
 
     // Update other fields
     $routingSlip->op_ctrl        = $request->input('op_ctrl');

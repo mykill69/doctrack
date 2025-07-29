@@ -82,28 +82,21 @@
                                     </div>
                                 </div>
 
-                                {{-- E-Signature --}}
-                                {{-- <div class="form-group row">
-                                <label class="col-md-3 col-form-label">Upload E-Signature:</label>
-                                <div class="col-md-9">
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" id="esig" name="esig" accept="image/*">
-                                        <label class="custom-file-label" for="esig">Choose e-signature file</label>
-                                    </div>
-                                </div>
-                            </div> --}}
-
-                                {{-- File Stamp --}}
-                                {{-- <div class="form-group row">
-                                    <label class="col-md-3 col-form-label">Upload File Stamp:</label>
+                                {{-- document update --}}
+                                <div class="form-group row">
+                                    <label class="col-md-3 col-form-label">Upload Document:</label>
                                     <div class="col-md-9">
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" id="file_stamp"
-                                                name="file_stamp" accept=".jpg,.jpeg,.png">
-                                            <label class="custom-file-label" for="file_stamp">Choose stamp image</label>
+                                            <input type="file" class="custom-file-input" id="document" name="document"
+                                                accept=".pdf">
+                                            <label class="custom-file-label" for="document">Choose document</label>
                                         </div>
+                                        @if ($routingSlips->document)
+                                            <small class="form-text text-muted">Current:
+                                                {{ $routingSlips->document }}</small>
+                                        @endif
                                     </div>
-                                </div> --}}
+                                </div>
 
                                 {{-- Received Name --}}
                                 <div class="form-group row">
