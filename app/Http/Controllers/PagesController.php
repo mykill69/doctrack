@@ -381,4 +381,41 @@ public function passChange(Request $request, $id)
     return redirect()->route('userPassword', ['id' => $id])
         ->with('success', 'User updated successfully.');
 }
+
+public function distributionList()
+{
+    $user = auth()->user();
+    $userRole = $user->role;
+
+    if (!in_array($userRole, ['Administrator', 'records_officer'])) {
+        abort(403, 'Unauthorized');
+    }
+
+    $logs = RoutingSlip::leftJoin('documents', 'routing_slip.rslip_id', '=', 'documents.route_id')
+    ->select('routing_slip.*', 'documents.id as doc_id', 'documents.file_name')
+    ->orderBy('routing_slip.created_at', 'desc')
+    ->get()
+    ->filter(function ($item) {
+        $routedUsers = $item->routed_users
+            ? array_filter(array_map('trim', explode(',', $item->routed_users)))
+            : [];
+        return count($routedUsers) >= 2;
+    });
+
+
+
+    $offices = Office::all();
+
+    $doctrackCount = Doctrack::where(function ($query) use ($user) {
+        $query->where('user_id', $user->id)
+              ->orWhere('update_by', $user->id)
+              ->orWhere('user_name', $user->fname . ' ' . $user->lname);
+    })->distinct('docslip_id')->count();
+
+    return view('home.distList', compact('logs', 'offices', 'doctrackCount'));
+}
+
+
+
+
 }

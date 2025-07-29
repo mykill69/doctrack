@@ -176,7 +176,15 @@
                 </li>
             </ul>
         </li>
-
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+            <li class="nav-item">
+                <a href="{{ route('distributionList') }}"
+                    class="nav-link {{ request()->routeIs('distributionList') ? 'active' : '' }}">
+                    <i class="fas fa-list nav-icon"></i>
+                    <p>Distribution List</p>
+                </a>
+            </li>
+        @endif
 
         <li
             class="nav-item {{ request()->routeIs('viewLogs', 'viewLogsTracking') ? 'menu-is-opening menu-open' : '' }}">
@@ -205,8 +213,6 @@
                 </li>
             </ul>
         </li>
-
-
 
 
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')

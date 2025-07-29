@@ -47,6 +47,7 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/viewLogs-Tracking', [PagesController::class, 'viewLogsTracking'])->name('viewLogsTracking');
     Route::get('/viewPdfRoute', [PagesController::class, 'viewPdfRoute'])->name('viewPdfRoute');
     Route::get('/doctrackslip-list', [PagesController::class, 'doctrackSlip'])->name('doctrackSlip');
+    Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
 
 
     //tracking page

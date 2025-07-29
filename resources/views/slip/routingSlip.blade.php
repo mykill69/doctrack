@@ -38,7 +38,7 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="example1" class="table table-bordered table-hover text-sm">
+                                <table id="example1" class="table table-bordered table-hover" style="font-size: 0.8rem;">
                                     <thead>
                                         <tr>
                                             <th>CTRL #</th>
