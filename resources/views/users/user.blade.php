@@ -26,7 +26,7 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="example1" class="table table-bordered table-hover" style="font-size:11px;">
+                                <table class="table table-bordered table-hover" style="font-size:11px;">
                                     <thead>
                                         <tr>
                                             <th>NO.</th>
