@@ -78,14 +78,20 @@
                                                                     @case(2)
                                                                         <span class="badge badge-warning">Pending</span>
                                                                     @break
+
                                                                     @case(3)
                                                                         <span class="badge badge-success">Signed</span>
                                                                     @break
 
+                                                                    @case(5)
+                                                                        <span class="badge badge-info">Checked</span>
+                                                                    @break
 
                                                                     @default
-                                                                        <span class="badge badge-danger">Returned with comments</span>
+                                                                        <span class="badge badge-danger">Returned with
+                                                                            comments</span>
                                                                 @endswitch
+
                                                             </td>
                                                             <td>
                                                                 @if (is_null($documentTrackslip->update_by))
@@ -125,7 +131,8 @@
                                                                         {{ $documentTrackslip->comments }}</span>
                                                                 @else
                                                                     <span class="text-muted">No comments</span>
-                                                                @endif </td>
+                                                                @endif
+                                                            </td>
                                                             <td>{{ $documentTrackslip->created_at }}</td>
                                                             <td>{{ $documentTrackslip->updated_at }}</td>
 
