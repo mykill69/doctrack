@@ -80,7 +80,7 @@
                                 </div>
                                 <div class="form-row">
                                     {{-- Department --}}
-                                    <div class="form-group col-md-3">
+                                    <div class="form-group col-md-4">
                                         <label for="department">Department</label>
                                         <select class="form-control" id="department" name="department">
                                             <option value="" disabled
@@ -95,7 +95,7 @@
                                     </div>
 
                                     {{-- Role --}}
-                                    <div class="form-group col-md-3">
+                                    <div class="form-group col-md-4">
                                         <label for="role">Role</label>
                                         <select class="form-control" id="role" name="role">
                                             <option value="" disabled {{ empty($user->role) ? 'selected' : '' }}>
@@ -105,13 +105,13 @@
                                             <option value="records_officer"
                                                 {{ $user->role == 'records_officer' ? 'selected' : '' }}>Records Officer
                                             </option>
-                                            <option value="staff" {{ $user->role == 'staff' ? 'selected' : '' }}>Staff
+                                            <option value="staff" {{ $user->role == 'staff' ? 'selected' : '' }}>Personnel
                                             </option>
                                         </select>
                                     </div>
 
                                     {{-- Position --}}
-                                    <div class="form-group col-md-3">
+                                    {{-- <div class="form-group col-md-3">
                                         <label for="position">Position/Designation</label>
                                         @php
                                             $positions = [
@@ -133,10 +133,10 @@
                                                 </option>
                                             @endforeach
                                         </select>
-                                    </div>
+                                    </div> --}}
 
                                     {{-- Groups --}}
-                                    <div class="form-group col-md-3">
+                                    <div class="form-group col-md-4">
                                         <label for="group">Group(s)</label>
                                         <select class="form-control select2" name="group_id[]" id="group" multiple>
                                             @foreach ($groups as $group)

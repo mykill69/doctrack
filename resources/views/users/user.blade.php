@@ -34,7 +34,7 @@
 
                                             <th>EMAIL</th>
                                             <th>DEPARTMENT</th>
-                                            <th>ROLE & POSITION</th>
+                                            <th>ROLE</th>
                                             <th>GROUP</th>
                                             <th>DATE CREATED</th>
                                             <th>ACTION</th>
@@ -49,29 +49,14 @@
 
                                                 <td class="text-bold text-primary">{{ $user->email }}</td>
                                                 <td>{{ $user->department }}</td>
-                                                @php
-                                                    $positionMap = [
-                                                        1 => 'President',
-                                                        2 => 'VPAA',
-                                                        3 => 'VPAF',
-                                                        4 => 'Office Heads',
-                                                        5 => 'Deans',
-                                                        6 => 'Campus Administrators',
-                                                        7 => 'Directors',
-                                                    ];
-                                                @endphp
+
 
                                                 <td>
                                                     <span class="badge badge-warning" style="font-size: 9px;">
-                                                        {{ $user->role }}
+                                                        {{ $user->role === 'staff' ? 'Personnel' : ucfirst($user->role) }}
                                                     </span>
-
-                                                    @if (!empty($user->position) && isset($positionMap[$user->position]))
-                                                        <span class="badge badge-info ml-1" style="font-size: 9px;">
-                                                            {{ $positionMap[$user->position] }}
-                                                        </span>
-                                                    @endif
                                                 </td>
+
                                                 <td>
                                                     @if ($user->groups && $user->groups->isNotEmpty())
                                                         @foreach ($user->groups as $group)
