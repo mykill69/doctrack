@@ -28,13 +28,13 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table table-bordered table-hover" style="font-size: 0.8rem;">
+                                    <table id="example1" class="table table-bordered table-hover"
+                                        style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
                                                 <th>TRACKING CODE</th>
                                                 <th>DOCUMENT TYPE</th>
                                                 <th>DOCUMENT TITLE</th>
-                                                {{-- <th>NAME ON THE DOCUMENT</th> --}}
                                                 <th>FILE NAME</th>
                                                 <th>STATUS</th>
                                                 <th>CREATED BY</th>
@@ -47,19 +47,15 @@
                                         <tbody>
                                             @foreach ($groupedTrack as $group)
                                                 @php
-
                                                     $sortedGroup = $group
-                                                        ->sortByDesc(function ($item) {
-                                                            return $item->doctrack_stat == 2 ? 1 : 0;
-                                                        })
+                                                        ->sortByDesc(fn($item) => $item->doctrack_stat == 2 ? 1 : 0)
                                                         ->values();
-
                                                     $firstRow = $sortedGroup->first();
                                                     $docslipId = $firstRow->docslip_id;
                                                     $collapseId = 'collapse-' . $docslipId;
                                                 @endphp
 
-                                                {{-- Primary Row (Visible Always) --}}
+                                                {{-- Primary Row --}}
                                                 <tr>
                                                     <td>
                                                         <a href="{{ route('slipMonitoring', ['docslip_id' => $docslipId]) }}"
@@ -67,9 +63,8 @@
                                                             {{ $docslipId }}
                                                         </a>
                                                         @if ($group->count() > 1)
-                                                            <a data-toggle="collapse" href="#{{ $collapseId }}"
-                                                                role="button" class="toggle-collapse-link"
-                                                                aria-expanded="false" aria-controls="{{ $collapseId }}">
+                                                            <a href="#" class="toggle-collapse-link"
+                                                                data-target="#{{ $collapseId }}">
                                                                 <i class="fas fa-plus-circle ml-2 text-primary"></i>
                                                             </a>
                                                         @endif
@@ -122,9 +117,7 @@
                                                             <p class="text-muted"><i>User not found</i></p>
                                                         @endif
                                                     </td>
-                                                    <td>
-                                                        {{ $firstRow->comments ?? 'No comments' }}
-                                                    </td>
+                                                    <td>{{ $firstRow->comments ?? 'No comments' }}</td>
                                                     <td>{{ $firstRow->created_at }}</td>
                                                     <td>{{ $firstRow->updated_at }}</td>
                                                     <td>
@@ -135,7 +128,6 @@
                                                                 'minutes' => 0,
                                                             ];
                                                         @endphp
-
                                                         @if ($diff['days'] === 0 && $diff['hours'] === 0)
                                                             {{ $diff['minutes'] }}
                                                             {{ Str::plural('minute', $diff['minutes']) }}
@@ -156,103 +148,111 @@
                                                     </td>
                                                 </tr>
 
-                                                {{-- Hidden Rows (Collapsible) --}}
-                                                @foreach ($sortedGroup->skip(1) as $documentTrackslip)
-                                                    <tr class="collapse" id="{{ $collapseId }}">
-                                                        <td colspan="1">
-                                                            <a href="{{ route('slipMonitoring', ['docslip_id' => $documentTrackslip->docslip_id]) }}"
-                                                                target="_blank" style="color: #007bff;">
-                                                                {{ $documentTrackslip->docslip_id }}
-                                                            </a>
-                                                        </td>
-                                                        <td>{{ $documentTrackslip->doc_type }}</td>
-                                                        <td>{{ $documentTrackslip->doc_title }}</td>
-                                                        <td>
-                                                            @if ($documentTrackslip->doctrackFile)
-                                                                <a href="{{ route('pdfDocSlip', $documentTrackslip->doctrackFile->id) }}"
-                                                                    target="_blank">
-                                                                    <i class="fas fa-file-pdf text-danger"></i>
-                                                                    <span>{{ $documentTrackslip->doctrackFile->file }}</span>
-                                                                </a>
-                                                            @else
-                                                                <span class="text-muted">No file attached</span>
-                                                            @endif
-                                                        </td>
-                                                        <td>
-                                                            @switch($documentTrackslip->doctrack_stat)
-                                                                @case(1)
-                                                                    <span class="badge badge-primary">Created</span>
-                                                                @break
+                                                {{-- Collapsible Row --}}
+                                                @if ($sortedGroup->count() > 1)
+                                                    <tr class="collapse-row collapse" id="{{ $collapseId }}">
+                                                        <td colspan="10" style="padding: 0; background: #f9f9f9;">
+                                                            <table class="table table-bordered table-hover m-0"
+                                                                style="font-size: 0.8rem;">
+                                                                @foreach ($sortedGroup->skip(1) as $documentTrackslip)
+                                                                    <tr>
+                                                                        <td>{{ $documentTrackslip->docslip_id }}</td>
+                                                                        <td>{{ $documentTrackslip->doc_type }}</td>
+                                                                        <td>{{ $documentTrackslip->doc_title }}</td>
+                                                                        <td>
+                                                                            @if ($documentTrackslip->doctrackFile)
+                                                                                <a href="{{ route('pdfDocSlip', $documentTrackslip->doctrackFile->id) }}"
+                                                                                    target="_blank">
+                                                                                    <i
+                                                                                        class="fas fa-file-pdf text-danger"></i>
+                                                                                    <span>{{ $documentTrackslip->doctrackFile->file }}</span>
+                                                                                </a>
+                                                                            @else
+                                                                                <span class="text-muted">No file
+                                                                                    attached</span>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td>
+                                                                            @switch($documentTrackslip->doctrack_stat)
+                                                                                @case(1)
+                                                                                    <span class="badge badge-primary">Created</span>
+                                                                                @break
 
-                                                                @case(2)
-                                                                    <span class="badge badge-warning">Pending</span>
-                                                                @break
+                                                                                @case(2)
+                                                                                    <span class="badge badge-warning">Pending</span>
+                                                                                @break
 
-                                                                @case(3)
-                                                                    <span class="badge badge-success">Signed</span>
-                                                                @break
+                                                                                @case(3)
+                                                                                    <span class="badge badge-success">Signed</span>
+                                                                                @break
 
-                                                                @case(5)
-                                                                    <span class="badge badge-info">Checked</span>
-                                                                @break
+                                                                                @case(5)
+                                                                                    <span class="badge badge-info">Checked</span>
+                                                                                @break
 
-                                                                @default
-                                                                    <span class="badge badge-danger">Returned with comments</span>
-                                                            @endswitch
-                                                        </td>
-                                                        <td>
-                                                            @php
-                                                                $user = $documentTrackslip->update_by
-                                                                    ? \App\Models\User::find(
-                                                                        $documentTrackslip->update_by,
-                                                                    )
-                                                                    : \App\Models\User::find(
-                                                                        $documentTrackslip->user_id,
-                                                                    );
-                                                            @endphp
-                                                            @if ($user)
-                                                                <p class="text-red text-bold">{{ $user->fname }}
-                                                                    {{ $user->lname }}</p>
-                                                            @else
-                                                                <p class="text-muted"><i>User not found</i></p>
-                                                            @endif
-                                                        </td>
-                                                        <td>{{ $documentTrackslip->comments ?? 'No comments' }}</td>
-                                                        <td>{{ $documentTrackslip->created_at }}</td>
-                                                        <td>{{ $documentTrackslip->updated_at }}</td>
-                                                        <td>
-                                                            @php
-                                                                $diff = $documentTrackslip->time_diff ?? [
-                                                                    'days' => 0,
-                                                                    'hours' => 0,
-                                                                    'minutes' => 0,
-                                                                ];
-                                                            @endphp
-
-                                                            @if ($diff['days'] === 0 && $diff['hours'] === 0)
-                                                                {{ $diff['minutes'] }}
-                                                                {{ Str::plural('minute', $diff['minutes']) }}
-                                                            @else
-                                                                @if ($diff['days'] > 0)
-                                                                    {{ $diff['days'] }}
-                                                                    {{ Str::plural('day', $diff['days']) }}
-                                                                @endif
-                                                                @if ($diff['hours'] > 0)
-                                                                    {{ $diff['days'] > 0 ? ', ' : '' }}{{ $diff['hours'] }}
-                                                                    {{ Str::plural('hr', $diff['hours']) }}
-                                                                @endif
-                                                                @if ($diff['minutes'] > 0)
-                                                                    {{ $diff['days'] > 0 || $diff['hours'] > 0 ? ' and ' : '' }}{{ $diff['minutes'] }}
-                                                                    {{ Str::plural('minute', $diff['minutes']) }}
-                                                                @endif
-                                                            @endif
+                                                                                @default
+                                                                                    <span class="badge badge-danger">Returned</span>
+                                                                            @endswitch
+                                                                        </td>
+                                                                        <td>
+                                                                            @php
+                                                                                $user = $documentTrackslip->update_by
+                                                                                    ? \App\Models\User::find(
+                                                                                        $documentTrackslip->update_by,
+                                                                                    )
+                                                                                    : \App\Models\User::find(
+                                                                                        $documentTrackslip->user_id,
+                                                                                    );
+                                                                            @endphp
+                                                                            @if ($user)
+                                                                                <p class="text-red text-bold">
+                                                                                    {{ $user->fname }}
+                                                                                    {{ $user->lname }}</p>
+                                                                            @else
+                                                                                <p class="text-muted"><i>User not found</i>
+                                                                                </p>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td>{{ $documentTrackslip->comments ?? 'No comments' }}
+                                                                        </td>
+                                                                        <td>{{ $documentTrackslip->created_at }}</td>
+                                                                        <td>{{ $documentTrackslip->updated_at }}</td>
+                                                                        <td>
+                                                                            @php
+                                                                                $diff = $documentTrackslip->time_diff ?? [
+                                                                                    'days' => 0,
+                                                                                    'hours' => 0,
+                                                                                    'minutes' => 0,
+                                                                                ];
+                                                                            @endphp
+                                                                            @if ($diff['days'] === 0 && $diff['hours'] === 0)
+                                                                                {{ $diff['minutes'] }}
+                                                                                {{ Str::plural('minute', $diff['minutes']) }}
+                                                                            @else
+                                                                                @if ($diff['days'] > 0)
+                                                                                    {{ $diff['days'] }}
+                                                                                    {{ Str::plural('day', $diff['days']) }}
+                                                                                @endif
+                                                                                @if ($diff['hours'] > 0)
+                                                                                    {{ $diff['days'] > 0 ? ', ' : '' }}{{ $diff['hours'] }}
+                                                                                    {{ Str::plural('hr', $diff['hours']) }}
+                                                                                @endif
+                                                                                @if ($diff['minutes'] > 0)
+                                                                                    {{ $diff['days'] > 0 || $diff['hours'] > 0 ? ' and ' : '' }}{{ $diff['minutes'] }}
+                                                                                    {{ Str::plural('minute', $diff['minutes']) }}
+                                                                                @endif
+                                                                            @endif
+                                                                        </td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            </table>
                                                         </td>
                                                     </tr>
-                                                @endforeach
+                                                @endif
                                             @endforeach
                                         </tbody>
-
                                     </table>
+
 
 
                                 </div>
@@ -272,16 +272,43 @@
 
     <script>
         $(document).ready(function() {
-            $('.collapse').on('shown.bs.collapse', function() {
-                const collapseId = $(this).attr('id');
-                const $icon = $('a[href="#' + collapseId + '"]').find('i');
-                $icon.removeClass('fa-plus-circle').addClass('fa-minus-circle');
-            });
+            // Use event delegation so it works after pagination/ajax too
+            $(document).on('click', '.toggle-collapse-link', function(e) {
+                e.preventDefault();
 
-            $('.collapse').on('hidden.bs.collapse', function() {
-                const collapseId = $(this).attr('id');
-                const $icon = $('a[href="#' + collapseId + '"]').find('i');
-                $icon.removeClass('fa-minus-circle').addClass('fa-plus-circle');
+                const $icon = $(this).find('i');
+                const targetId = $(this).data('target');
+                const $targetRow = $(targetId);
+
+                // Close any other open collapse rows
+                $('.collapse-row').not($targetRow).slideUp();
+                $('.toggle-collapse-link').find('i')
+                    .removeClass('fa-minus-circle')
+                    .addClass('fa-plus-circle');
+
+                if ($targetRow.is(':visible')) {
+                    $targetRow.slideUp();
+                    $icon.removeClass('fa-minus-circle').addClass('fa-plus-circle');
+                } else {
+                    $targetRow.slideDown();
+                    $icon.removeClass('fa-plus-circle').addClass('fa-minus-circle');
+                }
+            });
+        });
+    </script>
+    <script>
+        $(function() {
+            $('#example1').DataTable({
+                responsive: true,
+                autoWidth: false,
+                paging: true,
+                drawCallback: function() {
+                    // Reset icon state after page change
+                    $('.collapse-row').hide();
+                    $('.toggle-collapse-link i')
+                        .removeClass('fa-minus-circle')
+                        .addClass('fa-plus-circle');
+                }
             });
         });
     </script>
