@@ -30,7 +30,8 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table table-bordered table-hover" style="font-size: 0.8rem;">
+                                    <table id="example1" class="table table-bordered table-hover"
+                                        style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
                                                 <th>CTRL #</th>
@@ -60,7 +61,7 @@
                                                         trim($log->new_destination) === trim($userDepartment))
                                                     <tr>
                                                         <td><a href="{{ route('slipForm', $log->route_id) }}"
-                                                                target="_blank">{{ $log->route_id }}</a></td>
+                                                                style="color: #007bff;" target="_blank">{{ $log->route_id }}</a></td>
                                                         <td>
                                                             {{ optional($document->routingSlip)->date_received
                                                                 ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('F d, Y')
@@ -70,7 +71,7 @@
                                                         <td>{{ $document->routingSlip->subject }}</td>
                                                         <td>
                                                             <a href="{{ route('documents.viewPdf', $document->id) }}"
-                                                                target="_blank">
+                                                                style="color: #007bff;" target="_blank">
                                                                 <i class="fas fa-file-pdf text-danger"></i>
                                                                 {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
                                                             </a>
@@ -87,14 +88,24 @@
                                                         </td>
                                                         <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
-                                                        <td style="font-size:10px;">
+                                                        <td style="font-size:10px;width:5%;">
                                                             <span class="badge badge-success" style="font-size:10px;">
                                                                 {{ $document->routingSlip->trans_remarks }}
                                                             </span>
+                                                            @php
+                                                                $comment = $log->comments ?? '';
+                                                                $wrappedComment = preg_replace(
+                                                                    '/((?:\S+\s+){4})/',
+                                                                    '$1<br>',
+                                                                    $comment,
+                                                                );
+                                                            @endphp
+
                                                             <span class="badge badge-warning"
-                                                                style="margin-top: 2px;font-size:10px;">
-                                                                {{ $log->comments ?? '' }}
+                                                                style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                                {!! $wrappedComment !!}
                                                             </span>
+
                                                         </td>
                                                         <td>
                                                             @php

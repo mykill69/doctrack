@@ -140,6 +140,20 @@
                                                             class="badge badge-warning"
                                                             style="font-size:10px;">{{ $document->routingSlip->assign_com ?? '' }}</span>
 
+                                                            @php
+                                                                $comment = $log->comments ?? '';
+                                                                $wrappedComment = preg_replace(
+                                                                    '/((?:\S+\s+){4})/',
+                                                                    '$1<br>',
+                                                                    $comment,
+                                                                );
+                                                            @endphp
+
+                                                            <span class="badge badge-warning"
+                                                                style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                                {!! $wrappedComment !!}
+                                                            </span>
+
                                                         {{-- <span class="badge badge-warning"
                                                             style="margin-top: 2px; font-size:10px;">{{ $log->comments ?? '' }}</span>
 
