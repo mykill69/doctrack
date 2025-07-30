@@ -68,7 +68,9 @@
                                                 @endphp
 
                                                 <tr>
+                                              
                                                     <td>
+                                                        {{ $log->docslip_id }} -
                                                         <strong>{{ $actor->fname ?? 'N/A' }}
                                                             {{ $actor->lname ?? '' }}</strong>
                                                         <span
