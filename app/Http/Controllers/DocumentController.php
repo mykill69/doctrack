@@ -74,9 +74,11 @@ public function tracking(Request $request)
     $fullName = $user->fname . ' ' . $user->lname;
     $routeId = $request->input('route_id');
 
+    
     $query = Document::query()
-        ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
-        ->select('documents.*', 'routing_slip.routed_users');
+    ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
+    ->select('documents.*', 'routing_slip.routed_users', 'routing_slip.r_destination'); // <-- added here
+
 
     if ($routeId) {
         $query->where('documents.route_id', $routeId);

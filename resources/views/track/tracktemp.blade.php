@@ -190,8 +190,10 @@
                                                                             class="badge badge-success">{{ $log->assigned_to ?? '—' }}</span>
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <span
-                                                                            class="badge badge-info">{{ $log->comments ?? 'No comments' }}</span>
+                                                                        <span class="badge badge-info text-break d-block"
+                                                                            style="white-space: pre-line; word-break: break-word; max-width: 100%;">
+                                                                            {{ $log->comments ?? 'No comments' }}
+                                                                        </span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -250,7 +252,7 @@
                                                 </tr>
                                                 <tr>
                                                     <th>Recipient/s</th>
-                                                    <td>{{ $document->for_to }}</td>
+                                                    <td>{{ $document->r_destination ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Created At</th>
