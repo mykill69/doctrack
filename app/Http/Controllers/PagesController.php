@@ -457,7 +457,7 @@ public function distributionList()
         $routedUsers = $item->routed_users
             ? array_filter(array_map('trim', explode(',', $item->routed_users)))
             : [];
-        return count($routedUsers) >= 2;
+        return count($routedUsers) >= 4;
     });
 
 

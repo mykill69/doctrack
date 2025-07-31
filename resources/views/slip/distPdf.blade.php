@@ -4,21 +4,55 @@
 <head>
     <title>{{ $title }}</title>
     <style>
+        @page {
+            margin: 130px 40px 100px 40px;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+        }
+
+        header {
+            position: fixed;
+            top: -120px;
+            left: 0;
+            right: 0;
+            height: 100px;
+            text-align: center;
+        }
+
+        header img {
+            width: 100%;
+            height: auto;
+        }
+
+        footer {
+            position: fixed;
+            bottom: -80px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            text-align: center;
+        }
+
+        footer img {
+            width: 100%;
+            height: auto;
         }
 
         h1 {
             text-align: center;
             text-transform: uppercase;
-            margin-bottom: 30px;
+            padding: 0;
+            font-size: 16px;
+            margin-top: -3%;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            font-size: 11px;
+            page-break-inside: avoid;
         }
 
         th,
@@ -26,59 +60,98 @@
             border: 1px solid #000;
             padding: 8px;
             text-align: center;
+            vertical-align: middle;
+            height: 32px;
         }
 
         th {
-            background-color: #f2f2f2;
+            background-color: #f8f8f8;
+        }
+
+        .page-break {
+            page-break-after: always;
         }
     </style>
 </head>
 
 <body>
-    <h1>{{ $title }}</h1>
 
-    <table>
-        <thead>
-            <tr>
-                <th>NO.</th>
-                <th>OFFICE OF CUSTODIAN</th>
-                <th>DATE ISSUED</th>
-                <th>DATE RETRIEVED</th>
-                <th>RECEIVED BY</th>
-                <th>SIGNATURE</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php $count = 1; @endphp
-            @foreach ($logs as $log)
-                @if (!is_null($log->user_department))
-                    {{-- Only display rows with valid department --}}
+    <!-- Header -->
+    <header>
+        <img src="{{ public_path('template/img/header_new.png') }}" alt="Header">
+    </header>
+
+    <!-- Footer -->
+    <footer>
+        <img src="{{ public_path('template/img/footer_new.png') }}" alt="Footer">
+    </footer>
+
+    <!-- Content -->
+    <main>
+        <h1>{{ $title }}</h1>
+
+        @php
+            $logsPerPage = 15;
+            $chunks = $logs->whereNotNull('user_department')->chunk($logsPerPage);
+            $totalPages = ceil(count($logs->whereNotNull('user_department')) / $logsPerPage);
+            $rowCount = 1;
+        @endphp
+
+        @foreach ($chunks as $pageIndex => $chunk)
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ $count++ }}</td>
-                        <td>{{ $log->user_department }}</td>
-                        <td>{{ \Carbon\Carbon::parse($log->created_at)->format('M d, Y') }}</td>
-                        <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('M d, Y') : '---' }}
-                        </td>
-                        <td>{{ $log->new_destination ?? '---' }}</td>
-                        <td>
-                            @if ($log->esig_file)
-                                <img src="{{ public_path('storage/esignature/' . $log->esig_file) }}"
-                                    alt="Electronic Signature" style="width: 80px; height: auto;">
-                            @endif
-                        </td>
-
+                        <th colspan="6" height="70"> {{$routingSlip->subject}}   </th>
                     </tr>
-                @endif
-            @endforeach
+                    <tr>
+                        <th>NO.</th>
+                        <th>OFFICE OF CUSTODIAN</th>
+                        <th>DATE ISSUED</th>
+                        <th>DATE RETRIEVED</th>
+                        <th>RECEIVED BY</th>
+                        <th>SIGNATURE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($chunk as $log)
+                        <tr>
+                            <td>{{ $rowCount }}</td>
+                            <td><small>{{ $log->user_department }}</small></td>
+                            <td>{{ \Carbon\Carbon::parse($log->created_at)->format('M d, Y') }}</td>
+                            <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('M d, Y') : '---' }}</td>
+                            <td>{{ $log->new_destination ?? '---' }}</td>
+                            <td>
+                                @if ($log->esig_file)
+                                    <img src="{{ public_path('storage/esignature/' . $log->esig_file) }}" alt="Signature"
+                                        style="width: 80px; height: auto;">
+                                @endif
+                            </td>
+                        </tr>
+                        @php $rowCount++; @endphp
+                    @endforeach
 
-            @if ($count === 1)
-                <tr>
-                    <td colspan="6">No records found.</td>
-                </tr>
+                    {{-- Fill remaining rows --}}
+                    @for ($i = $chunk->count(); $i < $logsPerPage; $i++)
+                        <tr>
+                            <td>{{ $rowCount }}</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        @php $rowCount++; @endphp
+                    @endfor
+                </tbody>
+            </table>
+
+            {{-- Add a page break except for the last page --}}
+            @if ($pageIndex + 1 < $totalPages)
+                <div class="page-break"></div>
             @endif
-        </tbody>
+        @endforeach
+    </main>
 
-    </table>
 </body>
 
 </html>

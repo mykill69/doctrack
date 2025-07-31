@@ -22,7 +22,7 @@
                                                 <th>FILE NAME</th>
                                                 <th>ACTION UNIT</th>
                                                 <th>DATE RELEASED</th>
-                                                <th>STATUS</th>
+                                                {{-- <th>STATUS</th> --}}
                                                 <th>ACTION</th>
                                             </tr>
                                         </thead>
@@ -67,7 +67,7 @@
 
                                                     <td>{{ \Carbon\Carbon::parse($log->created_at)->format('m-d-Y h:i:s A') }}
                                                     </td>
-                                                    <td>
+                                                    {{-- <td>
                                                         @php
                                                             switch ($log->route_status) {
                                                                 case 0:
@@ -83,20 +83,15 @@
                                                                     echo '<span class="badge bg-dark">Unknown</span>';
                                                             }
                                                         @endphp
-                                                    </td>
-                                                    <td>
+                                                    </td> --}}
+                                                    <td class="text-center">
                                                         <a href="{{ route('viewDistributionPdf', ['id' => $log->rslip_id]) }}"
-                                                            target="_blank">
-                                                            <span class="badge bg-primary">
-                                                                <i class="fas fa-file-pdf text-danger"></i> View
-                                                            </span>
+                                                            target="_blank" class="btn btn-outline-danger btn-sm shadow-sm"
+                                                            title="View PDF">
+                                                            <i class="fas fa-file-pdf me-1"></i> View PDF
                                                         </a>
-
-                                                   
-
-
-
                                                     </td>
+
 
                                                 </tr>
                                             @endforeach
