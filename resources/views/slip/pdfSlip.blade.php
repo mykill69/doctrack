@@ -195,12 +195,13 @@ letter-spacing: 5px;
                     <tr>
                         <td colspan="4" style="padding: 0; margin: 0;">
 
-                            @if ($esig && $esig->esig_file && $esig->user_id == 38 && isset($routingSlip) && $routingSlip->route_status != 1)
+                            @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) &&
+                                    $esig->user_id == 38 &&
+                                    $routingSlip->route_status != 1)
                                 <img src="{{ asset('storage/esignature/' . $esig->esig_file) }}"
                                     alt="Electronic Signature"
                                     style="width: 150px; height: auto; margin-bottom: -40px; margin-top: 10%;">
                             @endif
-
 
 
                             <p style="font-weight:bold; font-size: 22px;font-family: Verdana, sans-serif;"><u>ALADINO C.
