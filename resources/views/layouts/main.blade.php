@@ -29,9 +29,11 @@
         href="{{ asset('template/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('template/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
     <!-- Select2 -->
+    <!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     <link rel="stylesheet" href="{{ asset('template/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('template/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
-
 
     <!-- Logo  -->
     <link rel="shortcut icon" type="" href="{{ asset('template/img/cpsu_logo.png') }}">
@@ -87,15 +89,26 @@
         border-bottom-left-radius: 0;
     }
 
-    .select2-selection__choice {
-        background-color: #007bff !important;
-        /* Blue background */
-        color: #fff !important;
-        /* White text */
-        border: none !important;
-        padding: 2px 10px;
-        border-radius: 0.2rem;
-        margin-top: 4px;
+    /* Align Select2 to match Bootstrap form-control */
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        height: auto;
+        min-height: 38px;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    /* Fix dropdown to appear above loader */
+    .select2-dropdown {
+        z-index: 9999 !important;
     }
 
     #page-loader {
@@ -339,13 +352,29 @@
     <script src="{{ asset('template/plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
     <script src="{{ asset('template/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
     <!-- Select2 -->
-    <script src="{{ asset('template/plugins/select2/js/select2.full.min.js') }}"></script>
+    {{-- <script src="{{ asset('template/plugins/select2/js/select2.full.min.js') }}"></script> --}}
     <!-- SweetAlert2 -->
     <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
 
     <script src="{{ asset('template/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+<!-- jQuery (required by Select2) -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Initialize Select2 -->
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            width: '100%' // Optional: ensures it fills parent container
+        });
+    });
+</script>
 
 
     <script>
@@ -497,17 +526,7 @@
             });
         });
     </script>
-    <script>
-        $(function() {
 
-            $('.select2').select2();
-
-            $('.select2bs4').select2({
-                theme: 'bootstrap4',
-                height: '100'
-            })
-        });
-    </script>
     <script>
         // validate search bar entry
         function validateForm() {
@@ -569,14 +588,36 @@
                         <textarea name="doc_title" class="form-control" rows="2" required></textarea>
                     </div>
 
-                    <div class="form-group text-left">
-                        <label>Select Personnels</label>
-                        <select name="update_by[]" id="user_name_select" class="form-control" multiple required>
-                            @foreach ($users as $user)
-                                <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                   <div class="form-group text-left">
+    <label>Select Personnels</label>
+    <select name="update_by[]" class="form-control " data-placeholder="Select users..."  required>
+
+        {{-- Static predefined positions --}}
+        <option disabled>— Select by Position —</option>
+        <option value="position:1">President</option>
+        <option value="position:2">VPAA</option>
+        <option value="position:3">VPAF</option>
+        <option value="position:4">Office Heads</option>
+        <option value="position:5">Deans</option>
+        <option value="position:6">Campus Administrators</option>
+        <option value="position:7">Directors</option>
+
+        {{-- Group list --}}
+        <option disabled>──────────</option>
+        <option disabled>— Select by Group —</option>
+        @foreach ($groups as $group)
+            <option value="group:{{ $group->group_name }}">{{ $group->group_name }}</option>
+        @endforeach
+
+        {{-- Individual users --}}
+        <option disabled>──────────</option>
+        <option disabled>— Select by Individual User —</option>
+        @foreach ($users as $user)
+            <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
+        @endforeach
+
+    </select>
+</div>
 
                     <div class="form-group text-left">
                         <label>Attach File (optional)</label>

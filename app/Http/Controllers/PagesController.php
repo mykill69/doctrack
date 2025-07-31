@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 
@@ -456,7 +457,7 @@ public function distributionList()
         $routedUsers = $item->routed_users
             ? array_filter(array_map('trim', explode(',', $item->routed_users)))
             : [];
-        return count($routedUsers) >= 4;
+        return count($routedUsers) >= 2;
     });
 
 
@@ -472,6 +473,31 @@ public function distributionList()
     return view('home.distList', compact('logs', 'offices', 'doctrackCount'));
 }
 
+public function viewDistribution($id)
+{
+    $routingSlip = RoutingSlip::with('document')->findOrFail($id);
+    $title = 'DISTRIBUTION/RETRIEVAL LIST';
+
+    // Eager load the newUser relationship
+    $logs = Log::with('newUser')->where('route_id', $routingSlip->rslip_id)->get();
+
+    return view('slip.distForm', compact('title', 'routingSlip', 'logs'));
+}
+
+
+public function viewDistributionPdf($id)
+{
+    $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
+    $logs = DB::table('logs')
+    ->leftJoin('users', 'logs.new_user', '=', 'users.id')
+    ->where('logs.route_id', $id)
+    ->select('logs.*', 'users.department as user_department')
+    ->get();
+    $title = 'DISTRIBUTION/RETRIEVAL LIST';
+
+    return Pdf::loadView('slip.distPdf', compact('routingSlip', 'logs', 'title'))
+        ->stream('distribution_list.pdf');
+}
 
 
 

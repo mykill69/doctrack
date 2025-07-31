@@ -18,26 +18,158 @@ use App\Models\DoctrackFile;
 use App\Models\User;
 use App\Mail\DoctrackNotification;
 use Illuminate\Support\Facades\Mail;
+use App\Models\Group;
 
 class DoctrackController extends Controller
 {
-    public function storeDoctrack(Request $request)
+//     public function storeDoctrack(Request $request)
+// {
+//     // ✅ Validate the request
+//     $request->validate([
+//         'user_id'     => 'required|integer',
+//         'doc_type'    => 'required|string',
+//         'doc_title'   => 'required|string',
+//         'update_by'   => 'required|array',
+//         'update_by.*' => 'integer|exists:users,id',
+//         'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls',
+//     ]);
+
+//     // ✅ Generate docslip ID
+//     $docslip_id = 'CPSU' . mt_rand(10000000, 99999999);
+
+//     // ✅ Handle optional file upload
+//     $fileName = null;
+//     if ($request->hasFile('file')) {
+//         $file = $request->file('file');
+//         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+//         $extension = $file->getClientOriginalExtension();
+//         $fileName = $originalName . '.' . $extension;
+
+//         $i = 1;
+//         $storagePath = storage_path('app/doc_track');
+
+//         while (file_exists($storagePath . '/' . $fileName)) {
+//             $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+//             $i++;
+//         }
+
+//         $file->storeAs('doc_track', $fileName);
+//     }
+
+//     // ✅ Create a record for the creator (doctrack_stat = 1)
+//     $creator = User::find($request->user_id);
+//     $creatorFullName = $creator->fname . ' ' . $creator->lname;
+
+//     $documentTrack = Doctrack::create([
+//         'user_id'       => $request->user_id,
+//         'update_by'     => null,
+//         'docslip_id'    => $docslip_id,
+//         'doc_type'      => $request->doc_type,
+//         'doc_title'     => $request->doc_title,
+//         'user_name'     => $creatorFullName,
+//         'doctrack_stat' => 1,
+//     ]);
+
+//      // 🔹 Add to logs_tracking for creator
+//     LogsTracking::create([
+//         'docslip_id' => $docslip_id,
+//         'user_id'    => $request->user_id,
+//         'update_by'  => null,
+//         'doc_title'  => $request->doc_title,
+//         'file_logs'  => $fileName,
+//         'logs_status'=> 1,
+//         'comments'   => null,
+//     ]);
+
+//     // ✅ Prepare email data
+//     $docInfo = (object)[
+//         'docslip_id' => $docslip_id,
+//         'doc_title'  => $request->doc_title,
+//         'doc_type'   => $request->doc_type,
+//         'user_name'  => $creatorFullName,
+//     ];
+
+//     // ✅ Send email to the creator
+//     if (!empty($creator) && !empty($creator->email)) {
+//         try {
+//             Mail::to($creator->email)->send(
+//                 new DoctrackNotification($docInfo, $creatorFullName)
+//             );
+//         } catch (\Exception $e) {
+//             Log::error("Email to creator failed: " . $e->getMessage());
+//         }
+//     }
+
+//     // ✅ Create records and send emails to each recipient (doctrack_stat = 2)
+//     foreach ($request->update_by as $userId) {
+//         $recipient = User::find($userId);
+//         if ($recipient) {
+//             $recipientFullName = $recipient->fname . ' ' . $recipient->lname;
+
+//             Doctrack::create([
+//                 'user_id'       => $request->user_id,
+//                 'update_by'     => $userId,
+//                 'docslip_id'    => $docslip_id,
+//                 'doc_type'      => $request->doc_type,
+//                 'doc_title'     => $request->doc_title,
+//                 'user_name'     => $creatorFullName,
+//                 'doctrack_stat' => 2,
+//             ]);
+
+//               LogsTracking::create([
+//                 'docslip_id' => $docslip_id,
+//                 'user_id'    => $request->user_id,
+//                 'update_by'  => $userId,
+//                 'doc_title'  => $request->doc_title,
+//                 'file_logs'  => $fileName,
+//                 'logs_status'=> 2,
+//                 'comments'   => null,
+//             ]);
+
+//             if (!empty($recipient->email)) {
+//                 try {
+//                     Mail::to($recipient->email)->send(
+//                         new DoctrackNotification($docInfo, $recipientFullName)
+//                     );
+//                 } catch (\Exception $e) {
+//                     Log::error("Email to recipient ID {$userId} failed: " . $e->getMessage());
+//                 }
+//             }
+//         }
+//     }
+
+//     // ✅ Save file (linked only to the creator's row)
+//     if ($fileName) {
+//         DoctrackFile::create([
+//             'doctrack_id' => $documentTrack->id,
+//             'docslip_id'  => $docslip_id,
+//             'file'        => $fileName,
+//         ]);
+//     }
+
+//     // ✅ Final JSON response
+//     return response()->json([
+//         'success' => true,
+//         'id'      => $documentTrack->id,
+//         'message' => 'Document successfully submitted!',
+//     ]);
+// }
+
+
+public function storeDoctrack(Request $request)
 {
-    // ✅ Validate the request
     $request->validate([
         'user_id'     => 'required|integer',
         'doc_type'    => 'required|string',
         'doc_title'   => 'required|string',
         'update_by'   => 'required|array',
-        'update_by.*' => 'integer|exists:users,id',
-        'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls',
+        'update_by.*' => 'required|string',
+        'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xls,xlsx,xlsm',
     ]);
 
-    // ✅ Generate docslip ID
     $docslip_id = 'CPSU' . mt_rand(10000000, 99999999);
-
-    // ✅ Handle optional file upload
     $fileName = null;
+
     if ($request->hasFile('file')) {
         $file = $request->file('file');
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -55,12 +187,11 @@ class DoctrackController extends Controller
         $file->storeAs('doc_track', $fileName);
     }
 
-    // ✅ Create a record for the creator (doctrack_stat = 1)
-    $creator = User::find($request->user_id);
+    $creator = User::findOrFail($request->user_id);
     $creatorFullName = $creator->fname . ' ' . $creator->lname;
 
     $documentTrack = Doctrack::create([
-        'user_id'       => $request->user_id,
+        'user_id'       => $creator->id,
         'update_by'     => null,
         'docslip_id'    => $docslip_id,
         'doc_type'      => $request->doc_type,
@@ -69,10 +200,9 @@ class DoctrackController extends Controller
         'doctrack_stat' => 1,
     ]);
 
-     // 🔹 Add to logs_tracking for creator
     LogsTracking::create([
         'docslip_id' => $docslip_id,
-        'user_id'    => $request->user_id,
+        'user_id'    => $creator->id,
         'update_by'  => null,
         'doc_title'  => $request->doc_title,
         'file_logs'  => $fileName,
@@ -80,7 +210,6 @@ class DoctrackController extends Controller
         'comments'   => null,
     ]);
 
-    // ✅ Prepare email data
     $docInfo = (object)[
         'docslip_id' => $docslip_id,
         'doc_title'  => $request->doc_title,
@@ -88,56 +217,76 @@ class DoctrackController extends Controller
         'user_name'  => $creatorFullName,
     ];
 
-    // ✅ Send email to the creator
-    if (!empty($creator) && !empty($creator->email)) {
+    // Send email to creator
+    if ($creator->email) {
         try {
-            Mail::to($creator->email)->send(
-                new DoctrackNotification($docInfo, $creatorFullName)
-            );
+            Mail::to($creator->email)->send(new DoctrackNotification($docInfo, $creatorFullName));
         } catch (\Exception $e) {
-            Log::error("Email to creator failed: " . $e->getMessage());
+            Log::error("Failed to email creator: " . $e->getMessage());
         }
     }
 
-    // ✅ Create records and send emails to each recipient (doctrack_stat = 2)
-    foreach ($request->update_by as $userId) {
-        $recipient = User::find($userId);
-        if ($recipient) {
-            $recipientFullName = $recipient->fname . ' ' . $recipient->lname;
+    // Handle update_by recipients
+    $finalRecipients = [];
 
-            Doctrack::create([
-                'user_id'       => $request->user_id,
-                'update_by'     => $userId,
-                'docslip_id'    => $docslip_id,
-                'doc_type'      => $request->doc_type,
-                'doc_title'     => $request->doc_title,
-                'user_name'     => $creatorFullName,
-                'doctrack_stat' => 2,
-            ]);
+    foreach ($request->update_by as $entry) {
+        $users = collect();
 
-              LogsTracking::create([
-                'docslip_id' => $docslip_id,
-                'user_id'    => $request->user_id,
-                'update_by'  => $userId,
-                'doc_title'  => $request->doc_title,
-                'file_logs'  => $fileName,
-                'logs_status'=> 2,
-                'comments'   => null,
-            ]);
+        if (Str::startsWith($entry, 'group:')) {
+            $groupName = Str::after($entry, 'group:');
+            $group = Group::where('group_name', $groupName)->first();
+            if ($group) {
+                $users = $group->users;
+            }
 
-            if (!empty($recipient->email)) {
-                try {
-                    Mail::to($recipient->email)->send(
-                        new DoctrackNotification($docInfo, $recipientFullName)
-                    );
-                } catch (\Exception $e) {
-                    Log::error("Email to recipient ID {$userId} failed: " . $e->getMessage());
-                }
+        } elseif (Str::startsWith($entry, 'position:')) {
+            $positionId = (int) Str::after($entry, 'position:');
+            $users = User::where('position', $positionId)->get();
+
+        } elseif (is_numeric($entry)) {
+            $user = User::find((int) $entry);
+            if ($user) $users = collect([$user]);
+        }
+
+        foreach ($users as $user) {
+            if (!$user || isset($finalRecipients[$user->id])) continue;
+
+            $finalRecipients[$user->id] = $user;
+        }
+    }
+
+    foreach ($finalRecipients as $recipient) {
+        $recipientFullName = $recipient->fname . ' ' . $recipient->lname;
+
+        Doctrack::create([
+            'user_id'       => $creator->id,
+            'update_by'     => $recipient->id,
+            'docslip_id'    => $docslip_id,
+            'doc_type'      => $request->doc_type,
+            'doc_title'     => $request->doc_title,
+            'user_name'     => $creatorFullName,
+            'doctrack_stat' => 2,
+        ]);
+
+        LogsTracking::create([
+            'docslip_id' => $docslip_id,
+            'user_id'    => $creator->id,
+            'update_by'  => $recipient->id,
+            'doc_title'  => $request->doc_title,
+            'file_logs'  => $fileName,
+            'logs_status'=> 2,
+            'comments'   => null,
+        ]);
+
+        if ($recipient->email) {
+            try {
+                Mail::to($recipient->email)->send(new DoctrackNotification($docInfo, $recipientFullName));
+            } catch (\Exception $e) {
+                Log::error("Failed to email recipient ({$recipient->id}): " . $e->getMessage());
             }
         }
     }
 
-    // ✅ Save file (linked only to the creator's row)
     if ($fileName) {
         DoctrackFile::create([
             'doctrack_id' => $documentTrack->id,
@@ -146,7 +295,6 @@ class DoctrackController extends Controller
         ]);
     }
 
-    // ✅ Final JSON response
     return response()->json([
         'success' => true,
         'id'      => $documentTrack->id,

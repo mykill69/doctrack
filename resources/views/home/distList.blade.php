@@ -23,6 +23,7 @@
                                                 <th>ACTION UNIT</th>
                                                 <th>DATE RELEASED</th>
                                                 <th>STATUS</th>
+                                                <th>ACTION</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -46,7 +47,7 @@
                                                     <td>{{ $log->subject ?? 'N/A' }}</td>
                                                     <td>
                                                         @if ($log->document)
-                                                           <a href="{{ route('documents.viewPdf', ['id' => $log->doc_id]) }}"
+                                                            <a href="{{ route('documents.viewPdf', ['id' => $log->doc_id]) }}"
                                                                 target="_blank" style="color: #007bff;">
                                                                 <i class="fas fa-file-pdf text-danger"></i>
                                                                 {{ \Illuminate\Support\Str::limit($log->document, 22) }}
@@ -83,6 +84,20 @@
                                                             }
                                                         @endphp
                                                     </td>
+                                                    <td>
+                                                        <a href="{{ route('viewDistributionPdf', ['id' => $log->rslip_id]) }}"
+                                                            target="_blank">
+                                                            <span class="badge bg-primary">
+                                                                <i class="fas fa-file-pdf text-danger"></i> View
+                                                            </span>
+                                                        </a>
+
+                                                   
+
+
+
+                                                    </td>
+
                                                 </tr>
                                             @endforeach
                                         </tbody>

@@ -32,4 +32,8 @@ public function document()
 {
     return $this->belongsTo(Document::class, 'route_id', 'route_id'); // Assuming 'route_id' is the foreign key
 }
+public function newUser()
+{
+    return $this->belongsTo(User::class, 'new_user');
+}
 }

@@ -48,6 +48,8 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/viewPdfRoute', [PagesController::class, 'viewPdfRoute'])->name('viewPdfRoute');
     Route::get('/doctrackslip-list', [PagesController::class, 'doctrackSlip'])->name('doctrackSlip');
     Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
+    Route::get('/distribution-List/view/{id}', [PagesController::class, 'viewDistribution'])->name('viewDistribution');
+    Route::get('/distributionList/pdf/{id}', [PagesController::class, 'viewDistributionPdf'])->name('viewDistributionPdf');
 
 
     //tracking page

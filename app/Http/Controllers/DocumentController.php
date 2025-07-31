@@ -12,10 +12,13 @@ use App\Models\Doctrack;
 use App\Models\LogsHistory;
 use App\Models\RoutingSlip;
 use App\Models\RouteDocument;
+use Illuminate\Support\Facades\Auth;
+
 
 class DocumentController extends Controller
 {
 
+    
 public function dashboard()
 {
    $user = auth()->user();
@@ -42,6 +45,13 @@ public function dashboard()
         ? RoutingSlip::where('route_status', 2)->count()
         : 0;
 
+ $groups = User::select('id', 'fname', 'lname', 'department')
+        ->orderBy('department')
+        ->orderBy('lname')
+        ->get()
+        ->groupBy('department');
+        
+
     $offices = Office::all();
     $dpa = auth()->user()->dpa;
     $users = User::all();
@@ -52,7 +62,9 @@ public function dashboard()
           ->orWhere('user_name', $userFullName);
 })->distinct('docslip_id')->count();
 
-    return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount'));
+
+
+    return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount' , 'groups'));
 }
 
 public function tracking(Request $request)
@@ -185,6 +197,53 @@ public function storeDoc(Request $request)
 }
 
 
+// public function update(Request $request, $id)
+// {
+//     $request->validate([
+//         'comments' => 'nullable|string',
+//         'user_id' => 'required|integer',
+//         'new_user' => 'required|integer',
+//     ]);
+
+//     $document = Document::find($id);
+//     if (!$document) {
+//         return redirect()->back()->with('error', 'Document not found.');
+//     }
+
+//     $routeId = $document->route_id;
+
+//     // Match by route_id and optionally user if needed
+//     $logToUpdate = Log::where('route_id', $routeId)
+//                       ->first();
+
+//     if ($logToUpdate) {
+//         $logToUpdate->user_id = $request->input('user_id');
+//         $logToUpdate->new_user = $request->input('new_user');
+//         $logToUpdate->action = 'Acknowledged';
+//         $logToUpdate->status_update = $request->input('status_update');
+//         $logToUpdate->prev_file = $logToUpdate->new_file;
+//         $logToUpdate->comments = $request->input('comments', null);
+//         $logToUpdate->updated_at = now();
+//         $logToUpdate->save();
+
+//         if ($logToUpdate->status_update == 3) {
+//             LogsHistory::create([
+//                 'doc_id' => $logToUpdate->doc_id,
+//                 'action' => $logToUpdate->action,
+//                 'status_update' => $logToUpdate->status_update,
+//                 'created_at' => now(),
+//                 'updated_at' => now(),
+//             ]);
+//         }
+
+//        return redirect($request->input('redirectUrl'))->with('success', 'The document was acknowledged successfully.');
+
+//     } else {
+//         return redirect()->back()->with('error', 'Log entry not found for the specified route_id.');
+//     }
+// }
+
+
 public function update(Request $request, $id)
 {
     $request->validate([
@@ -200,8 +259,13 @@ public function update(Request $request, $id)
 
     $routeId = $document->route_id;
 
-    // Match by route_id and optionally user if needed
+    // Correct way to get the logged-in user
+    $currentUser = Auth::user(); // Use Auth facade, not 'auth'
+    $fullName = $currentUser->fname . ' ' . $currentUser->lname;
+
     $logToUpdate = Log::where('route_id', $routeId)
+                      ->where('new_destination', $fullName)
+                      ->whereNull('new_user')
                       ->first();
 
     if ($logToUpdate) {
@@ -224,13 +288,11 @@ public function update(Request $request, $id)
             ]);
         }
 
-       return redirect($request->input('redirectUrl'))->with('success', 'The document was acknowledged successfully.');
-
-    } else {
-        return redirect()->back()->with('error', 'Log entry not found for the specified route_id.');
+        return redirect($request->input('redirectUrl'))->with('success', 'The document was acknowledged successfully.');
     }
-}
 
+    return redirect()->back()->with('error', 'No matching log entry found for acknowledgment.');
+}
 
 
 
