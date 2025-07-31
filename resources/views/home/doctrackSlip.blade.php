@@ -13,6 +13,10 @@
         margin-top: 0.31rem;
     }
 </style>
+
+
+<!-- SweetAlert2 -->
+<link rel="stylesheet" href="{{ asset('template/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
 @section('body')
     <div class="content-wrapper">
 
@@ -147,6 +151,23 @@
             </div>
         </div>
     </div>
+
+    @if (session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+    <!-- SweetAlert2 -->
+    <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+    <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
+
+
     @include('modal.docAdd')
     @include('modal.docEdit')
     @include('modal.addTrans')

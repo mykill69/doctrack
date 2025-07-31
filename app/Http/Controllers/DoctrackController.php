@@ -300,6 +300,9 @@ public function storeDoctrack(Request $request)
         'id'      => $documentTrack->id,
         'message' => 'Document successfully submitted!',
     ]);
+    return redirect()->route('doctrackSlip')
+    ->with('success', 'Document successfully submitted with tracking # ' . $docslip_id . '!');
+
 }
 
 

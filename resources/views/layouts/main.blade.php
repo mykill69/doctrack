@@ -683,11 +683,18 @@
                             }
                             return response.json();
                         })
+                        //this is where the redirect to QR page happens 08/01/2025
+                        // .then(data => {
+                        //     if (loader) loader.style.display = 'none';
+                        //     window.location.href = "{{ route('docslipForm', ['id' => '__REPLACE__']) }}"
+                        //         .replace('__REPLACE__', data.id || '');
+                        // })
                         .then(data => {
                             if (loader) loader.style.display = 'none';
-                            window.location.href = "{{ route('docslipForm', ['id' => '__REPLACE__']) }}"
-                                .replace('__REPLACE__', data.id || '');
+                            window.location.href =
+                            "{{ route('doctrackSlip') }}"; // ✅ REDIRECT TO THE LIST PAGE
                         })
+
                         .catch(error => {
                             if (loader) loader.style.display = 'none';
                             Swal.fire('Error', error.message, 'error');
