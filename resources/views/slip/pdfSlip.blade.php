@@ -200,11 +200,11 @@ letter-spacing: 5px;
                                     $routingSlip->route_status != 1)
                                 <img src="{{ public_path('storage/esignature/' . $esig->esig_file) }}"
                                     alt="Electronic Signature"
-                                    style="width: 150px; height: auto; margin-bottom: -40px; margin-top: 10%;">
+                                    style="width: 200px; height: auto; margin-bottom: -20px; margin-top: 10%;">
                             @endif
 
 
-                            <p style="font-weight:bold; font-size: 22px;font-family: Verdana, sans-serif;"><u>ALADINO C.
+                            <p style="font-weight:bold; font-size: 18px;font-family: Verdana, sans-serif;"><u>ALADINO C.
                                     MORACA, Ph.D.</u></p>
                             <p style="margin-top: -20px;font-style: italic;font-family: Verdana, sans-serif;">SUC
                                 President</p>
