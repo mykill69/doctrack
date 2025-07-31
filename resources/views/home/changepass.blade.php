@@ -108,4 +108,5 @@
                 message.style.display = 'none';
             }
         }
+        </script>
     @endsection

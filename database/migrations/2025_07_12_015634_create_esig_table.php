@@ -13,9 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('esig', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::create('esigs', function (Blueprint $table) {
+    $table->id(); // this sets it as auto-increment by default
+    $table->unsignedBigInteger('user_id')->unique();
+    $table->string('esig_file');
+    $table->timestamps();
         });
     }
 
