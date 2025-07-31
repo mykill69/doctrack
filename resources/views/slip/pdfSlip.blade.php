@@ -107,7 +107,7 @@ letter-spacing: 5px;
 
                             </div>
                             <div class="route-number">
-                                <span>{{ $routingSlip->rslip_id }}</span>
+                                <span>{{ $routingSlip->op_ctrl }}</span>
                             </div>
                         </th>
                     </tr>
