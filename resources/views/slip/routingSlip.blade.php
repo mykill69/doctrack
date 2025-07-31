@@ -61,7 +61,7 @@
                                                 <td>
                                                     <a href="{{ route('slipForm', $slip->rslip_id) }}" target="_blank"
                                                         style="color: #007bff;">
-                                                        @if (auth()->user()->role === 'super_user')
+                                                        @if (auth()->user()->role === 'super_user' || auth()->user()->role === 'Administrator')
                                                             {{ $slip->op_ctrl }}
                                                         @else
                                                             {{ $slip->rslip_id }}
