@@ -196,7 +196,7 @@ letter-spacing: 5px;
                         <td colspan="4" style="padding: 0; margin: 0;">
 
                             @if ($esig && $esig->esig_file && isset($routingSlip) && $routingSlip->route_status != 1)
-                                <img src="{{ public_path('esignature/' . $esig->esig_file) }}"
+                                <img src="{{ asset('storage/esignature/' . $esig->esig_file) }}"
                                     alt="Electronic Signature"
                                     style="width: 150px; height: auto; margin-bottom: -40px; margin-top: 10%;">
                             @endif

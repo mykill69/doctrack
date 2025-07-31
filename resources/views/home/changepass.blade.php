@@ -80,9 +80,10 @@
 
                                         @if ($userEsig && $userEsig->esig_file)
                                             <p>Current E-Signature:</p>
-                                            <img src="{{ asset('esignature/' . $userEsig->esig_file) }}" alt="E-signature"
-                                                class="img-thumbnail" style="max-height: 120px;">
+                                            <img src="{{ asset('storage/esignature/' . $userEsig->esig_file) }}"
+                                                alt="E-signature" class="img-thumbnail" style="max-height: 120px;">
                                         @endif
+
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">Update Details</button>

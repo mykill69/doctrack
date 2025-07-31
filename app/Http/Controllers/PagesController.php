@@ -19,6 +19,7 @@ use App\Models\Doctrack;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
 
 
@@ -317,6 +318,69 @@ public function userPassword($id)
     ));
 }
 
+// public function passChange(Request $request, $id)
+// {
+//     $validator = Validator::make($request->all(), [
+//         'email' => 'nullable|string|max:255|unique:users,email,' . $id,
+//         'password' => 'nullable|string|min:8|confirmed',
+//         'department' => 'nullable|string|max:255',
+//         'esig_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf',
+//     ]);
+
+//     if ($validator->fails()) {
+//         return redirect()->back()->withErrors($validator)->withInput();
+//     }
+
+//     $user = User::find($id);
+//     if (!$user) {
+//         return redirect()->back()->with('error', 'User not found');
+//     }
+
+//     // Update only fields that were filled
+//     if ($request->filled('fname')) $user->fname = $request->input('fname');
+//     if ($request->filled('mname')) $user->mname = $request->input('mname');
+//     if ($request->filled('lname')) $user->lname = $request->input('lname');
+//     if ($request->filled('email')) $user->email = $request->input('email');
+//     if ($request->filled('department')) $user->department = $request->input('department');
+//     if ($request->filled('password')) $user->password = Hash::make($request->input('password'));
+
+//     $user->save();
+
+//     // ✅ Handle E-signature upload
+//     if ($request->hasFile('esig_file')) {
+//         $file = $request->file('esig_file');
+//         $filename = $user->fname . '_' . $file->getClientOriginalName();
+//         $destinationPath = public_path('esignature');
+
+//         // Ensure destination folder exists
+//         if (!File::exists($destinationPath)) {
+//             File::makeDirectory($destinationPath, 0755, true);
+//         }
+
+//         // Retrieve existing esig row
+//         $existingEsig = Esig::where('user_id', $user->id)->first();
+
+//         // If exists, delete old file before replacing
+//         if ($existingEsig && $existingEsig->esig_file) {
+//             $oldFilePath = $destinationPath . '/' . $existingEsig->esig_file;
+//             if (File::exists($oldFilePath)) {
+//                 File::delete($oldFilePath);
+//             }
+//         }
+
+//         // Move the new file
+//         $file->move($destinationPath, $filename);
+
+//         // Update or create the Esig row
+//         Esig::updateOrCreate(
+//             ['user_id' => $user->id],
+//             ['esig_file' => $filename]
+//         );
+//     }
+
+//     return redirect()->route('userPassword', ['id' => $id])
+//         ->with('success', 'User updated successfully.');
+// }
 public function passChange(Request $request, $id)
 {
     $validator = Validator::make($request->all(), [
@@ -349,26 +413,20 @@ public function passChange(Request $request, $id)
     if ($request->hasFile('esig_file')) {
         $file = $request->file('esig_file');
         $filename = $user->fname . '_' . $file->getClientOriginalName();
-        $destinationPath = public_path('esignature');
 
-        // Ensure destination folder exists
-        if (!File::exists($destinationPath)) {
-            File::makeDirectory($destinationPath, 0755, true);
-        }
+        $storagePath = 'public/esignature'; // store in storage/app/public/esignature   
+        Storage::putFileAs($storagePath, $file, $filename);
 
         // Retrieve existing esig row
         $existingEsig = Esig::where('user_id', $user->id)->first();
 
         // If exists, delete old file before replacing
         if ($existingEsig && $existingEsig->esig_file) {
-            $oldFilePath = $destinationPath . '/' . $existingEsig->esig_file;
-            if (File::exists($oldFilePath)) {
-                File::delete($oldFilePath);
-            }
+            Storage::delete($storagePath . '/' . $existingEsig->esig_file);
         }
 
-        // Move the new file
-        $file->move($destinationPath, $filename);
+        // Save the file inside storage/app/esignature
+        Storage::putFileAs($storagePath, $file, $filename);
 
         // Update or create the Esig row
         Esig::updateOrCreate(
