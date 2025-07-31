@@ -231,12 +231,6 @@
             </div>
         </div>
     </div>
-    <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="{{ asset('template/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {

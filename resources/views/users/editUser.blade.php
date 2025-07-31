@@ -2,33 +2,45 @@
 @section('body')
     <!-- Include CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <style type="text/css">
-        .no-left-radius {
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
-        }
+   <style>
+    /* Force Select2 to full width */
+    .select2-container {
+        width: 100% !important;
+    }
 
-        /* Ensure Select2 matches Bootstrap input height */
-.select2-container--default .select2-selection--multiple {
-    height: auto !important;
-    min-height: 38px !important;
-    padding: 0.2rem 0.75rem !important;
-    border: 1px solid #ced4da !important;
-    border-radius: 0.25rem !important;
-    line-height: 1.5 !important;
-    font-size: 1rem !important;
-    box-sizing: border-box;
-}
+    /* Match Bootstrap form-control styling for multiple select */
+    .select2-container--default .select2-selection--multiple {
+        height: 38px !important;           /* Match form-control */
+        min-height: 38px !important;
+        padding: 0.25rem 0.5rem !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 0.25rem !important;
+        font-size: 1rem !important;
+        display: flex !important;
+        align-items: center;
+        background-color: #fff !important;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
 
-/* Fix vertical alignment of tags inside the selection box */
-.select2-container--default .select2-selection--multiple .select2-selection__rendered {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    padding: 0 !important;
-}
+    /* Style selected tags (optional, keep if you like) */
+    .select2-selection__choice {
+        background-color: #007bff !important;
+        color: #fff !important;
+        border: none !important;
+        padding: 2px 10px;
+        border-radius: 0.2rem;
+        margin-top: 4px;
+    }
 
-    </style>
+    /* Hide × button in tag (optional) */
+    .select2-selection__choice__remove {
+        display: none !important;
+    }
+</style>
+
+
+
     <div class="content-wrapper">
         <div class="content" style="padding-top: 1%;">
             <div class="container-fluid">
@@ -159,10 +171,12 @@
         </div>
     </div>
 
+    <script src="{{ asset('template/plugins/jquery/jquery.min.js') }}"></script>
+    <!-- Bootstrap 4 -->
+    <script src="{{ asset('template/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <!-- Select2 -->
+    <script src="{{ asset('template/plugins/select2/js/select2.full.min.js') }}"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         function checkPasswordMatch() {
             const password = document.getElementById('password').value;
@@ -177,14 +191,14 @@
         }
     </script>
 
-
     <script>
-        $(document).ready(function() {
-            $('#group').select2({
-                theme: 'bootstrap4',
-                placeholder: 'Select Group(s)',
-                allowClear: true,
-                width: '100%'
+        $(function() {
+            //Initialize Select2 Elements
+            $('.select2').select2();
+
+            //Initialize Select2 Elements
+            $('.select2bs4').select2({
+                theme: 'bootstrap4'
             });
         });
     </script>

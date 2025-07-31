@@ -488,16 +488,32 @@ public function viewDistribution($id)
 public function viewDistributionPdf($id)
 {
     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
+
+    // Fetch logs with user info
     $logs = DB::table('logs')
-    ->leftJoin('users', 'logs.new_user', '=', 'users.id')
-    ->where('logs.route_id', $id)
-    ->select('logs.*', 'users.department as user_department')
-    ->get();
+        ->leftJoin('users', 'logs.new_user', '=', 'users.id')
+        ->where('logs.route_id', $id)
+        ->select('logs.*', 'users.department as user_department')
+        ->get();
+
+    // Add e-signature (if any) for each log where status_update == 3
+    $logs->transform(function ($log) {
+        if ($log->status_update == 3) {
+            $esig = \App\Models\Esig::where('user_id', $log->new_user)->first();
+            $log->esig_file = $esig ? $esig->esig_file : null;
+        } else {
+            $log->esig_file = null;
+        }
+        return $log;
+    });
+
     $title = 'DISTRIBUTION/RETRIEVAL LIST';
 
-    return Pdf::loadView('slip.distPdf', compact('routingSlip', 'logs', 'title'))
+    return PDF::loadView('slip.distPdf', compact('routingSlip', 'logs', 'title'))
         ->stream('distribution_list.pdf');
 }
+
+
 
 
 
