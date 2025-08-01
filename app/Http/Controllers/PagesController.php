@@ -415,9 +415,10 @@ public function passChange(Request $request, $id)
         $file = $request->file('esig_file');
         $filename = $user->fname . '_' . $file->getClientOriginalName();
 
-        $storagePath = 'public/esignature'; // store in storage/app/public/esignature   
+        // $storagePath = 'public/esignature'; // store in storage/app/public/esignature   
+        // Storage::putFileAs($storagePath, $file, $filename);
+       $storagePath = 'esignature'; // relative to storage/app
         Storage::putFileAs($storagePath, $file, $filename);
-
         // Retrieve existing esig row
         $existingEsig = Esig::where('user_id', $user->id)->first();
 
