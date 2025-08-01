@@ -83,9 +83,9 @@
                                                             </span>
                                                         @endif
 
-                                                        @if ($log->routingSlip)
+                                                        @if (!empty($log->r_destination))
                                                             <span class="badge badge-info">
-                                                                {{ $log->routingSlip->r_destination }}
+                                                                {{ $log->r_destination }}
                                                             </span>
                                                         @endif
                                                     </td>
