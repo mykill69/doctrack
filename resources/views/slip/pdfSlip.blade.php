@@ -196,7 +196,7 @@ letter-spacing: 5px;
                         <td colspan="4" style="padding: 0; margin: 0;">
 
                             @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) &&
-                                    $esig->user_id == 119 &&
+                                    $esig->user_id == 38 &&
                                     $routingSlip->route_status != 1)
                                 <img src="{{ $esig->esig_path }}" alt="Electronic Signature"
                                     style="width: 200px; height: auto; margin-bottom: -20px; margin-top: 10%;">

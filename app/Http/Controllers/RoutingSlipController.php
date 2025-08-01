@@ -174,7 +174,7 @@ public function pdfSlip($id)
     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
     // Get e-signature of user_id 119
-    $esig = Esig::where('user_id', 119)->first();
+    $esig = Esig::where('user_id', 38)->first();
 
     // Convert esig_file path to absolute for PDF use
     if ($esig && $esig->esig_file) {
