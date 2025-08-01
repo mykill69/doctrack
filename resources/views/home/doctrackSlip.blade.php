@@ -61,7 +61,7 @@
                                                     <td>{{ $record->doc_title }}</td>
                                                     <td>
                                                         @if ($record->doctrackFile)
-                                                            <a href="{{ route('pdfDocSlip', $record->doctrackFile->id) }}"
+                                                            <a href="{{ asset('storage/doc_track/' . $record->doctrackFile->file) }}"
                                                                 target="_blank">
                                                                 <i class="fas fa-file-pdf text-danger"></i>
                                                                 <span>{{ $record->doctrackFile->file }}</span>
@@ -69,7 +69,8 @@
                                                         @else
                                                             <span class="text-muted">No file attached</span>
                                                         @endif
-                                                    </td>
+                                                        
+                                                    </td> 
                                                     <td>
                                                         @switch($record->doctrack_stat)
                                                             @case(1)
