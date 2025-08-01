@@ -124,21 +124,22 @@ public function pending()
     $userDepartment = $user->department;
 
     $logs = Log::with('routingSlip') // <-- eager load routingSlip
-        ->leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
-        ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
-        ->select('logs.*', 'documents.*', 'routing_slip.*')
-        ->where('logs.status_update', 2)
-        ->where(function ($q) {
-            $q->whereNull('logs.new_user')
-              ->orWhereNull('logs.assigned_to');
-        })
-        ->where(function ($q) use ($userFullName, $userId) {
-            $q->where('logs.new_destination', $userFullName)
-              ->orWhere('logs.user_id', $userId);
-        })
-        ->orderBy('logs.created_at', 'desc')
-        ->distinct('logs.id')
-        ->get();
+    ->leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+    ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
+    ->select('logs.*', 'documents.*', 'routing_slip.*')
+    ->where('logs.status_update', 2)
+    ->where(function ($q) {
+        $q->whereNull('logs.new_user')
+          ->orWhereNull('logs.assigned_to');
+    })
+    ->where(function ($q) use ($userFullName, $userId) {
+        $q->where('logs.new_destination', $userFullName)
+          ->orWhere('logs.user_id', $userId);
+    })
+    ->orderBy('logs.created_at', 'desc')
+    ->distinct('logs.id')
+    ->get();
+
 
     $offices = Office::all();
     $recordsOfficerCount = 0;

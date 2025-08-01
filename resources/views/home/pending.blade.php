@@ -64,24 +64,17 @@
                                                     <td>{{ $log->pres_dept ?? 'N/A' }}</td>
                                                     <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
                                                     </td>
-                                                    <td style="font-size:10px;">
-                                                        @if ($log->document && $log->document->routingSlip && $log->document->routingSlip->r_destination)
+                                                    <td>
+                                                        <strong class="text-danger">{{ $log->for_to }}</strong>
+
+                                                        @if ($log->routingSlip && $log->routingSlip->r_destination)
                                                             <strong
-                                                                class="text-danger">{{ $log->document->routingSlip->r_destination }}</strong>
+                                                                class="text-primary">{{ $log->routingSlip->r_destination }}</strong>
                                                         @endif
 
                                                         @if ($log->assigned_to)
-                                                            , was re-assigned to <strong
+                                                            , was re-rerouted to <strong
                                                                 class="text-danger">{{ $log->assigned_to }}</strong>
-                                                        @endif
-
-                                                        @if ($log->trans_remarks)
-                                                            <br><span
-                                                                class="badge badge-success">{{ $log->trans_remarks }}</span>
-                                                        @endif
-
-                                                        @if ($log->assign_com)
-                                                            <span class="badge badge-warning">{{ $log->assign_com }}</span>
                                                         @endif
                                                     </td>
 
