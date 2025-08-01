@@ -73,20 +73,23 @@
                                                     </td>
                                                     <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td style="font-size:10px;">
-                                                        <span class="badge badge-success">
-                                                            {{ $log->trans_remarks ?? 'N/A' }}
-                                                        </span>
-
-                                                        @if ($log->assign_com)
-                                                            <span class="badge badge-warning">
-                                                                {{ $log->assign_com }}
-                                                            </span>
+                                                        @if ($log->routingSlip && $log->routingSlip->r_destination)
+                                                            <strong
+                                                                class="text-danger">{{ $log->routingSlip->r_destination }}</strong>
                                                         @endif
 
-                                                        @if (!empty($log->r_destination))
-                                                            <span class="badge badge-info">
-                                                                {{ $log->r_destination }}
-                                                            </span>
+                                                        @if ($log->assigned_to)
+                                                            , was re-assigned to <strong
+                                                                class="text-danger">{{ $log->assigned_to }}</strong>
+                                                        @endif
+
+                                                        @if ($log->trans_remarks)
+                                                            <br><span
+                                                                class="badge badge-success">{{ $log->trans_remarks }}</span>
+                                                        @endif
+
+                                                        @if ($log->assign_com)
+                                                            <span class="badge badge-warning">{{ $log->assign_com }}</span>
                                                         @endif
                                                     </td>
 
