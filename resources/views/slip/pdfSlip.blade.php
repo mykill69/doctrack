@@ -198,7 +198,7 @@ letter-spacing: 5px;
                             @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) &&
                                     $esig->user_id == 119 &&
                                     $routingSlip->route_status != 1)
-                              <img src="{{ asset('storage/esignature/' . $esig->esig_file) }}" alt="Electronic Signature"
+                                <img src="{{ $esig->esig_path }}" alt="Electronic Signature"
                                     style="width: 200px; height: auto; margin-bottom: -20px; margin-top: 10%;">
                             @endif
 

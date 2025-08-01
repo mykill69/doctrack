@@ -152,20 +152,40 @@ public function slipForm($id)
 }
 
 
+// public function pdfSlip($id)
+// {
+//     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
+//     $remarks = Remark::all();
+//     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
+
+//     // 👇 Get e-signature of user_id 38
+//     $esig = Esig::where('user_id', 119)->first();
+
+//     // Send all data to view
+//     $pdf = Pdf::loadView('slip.pdfSlip', compact('remarks', 'routingSlip', 'relatedDocuments', 'esig'));
+
+//     return $pdf->stream('routing-slip.pdf');
+// }
+
 public function pdfSlip($id)
 {
     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
     $remarks = Remark::all();
     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
-    // 👇 Get e-signature of user_id 38
+    // Get e-signature of user_id 119
     $esig = Esig::where('user_id', 119)->first();
 
-    // Send all data to view
+    // Convert esig_file path to absolute for PDF use
+    if ($esig && $esig->esig_file) {
+        $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
+    }
+
     $pdf = Pdf::loadView('slip.pdfSlip', compact('remarks', 'routingSlip', 'relatedDocuments', 'esig'));
 
     return $pdf->stream('routing-slip.pdf');
 }
+
 
     // public function deletePdf($id)
     // {
