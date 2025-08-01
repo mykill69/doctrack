@@ -445,7 +445,7 @@ public function docslipForm($id)
 public function pdfDocSlip($id)
 {
     $documentTrack = DoctrackFile::findOrFail($id);
-    $filePath = storage_path('app/doc_track/' . $documentTrack->file);
+    $filePath = storage_path('storage/doc_track/' . $documentTrack->file);
 
     if (file_exists($filePath)) {
         // force download with correct extension

@@ -163,13 +163,13 @@
                                                     <div class="d-flex align-items-center">
                                                         <i class="fas fa-paperclip text-muted mr-2"></i>
                                                         @if ($documentTrack->doctrackFile)
-                                                            <a href="{{ route('pdfDocSlip', $documentTrack->doctrackFile->id) }}"
-                                                                target="_blank" class="text-danger font-weight-bold">
-                                                                <i
-                                                                    class="fas fa-file-pdf mr-1"></i>{{ $documentTrack->doctrackFile->file }}
+                                                            <a href="{{ asset('storage/doc_track/' . $documentTrack->doctrackFile->file) }}"
+                                                                target="_blank">
+                                                                <i class="fas fa-file-pdf text-danger"></i>
+                                                                <span>{{ $documentTrack->doctrackFile->file }}</span>
                                                             </a>
                                                         @else
-                                                            <span class="text-muted">No File Attached</span>
+                                                            <span class="text-muted">No file attached</span>
                                                         @endif
                                                     </div>
 
