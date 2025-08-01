@@ -400,36 +400,35 @@ public function passChange(Request $request, $id)
         return redirect()->back()->with('error', 'User not found');
     }
 
-    // Update only fields that were filled
-    if ($request->filled('fname')) $user->fname = $request->input('fname');
-    if ($request->filled('mname')) $user->mname = $request->input('mname');
-    if ($request->filled('lname')) $user->lname = $request->input('lname');
-    if ($request->filled('email')) $user->email = $request->input('email');
-    if ($request->filled('department')) $user->department = $request->input('department');
-    if ($request->filled('password')) $user->password = Hash::make($request->input('password'));
-
-    $user->save();
-
-    // ✅ Handle E-signature upload
+    // ✅ Handle E-signature upload to storage/app/esignature
     if ($request->hasFile('esig_file')) {
         $file = $request->file('esig_file');
-        $filename = $user->fname . '_' . $file->getClientOriginalName();
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
+        $filename = $user->fname . '_' . $originalName . '.' . $extension;
 
-        // $storagePath = 'public/esignature'; // store in storage/app/public/esignature   
-        // Storage::putFileAs($storagePath, $file, $filename);
-      $storagePath = storage_path('app/esignature'); // store in storage/app/esignature
-        // Retrieve existing esig row
-        $existingEsig = Esig::where('user_id', $user->id)->first();
+        $i = 1;
+        $storagePath = storage_path('app/esignature');
 
-        // If exists, delete old file before replacing
-        if ($existingEsig && $existingEsig->esig_file) {
-            Storage::delete($storagePath . '/' . $existingEsig->esig_file);
+        // Ensure filename is unique in esignature folder
+        while (file_exists($storagePath . '/' . $filename)) {
+            $filename = $user->fname . '_' . $originalName . ' Copy ' . $i . '.' . $extension;
+            $i++;
         }
 
-        // Save the file inside storage/app/esignature
-        Storage::putFileAs($storagePath, $file, $filename);
+        // Delete old file if exists
+        $existingEsig = Esig::where('user_id', $user->id)->first();
+        if ($existingEsig && $existingEsig->esig_file) {
+            $oldPath = $storagePath . '/' . $existingEsig->esig_file;
+            if (file_exists($oldPath)) {
+                unlink($oldPath);
+            }
+        }
 
-        // Update or create the Esig row
+        // Save new file
+        $file->storeAs('esignature', $filename); // this stores to storage/app/esignature
+
+        // Save or update Esig record
         Esig::updateOrCreate(
             ['user_id' => $user->id],
             ['esig_file' => $filename]
