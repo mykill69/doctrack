@@ -64,14 +64,6 @@
                                                     <td>{{ $log->pres_dept ?? 'N/A' }}</td>
                                                     <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
                                                     </td>
-                                                    <td>
-                                                        <strong class="text-danger">{{ $log->for_to }}</strong>
-                                                        @if ($log->assigned_to)
-                                                            , was re-rerouted to <strong
-                                                                class="text-danger">{{ $log->assigned_to }}</strong>
-                                                        @endif
-                                                    </td>
-                                                    <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td style="font-size:10px;">
                                                         @if ($log->document && $log->document->routingSlip && $log->document->routingSlip->r_destination)
                                                             <strong
@@ -93,7 +85,13 @@
                                                         @endif
                                                     </td>
 
-
+                                                    <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
+                                                    <td style="font-size:10px;">
+                                                        <span
+                                                            class="badge badge-success">{{ $log->trans_remarks ?? 'N/A' }}</span>
+                                                        <span
+                                                            class="badge badge-warning">{{ $log->assign_com ?? '' }}</span>
+                                                    </td>
                                                     {{-- <td>{{ $log->new_destination }}</td> --}}
                                                     <td>
                                                         <a href="{{ route('tracking', ['route_id' => $log->route_id]) }}"
