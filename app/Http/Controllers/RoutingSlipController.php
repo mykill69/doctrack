@@ -159,7 +159,7 @@ public function pdfSlip($id)
     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
     // 👇 Get e-signature of user_id 38
-    $esig = Esig::where('user_id', 38)->first();
+    $esig = Esig::where('user_id', 119)->first();
 
     // Send all data to view
     $pdf = Pdf::loadView('slip.pdfSlip', compact('remarks', 'routingSlip', 'relatedDocuments', 'esig'));
