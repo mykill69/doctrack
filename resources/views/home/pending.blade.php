@@ -73,9 +73,9 @@
                                                     </td>
                                                     <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td style="font-size:10px;">
-                                                        @if ($log->routingSlip && $log->routingSlip->r_destination)
+                                                        @if ($log->document && $log->document->routingSlip && $log->document->routingSlip->r_destination)
                                                             <strong
-                                                                class="text-danger">{{ $log->routingSlip->r_destination }}</strong>
+                                                                class="text-danger">{{ $log->document->routingSlip->r_destination }}</strong>
                                                         @endif
 
                                                         @if ($log->assigned_to)
@@ -92,6 +92,7 @@
                                                             <span class="badge badge-warning">{{ $log->assign_com }}</span>
                                                         @endif
                                                     </td>
+
 
                                                     {{-- <td>{{ $log->new_destination }}</td> --}}
                                                     <td>

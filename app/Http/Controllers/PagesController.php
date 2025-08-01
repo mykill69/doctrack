@@ -118,31 +118,31 @@ public function doctrackSlip()
 public function pending()
 {
     $user = auth()->user();
-    $userFullName = $user->fname . ' ' . $user->lname;
     $userId = $user->id;
-    $userRole = $user->role;
     $userDepartment = $user->department;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
 
-    $logs = Log::with('routingSlip') // <-- eager load routingSlip
-        ->leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
-        ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
-        ->select('logs.*', 'documents.*', 'routing_slip.*')
-        ->where('logs.status_update', 2)
+    $logs = Log::with('document', 'document.routingSlip')
+        ->where('status_update', 2)
         ->where(function ($q) {
-            $q->whereNull('logs.new_user')
-              ->orWhereNull('logs.assigned_to');
+            $q->whereNull('new_user')
+              ->orWhereNull('assigned_to');
         })
-        ->where(function ($q) use ($userFullName, $userId) {
-            $q->where('logs.new_destination', $userFullName)
-              ->orWhere('logs.user_id', $userId);
+        ->when($userRole === 'records_officer', function ($query) {
+            return $query; // show all for records_officer
+        }, function ($query) use ($userId, $userDepartment, $userFullName) {
+            return $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+                $q->where('new_user', $userId)
+                  ->orWhere('user_id', $userId)
+                  ->orWhere('new_destination', $userDepartment)
+                  ->orWhere('new_destination', $userFullName);
+            });
         })
-        ->orderBy('logs.created_at', 'desc')
-        ->distinct('logs.id')
+        ->orderBy('created_at', 'desc')
         ->get();
 
     $offices = Office::all();
-    $recordsOfficerCount = 0;
-    $superUserCount = 0;
 
     $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
         $query->where('user_id', $userId)
@@ -150,8 +150,17 @@ public function pending()
               ->orWhere('user_name', $userFullName);
     })->distinct('docslip_id')->count();
 
+    $recordsOfficerCount = $userRole === 'records_officer'
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
+
+    $superUserCount = $userRole === 'super_user'
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
     return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount', 'doctrackCount'));
 }
+
 
 
    public function served()
