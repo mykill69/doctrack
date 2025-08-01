@@ -26,7 +26,8 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table table-bordered table-hover" style="font-size: 0.8rem;">
+                                    <table id="example1" class="table table-bordered table-hover"
+                                        style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
                                                 <th>CTRL #</th>
@@ -119,10 +120,14 @@
                                                     <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}
                                                     </td>
                                                     <td>
-                                                        <strong class="text-danger">{{ $document->for_to }}</strong>
-                                                        @if (optional($document->routingSlip)->assigned_to)
-                                                            , was re-routed to <strong
-                                                                class="text-danger">{{ optional($document->routingSlip)->assigned_to }}</strong>
+                                                        @if ($log->routingSlip)
+                                                            <strong
+                                                                class="text-danger">{{ $log->routingSlip->r_destination }}</strong>
+                                                        @endif
+
+                                                        @if ($log->assigned_to != null)
+                                                            , was re-assigned to <strong
+                                                                class="text-danger">{{ $log->assigned_to }}</strong>
                                                         @endif
                                                     </td>
                                                     <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
@@ -140,19 +145,19 @@
                                                             class="badge badge-warning"
                                                             style="font-size:10px;">{{ $document->routingSlip->assign_com ?? '' }}</span>
 
-                                                            @php
-                                                                $comment = $log->comments ?? '';
-                                                                $wrappedComment = preg_replace(
-                                                                    '/((?:\S+\s+){4})/',
-                                                                    '$1<br>',
-                                                                    $comment,
-                                                                );
-                                                            @endphp
+                                                        @php
+                                                            $comment = $log->comments ?? '';
+                                                            $wrappedComment = preg_replace(
+                                                                '/((?:\S+\s+){4})/',
+                                                                '$1<br>',
+                                                                $comment,
+                                                            );
+                                                        @endphp
 
-                                                            <span class="badge badge-warning"
-                                                                style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
-                                                                {!! $wrappedComment !!}
-                                                            </span>
+                                                        <span class="badge badge-warning"
+                                                            style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                            {!! $wrappedComment !!}
+                                                        </span>
 
                                                         {{-- <span class="badge badge-warning"
                                                             style="margin-top: 2px; font-size:10px;">{{ $log->comments ?? '' }}</span>

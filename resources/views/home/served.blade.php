@@ -61,7 +61,8 @@
                                                         trim($log->new_destination) === trim($userDepartment))
                                                     <tr>
                                                         <td><a href="{{ route('slipForm', $log->route_id) }}"
-                                                                style="color: #007bff;" target="_blank">{{ $log->route_id }}</a></td>
+                                                                style="color: #007bff;"
+                                                                target="_blank">{{ $log->route_id }}</a></td>
                                                         <td>
                                                             {{ optional($document->routingSlip)->date_received
                                                                 ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('F d, Y')
@@ -81,11 +82,18 @@
                                                         </td>
                                                         <td>
                                                             <strong class="text-danger">{{ $document->for_to }}</strong>
-                                                            @if ($document->routingSlip->assigned_to)
+
+                                                            @if ($document->routingSlip && $document->routingSlip->r_destination)
+                                                             <strong
+                                                                    class="text-primary">{{ $document->routingSlip->r_destination }}</strong>
+                                                            @endif
+
+                                                            @if ($document->routingSlip && $document->routingSlip->assigned_to)
                                                                 , was re-rerouted to <strong
                                                                     class="text-danger">{{ $document->routingSlip->assigned_to }}</strong>
                                                             @endif
                                                         </td>
+
                                                         <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td style="font-size:10px;width:5%;">

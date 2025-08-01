@@ -27,7 +27,8 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table table-bordered table-hover" style="font-size: 0.8rem;">
+                                    <table id="example1" class="table table-bordered table-hover"
+                                        style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
                                                 <th>CTRL #</th>
@@ -54,8 +55,8 @@
                                                     <td>{{ $log->source ?? 'N/A' }}</td>
                                                     <td>{{ $log->subject ?? 'N/A' }}</td>
                                                     <td>
-                                                        <a href="{{ route('documents.viewPdf', $log->doc_id) }}" target="_blank"
-                                                            style="color: #007bff;">
+                                                        <a href="{{ route('documents.viewPdf', $log->doc_id) }}"
+                                                            target="_blank" style="color: #007bff;">
                                                             <i class="fas fa-file-pdf text-danger"></i>
                                                             {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
                                                         </a>
@@ -72,11 +73,23 @@
                                                     </td>
                                                     <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td style="font-size:10px;">
-                                                        <span
-                                                            class="badge badge-success">{{ $log->trans_remarks ?? 'N/A' }}</span>
-                                                        <span
-                                                            class="badge badge-warning">{{ $log->assign_com ?? '' }}</span>
+                                                        <span class="badge badge-success">
+                                                            {{ $log->trans_remarks ?? 'N/A' }}
+                                                        </span>
+
+                                                        @if ($log->assign_com)
+                                                            <span class="badge badge-warning">
+                                                                {{ $log->assign_com }}
+                                                            </span>
+                                                        @endif
+
+                                                        @if ($log->routingSlip)
+                                                            <span class="badge badge-info">
+                                                                {{ $log->routingSlip->r_destination }}
+                                                            </span>
+                                                        @endif
                                                     </td>
+
                                                     {{-- <td>{{ $log->new_destination }}</td> --}}
                                                     <td>
                                                         <a href="{{ route('tracking', ['route_id' => $log->route_id]) }}"

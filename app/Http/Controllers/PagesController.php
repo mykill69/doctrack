@@ -123,22 +123,21 @@ public function pending()
     $userRole = $user->role;
     $userDepartment = $user->department;
 
-    $logs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+    $logs = Log::with('routingSlip') // <-- eager load routingSlip
+        ->leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
         ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
         ->select('logs.*', 'documents.*', 'routing_slip.*')
         ->where('logs.status_update', 2)
         ->where(function ($q) {
-            // Exclude rows where both are NOT NULL
             $q->whereNull('logs.new_user')
               ->orWhereNull('logs.assigned_to');
         })
         ->where(function ($q) use ($userFullName, $userId) {
-            // Match either destination name or user ID
             $q->where('logs.new_destination', $userFullName)
               ->orWhere('logs.user_id', $userId);
         })
         ->orderBy('logs.created_at', 'desc')
-        ->distinct('logs.id') // Optional: prevents duplicates
+        ->distinct('logs.id')
         ->get();
 
     $offices = Office::all();
@@ -146,14 +145,14 @@ public function pending()
     $superUserCount = 0;
 
     $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
-    $query->where('user_id', $userId)
-          ->orWhere('update_by', $userId)
-          ->orWhere('user_name', $userFullName);
-})->distinct('docslip_id')->count();
+        $query->where('user_id', $userId)
+              ->orWhere('update_by', $userId)
+              ->orWhere('user_name', $userFullName);
+    })->distinct('docslip_id')->count();
 
-
-    return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount'));
+    return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount', 'doctrackCount'));
 }
+
 
    public function served()
 {

@@ -27,11 +27,12 @@ public function dashboard()
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
-    $logs = Log::where(function ($query) use ($userId, $userDepartment) {
+    $logs = Log::with('routingSlip') // <- add this
+    ->where(function ($query) use ($userId, $userDepartment) {
         $query->where('new_user', $userId)
               ->orWhere('user_id', $userId)
               ->orWhere('new_destination', $userDepartment);
-    })->get(); 
+    })->get();
 
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
         ? RoutingSlip::where('route_status', 3)->count()
