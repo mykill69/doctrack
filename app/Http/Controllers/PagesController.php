@@ -21,8 +21,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\UploadedFile;
-
 
 
 
@@ -413,28 +411,30 @@ public function passChange(Request $request, $id)
     $user->save();
 
     // ✅ Handle E-signature upload
-   if ($request->hasFile('esig_file')) {
-    $file = $request->file('esig_file');
-    $filename = $user->fname . '_' . $file->getClientOriginalName();
+    if ($request->hasFile('esig_file')) {
+        $file = $request->file('esig_file');
+        $filename = $user->fname . '_' . $file->getClientOriginalName();
 
-    $storagePath = 'esignature';
+        // $storagePath = 'public/esignature'; // store in storage/app/public/esignature   
+        // Storage::putFileAs($storagePath, $file, $filename);
+      $storagePath = storage_path('app/esignature'); // store in storage/app/esignature
+        // Retrieve existing esig row
+        $existingEsig = Esig::where('user_id', $user->id)->first();
 
-    $existingEsig = Esig::where('user_id', $user->id)->first();
+        // If exists, delete old file before replacing
+        if ($existingEsig && $existingEsig->esig_file) {
+            Storage::delete($storagePath . '/' . $existingEsig->esig_file);
+        }
 
-    if ($existingEsig && $existingEsig->esig_file) {
-        Storage::disk('public')->delete($storagePath . '/' . $existingEsig->esig_file);
+        // Save the file inside storage/app/esignature
+        Storage::putFileAs($storagePath, $file, $filename);
+
+        // Update or create the Esig row
+        Esig::updateOrCreate(
+            ['user_id' => $user->id],
+            ['esig_file' => $filename]
+        );
     }
-
-    // 🔴 If redline appears here, check the 4 points above
-   Storage::disk('public')->put($storagePath . '/' . $filename, file_get_contents($file));
-
-
-    Esig::updateOrCreate(
-        ['user_id' => $user->id],
-        ['esig_file' => $filename]
-    );
-}
-
 
     return redirect()->route('userPassword', ['id' => $id])
         ->with('success', 'User updated successfully.');
