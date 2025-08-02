@@ -187,7 +187,8 @@ letter-spacing: 5px;
                     <tr>
                         <td colspan="4"
                             style="text-align: left; border-top: 1px solid black; padding: 0; margin: 0;font-family: Verdana, sans-serif;">
-                            <p style="margin: 0; padding: 5px;">REMARKS:</p>
+                            <span style="margin: 0; padding: 5px;">REMARKS:</span>{{ $routingSlip->other_remarks }}
+                        </td>
                         </td>
 
                     </tr>
@@ -195,12 +196,22 @@ letter-spacing: 5px;
                     <tr>
                         <td colspan="4" style="padding: 0; margin: 0;">
 
-                            @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) &&
-                                    $esig->user_id == 38 &&
-                                    $routingSlip->route_status != 1)
+                            {{-- @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) && $esig->user_id == 38 && $routingSlip->route_status != 1)
                                 <img src="{{ $esig->esig_path }}" alt="Electronic Signature"
                                     style="width: 200px; height: auto; margin-bottom: -20px; margin-top: 10%;">
+                            @endif --}}
+                            @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
+                                <div style="display: flex; align-items: center; margin-top: 13%;">
+                                    @if ($esig->user_id == 63 || $esig->user_id == 64)
+                                        <span style="font-weight: bold;">for:</span>
+                                    @endif
+                                    <img src="{{ $esig->esig_path }}" alt="Electronic Signature"
+                                        style="width: 200px; height: auto; margin-bottom: -20px;">
+                                </div>
                             @endif
+
+
+
 
 
                             <p style="font-weight:bold; font-size: 18px;font-family: Verdana, sans-serif;"><u>ALADINO C.

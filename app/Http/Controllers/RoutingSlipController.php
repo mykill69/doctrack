@@ -167,18 +167,53 @@ public function slipForm($id)
 //     return $pdf->stream('routing-slip.pdf');
 // }
 
+
+
+// commented on 08-02-2025
+
+// public function pdfSlip($id)
+// {
+//     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
+//     $remarks = Remark::all();
+//     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
+
+//     // Get e-signature of user_id 119
+//     $esig = Esig::where('user_id', 38)->first();
+
+//     // Convert esig_file path to absolute for PDF use
+//     if ($esig && $esig->esig_file) {
+//         $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
+//     }
+
+//     $pdf = Pdf::loadView('slip.pdfSlip', compact('remarks', 'routingSlip', 'relatedDocuments', 'esig'));
+
+//     return $pdf->stream('routing-slip.pdf');
+// }
 public function pdfSlip($id)
 {
     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
     $remarks = Remark::all();
     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
-    // Get e-signature of user_id 119
-    $esig = Esig::where('user_id', 38)->first();
+    // Set default user_id based on pres_dept value
+    $esigUserId = null;
 
-    // Convert esig_file path to absolute for PDF use
-    if ($esig && $esig->esig_file) {
-        $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
+    if ($routingSlip->pres_dept === "PRESIDENT'S OFFICE") {
+        $esigUserId = 38;
+    } elseif ($routingSlip->pres_dept === 'VPAF') {
+        $esigUserId = 63;
+    } elseif ($routingSlip->pres_dept === 'VPAA') {
+        $esigUserId = 64;
+    }
+
+    $esig = null;
+    if ($esigUserId) {
+        $esig = Esig::where('user_id', $esigUserId)->first();
+
+        // Convert path for PDF use
+        if ($esig && $esig->esig_file) {
+            $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
+        }
     }
 
     $pdf = Pdf::loadView('slip.pdfSlip', compact('remarks', 'routingSlip', 'relatedDocuments', 'esig'));
