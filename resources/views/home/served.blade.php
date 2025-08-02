@@ -84,8 +84,8 @@
                                                             <strong class="text-danger">{{ $document->for_to }}</strong>
 
                                                             @if ($document->routingSlip && $document->routingSlip->r_destination)
-                                                             <strong
-                                                                    class="text-primary">{{ $document->routingSlip->r_destination }}</strong>
+                                                                <strong
+                                                                    class="text-danger">{{ $document->routingSlip->r_destination }}</strong>
                                                             @endif
 
                                                             @if ($document->routingSlip && $document->routingSlip->assigned_to)
@@ -97,9 +97,16 @@
                                                         <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td style="font-size:10px;width:5%;">
-                                                            <span class="badge badge-success" style="font-size:10px;">
+                                                            <span class="badge badge-success"
+                                                                style="font-size:10px; display: block;">
                                                                 {{ $document->routingSlip->trans_remarks }}
                                                             </span>
+
+                                                            <span class="badge badge-danger"
+                                                                style="font-size:10px; display: block;">
+                                                                {{ $document->routingSlip->other_remarks ?? '' }}
+                                                            </span>
+
                                                             @php
                                                                 $comment = $log->comments ?? '';
                                                                 $wrappedComment = preg_replace(
@@ -113,8 +120,8 @@
                                                                 style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
                                                                 {!! $wrappedComment !!}
                                                             </span>
-
                                                         </td>
+
                                                         <td>
                                                             @php
                                                                 $created = $document->created_at;

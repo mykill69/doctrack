@@ -141,9 +141,11 @@
                                                 <span class="badge badge-danger">En route</span>
                                                 @endif --}}
                                                         <span class="badge badge-success"
-                                                            style="font-size:10px;">{{ $document->routingSlip->trans_remarks ?? '' }}</span><span
+                                                            style="font-size:10px;display: block;">{{ $document->routingSlip->trans_remarks ?? '' }}</span><span
                                                             class="badge badge-warning"
                                                             style="font-size:10px;">{{ $document->routingSlip->assign_com ?? '' }}</span>
+                                                            <span class="badge badge-danger"
+                                                            style="font-size:10px;display: block;">{{ $document->routingSlip->other_remarks ?? '' }}</span>
 
                                                         @php
                                                             $comment = $log->comments ?? '';

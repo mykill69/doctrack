@@ -80,7 +80,7 @@
 
                                                 </td>
                                                 <td>{{ $slip->trans_remarks }}</td>
-                                                <td>{{ $slip->oher_remarks }}</td>
+                                                <td>{{ $slip->other_remarks }}</td>
                                                 <td>
                                                     <strong class="text-danger">{{ $slip->r_destination }}</strong>
                                                     @if ($slip->assigned_to != null)
