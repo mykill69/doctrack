@@ -65,6 +65,21 @@ letter-spacing: 5px;
         font-family: 'Embassy BT', Arial, sans-serif;
     }
 
+    .header-img {
+        width: 180%;
+        height: auto;
+        margin-top: -5%;
+    }
+
+    footer {
+        position: fixed;
+        bottom: -80px;
+        left: 0;
+        right: 0;
+        height: 60px;
+        text-align: center;
+    }
+
     /* Clear floats after the columns */
     .row:after {
         content: "";
@@ -73,14 +88,16 @@ letter-spacing: 5px;
     }
 
     .route-number {
-        margin-top: -8.5%;
-        margin-left: 10%;
-        text-align: right;
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin: 0;
         padding: 0;
-        width: 70%;
-        font-size: 24px;
+        font-size: 20px;
         font-family: Verdana, sans-serif;
         font-weight: bold;
+        text-align: right;
+        width: auto;
     }
 
     .routed-assign {
@@ -92,6 +109,13 @@ letter-spacing: 5px;
         line-height: 2.3;
         /*border: 1px solid black;*/
     }
+    h1 {
+        text-align: center;
+        text-transform: uppercase;
+        padding: 0;
+        font-size: 24px;
+        font-family: Verdana, sans-serif;
+    }
 </style>
 {{-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"> --}}
 <div class="content-wrapper">
@@ -102,9 +126,8 @@ letter-spacing: 5px;
                     <tr>
                         <th colspan="4" style="border-style: none;">
                             <div class="center-content">
-                                <img src="{{ public_path('template/img/formHeader2.png') }}" class="header-img"
-                                    alt="Header Image">
-
+                                <img src="{{ public_path('template/img/header_new.png') }}" class="header-img" alt="Header Image">
+                                <h1>Routing Slip</h1>
                             </div>
                             <div class="route-number">
                                 <span>{{ $routingSlip->op_ctrl }}</span>
@@ -201,7 +224,7 @@ letter-spacing: 5px;
                                     style="width: 200px; height: auto; margin-bottom: -20px; margin-top: 10%;">
                             @endif --}}
                             @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
-                                <div style="display: flex; align-items: center; margin-top: 13%;">
+                                <div style="display: flex; align-items: center; margin-top: 40%;">
                                     @if ($esig->user_id == 63 || $esig->user_id == 64)
                                         <span style="font-weight: bold;">for:</span>
                                     @endif
