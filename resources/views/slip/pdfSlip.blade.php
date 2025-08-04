@@ -109,6 +109,7 @@ letter-spacing: 5px;
         line-height: 2.3;
         /*border: 1px solid black;*/
     }
+
     h1 {
         text-align: center;
         text-transform: uppercase;
@@ -126,7 +127,8 @@ letter-spacing: 5px;
                     <tr>
                         <th colspan="4" style="border-style: none;">
                             <div class="center-content">
-                                <img src="{{ public_path('template/img/header_new.png') }}" class="header-img" alt="Header Image">
+                                <img src="{{ public_path('template/img/header_new.png') }}" class="header-img"
+                                    alt="Header Image">
                                 <h1>Routing Slip</h1>
                             </div>
                             <div class="route-number">
@@ -148,7 +150,7 @@ letter-spacing: 5px;
                     <tr>
                         <td colspan="2"></td>
                         <td colspan="2" style="text-align: right;font-family: Verdana, sans-serif;">Date:
-                            <u>{{ \Carbon\Carbon::parse($routingSlip->date_received)->format('m / d / Y') }}</u>
+                            <u>{{ \Carbon\Carbon::parse($routingSlip->date_received)->format('F d, Y') }}</u>
                         </td>
                     </tr>
                     <tr>
