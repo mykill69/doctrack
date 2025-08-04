@@ -6,7 +6,7 @@
         border-bottom-left-radius: 0;
     }
 
-     /* Align Select2 to match Bootstrap form-control */
+    /* Align Select2 to match Bootstrap form-control */
     .select2-container--default .select2-selection--multiple {
         border: 1px solid #ced4da;
         border-radius: 0.25rem;
@@ -141,42 +141,41 @@
                                             rows="3" value="{{ $routingSlips->assigned_to }}" readonly>
                                     </div>
                                 </div>
-                                <div class="form-group row">
-                                    <label for="new_destination" class="col-md-3 col-form-label">Name of Users:</label>
-                                    <div class="col-md-9">
-                                        <select class="form-control select2" name="new_destination[]"
-                                            id="new_destination" multiple required>
-                                            {{-- Static predefined positions --}}
-                                            <option disabled>— Select by Position —</option>
-                                            <option value="position:1">President</option>
-                                            <option value="position:2">VPAA</option>
-                                            <option value="position:3">VPAF</option>
-                                            <option value="position:4">Office Heads</option>
-                                            <option value="position:5">Deans</option>
-                                            <option value="position:6">Campus Administrators</option>
-                                            <option value="position:7">Directors</option>
+                                <div id="destination-select-container">
+                                    <div class="form-group row">
+                                        <label for="new_destination" class="col-md-3 col-form-label">Name of
+                                            Users:</label>
+                                        <div class="col-md-9">
+                                            <select class="form-control select2" name="new_destination[]"
+                                                id="new_destination" multiple required>
+                                                <option disabled>— Select by Position —</option>
+                                                <option value="position:1">President</option>
+                                                <option value="position:2">VPAA</option>
+                                                <option value="position:3">VPAF</option>
+                                                <option value="position:4">Office Heads</option>
+                                                <option value="position:5">Deans</option>
+                                                <option value="position:6">Campus Administrators</option>
+                                                <option value="position:7">Directors</option>
 
-                                            {{-- Group list --}}
-                                            <option disabled>──────────</option>
-                                            <option disabled>— Select by Group —</option>
-                                            @foreach ($groups as $group)
-                                                <option value="group:{{ $group->group_name }}">{{ $group->group_name }}
-                                                </option>
-                                            @endforeach
+                                                <option disabled>──────────</option>
+                                                <option disabled>— Select by Group —</option>
+                                                @foreach ($groups as $group)
+                                                    <option value="group:{{ $group->group_name }}">
+                                                        {{ $group->group_name }}</option>
+                                                @endforeach
 
-                                            {{-- Separator --}}
-                                            <option disabled>──────────</option>
-                                            <option disabled>— Select by Individual User —</option>
-
-                                            {{-- Dynamic users --}}
-                                            @foreach ($users as $user)
-                                                <option value="{{ $user->fname }} {{ $user->lname }}">
-                                                    {{ $user->fname }} {{ $user->lname }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                                <option disabled>──────────</option>
+                                                <option disabled>— Select by Individual User —</option>
+                                                @foreach ($users as $user)
+                                                    <option value="{{ $user->fname }} {{ $user->lname }}">
+                                                        {{ $user->fname }} {{ $user->lname }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
+
                                 <div id="additional-destinations"></div>
                                 <div class="form-group row">
                                     <div class="col-md-9">
@@ -209,4 +208,52 @@
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('route-form');
+            const loader = document.getElementById('page-loader');
+            const bar = document.getElementById('progress-bar');
+            const card = document.querySelector('.card'); // Target the card container to hide
+
+            // Initialize Select2 for new_destination
+            $('#new_destination').select2({
+                placeholder: "Select users...",
+                width: '100%',
+                dropdownParent: $(
+                    '#destination-select-container') // IMPORTANT: make sure this container exists
+            });
+
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (card) {
+                        card.style.display = 'none';
+                    }
+
+                    setTimeout(() => {
+                        loader.style.display = 'flex';
+                    }, 100);
+
+                    animateBarTo(90, 8000);
+                });
+            }
+
+            function animateBarTo(target, duration) {
+                const start = parseFloat(bar.style.width) || 0;
+                const diff = target - start;
+                const startTs = performance.now();
+                requestAnimationFrame(function step(now) {
+                    const pct = Math.min(1, (now - startTs) / duration);
+                    bar.style.width = (start + diff * pct) + '%';
+                    if (pct < 1) requestAnimationFrame(step);
+                });
+            }
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#destination_1').select2({
+                placeholder: "Select users..."
+            });
+        });
+    </script>
 @endsection
