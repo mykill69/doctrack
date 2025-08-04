@@ -26,7 +26,7 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-bordered table-hover" style="font-size:11px;">
+                                <table id="userTable" class="table table-bordered table-hover" style="font-size:11px;">
                                     <thead>
                                         <tr>
                                             <th>NO.</th>
@@ -44,7 +44,8 @@
                                         @php $no = 1; @endphp
                                         @foreach ($users as $user)
                                             <tr>
-                                                <td>{{ $no++ }}.</td>
+                                                {{-- <td>{{ $no++ }}.</td> --}}
+                                                <td></td>
                                                 <td>{{ $user->fname }} {{ $user->mname }} {{ $user->lname }}</td>
 
                                                 <td class="text-bold text-primary">{{ $user->email }}</td>
@@ -148,6 +149,33 @@
             }
         }
     </script>
+
+    <script>
+        $(document).ready(function() {
+            var t = $('#userTable').DataTable({
+                "order": [
+                    [1, 'asc']
+                ], // Sort by FULLNAME
+                "pageLength": 50,
+                "columnDefs": [{
+                    "searchable": false,
+                    "orderable": false,
+                    "targets": 0 // Index column
+                }],
+                "fnDrawCallback": function() {
+                    var api = this.api();
+                    api.column(0, {
+                        page: 'current'
+                    }).nodes().each(function(cell, i) {
+                        cell.innerHTML = i + 1;
+                    });
+                }
+            });
+        });
+    </script>
+
+
+
     @include('modal.addUser')
     @include('modal.addGroup')
 @endsection

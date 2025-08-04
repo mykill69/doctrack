@@ -21,7 +21,7 @@ public function userView()
     $userRole = $user->role ?? null;
 
     // Fetch all users and offices
-    $users = User::all();
+    $users = User::orderBy('lname', 'asc')->get();
     $offices = Office::orderBy('office_name', 'asc')->get();
 
     // Routing slip counts
