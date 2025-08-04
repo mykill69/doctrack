@@ -1,19 +1,31 @@
 @extends('layouts.main')
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
     .no-left-radius {
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
     }
 
-    .select2-selection__choice {
-        background-color: #007bff !important;
-        /* Blue background */
-        color: #fff !important;
-        /* White text */
-        border: none !important;
-        padding: 2px 10px;
-        border-radius: 0.2rem;
-        margin-top: 4px;
+     /* Align Select2 to match Bootstrap form-control */
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        height: auto;
+        min-height: 38px;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    /* Fix dropdown to appear above loader */
+    .select2-dropdown {
+        z-index: 9999 !important;
     }
 
     .progress-loader {
