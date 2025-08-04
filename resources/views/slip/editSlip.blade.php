@@ -102,7 +102,7 @@
                                     <label class="col-md-3 col-form-label">Additional Remarks (optional):</label>
                                     <div class="col-md-9">
                                         <input type="text" class="form-control" id="other_remarks" name="other_remarks"
-                                            placeholder="Additional Remarks" required>
+                                            placeholder="Additional Remarks">
                                     </div>
                                 </div>
                                 {{-- Received Name --}}
