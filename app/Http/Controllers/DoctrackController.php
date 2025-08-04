@@ -305,34 +305,21 @@ public function storeDoctrack(Request $request)
 
 }
 
-
-
 public function storeDoctrackUpdate(Request $request)
 {
-    // Validate the request
     $request->validate([
-        'user_id' => 'required|integer',
-        'update_by' => 'required|integer',
-        'doc_type' => 'required|string',
-        'doc_title' => 'required|string',
-        'user_name' => 'required|string',
-        'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+        'user_id'     => 'required|integer',
+        'update_by'   => 'required|integer',
+        'docslip_id'  => 'required|string',
+        'doc_type'    => 'required|string',
+        'doc_title'   => 'required|string',
+        'user_name'   => 'required|string',
+        'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
     ]);
 
-    // Store the document in the database
-    $documentTrack = Doctrack::create([
-        'user_id' => $request->user_id,
-        'update_by' => $request->update_by,
-        'docslip_id' => $request->docslip_id,
-        'doc_type' => $request->doc_type,
-        'doc_title' => $request->doc_title,
-        'user_name' => $request->user_name,
-        'doctrack_stat' => 2,
-    ]);
+    $fileName = null;
 
-    $storagePath = storage_path('app/doc_track');
-
-    // Check if a new file is uploaded
+    // Handle file upload
     if ($request->hasFile('file')) {
         $file = $request->file('file');
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -340,41 +327,148 @@ public function storeDoctrackUpdate(Request $request)
         $fileName = $originalName . '.' . $extension;
 
         $i = 1;
+        $storagePath = storage_path('app/doc_track');
         while (file_exists($storagePath . '/' . $fileName)) {
             $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
             $i++;
         }
 
-        // Delete old file if it exists
+        $file->storeAs('doc_track', $fileName);
+    }
+
+    // Create doctrack entry
+    $documentTrack = Doctrack::create([
+        'user_id'       => $request->user_id,
+        'update_by'     => $request->update_by,
+        'docslip_id'    => $request->docslip_id,
+        'doc_type'      => $request->doc_type,
+        'doc_title'     => $request->doc_title,
+        'user_name'     => $request->user_name,
+        'doctrack_stat' => 2,
+    ]);
+
+    // Save file record
+    if ($fileName) {
+        // Delete old file (if any)
         $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
         if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
             unlink($storagePath . '/' . $existingFile->file);
         }
 
-        // Store new file
-        $file->storeAs('doc_track', $fileName);
-
-        // Update existing record (no duplicate)
         DoctrackFile::updateOrCreate(
-            ['docslip_id' => $request->docslip_id], // match
+            ['docslip_id' => $request->docslip_id],
             [
                 'doctrack_id' => $documentTrack->id,
-                'file' => $fileName,
+                'file'        => $fileName,
             ]
         );
-    } else {
-        // No new file uploaded: retain existing file reference
-        $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
-        if ($existingFile) {
-            $existingFile->update([
-                'doctrack_id' => $documentTrack->id,
-            ]);
+    }
+
+    // Save log entry
+    LogsTracking::create([
+        'docslip_id' => $request->docslip_id,
+        'user_id'    => $request->user_id,
+        'update_by'  => $request->update_by,
+        'doc_title'  => $request->doc_title,
+        'file_logs'  => $fileName,
+        'logs_status'=> 2,
+        'comments'   => null,
+    ]);
+
+    // Send email notification to the receiver (update_by)
+    $recipient = User::find($request->update_by);
+    $creator = User::find($request->user_id);
+
+    if ($recipient && $recipient->email) {
+        $docInfo = (object)[
+            'docslip_id' => $request->docslip_id,
+            'doc_title'  => $request->doc_title,
+            'doc_type'   => $request->doc_type,
+            'user_name'  => $request->user_name,
+        ];
+
+        try {
+            Mail::to($recipient->email)->send(new DoctrackNotification($docInfo, $recipient->fname . ' ' . $recipient->lname));
+        } catch (\Exception $e) {
+            Log::error("Failed to send email to recipient: " . $e->getMessage());
         }
     }
 
     return redirect()->route('doctrackSlip', ['id' => $documentTrack->id])
         ->with('success', 'New entry with tracking # ' . $documentTrack->docslip_id . ' was added successfully!');
 }
+
+
+// public function storeDoctrackUpdate(Request $request)
+// {
+//     // Validate the request
+//     $request->validate([
+//         'user_id' => 'required|integer',
+//         'update_by' => 'required|integer',
+//         'doc_type' => 'required|string',
+//         'doc_title' => 'required|string',
+//         'user_name' => 'required|string',
+//         'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+//     ]);
+
+//     // Store the document in the database
+//     $documentTrack = Doctrack::create([
+//         'user_id' => $request->user_id,
+//         'update_by' => $request->update_by,
+//         'docslip_id' => $request->docslip_id,
+//         'doc_type' => $request->doc_type,
+//         'doc_title' => $request->doc_title,
+//         'user_name' => $request->user_name,
+//         'doctrack_stat' => 2,
+//     ]);
+
+//     $storagePath = storage_path('app/doc_track');
+
+//     // Check if a new file is uploaded
+//     if ($request->hasFile('file')) {
+//         $file = $request->file('file');
+//         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+//         $extension = $file->getClientOriginalExtension();
+//         $fileName = $originalName . '.' . $extension;
+
+//         $i = 1;
+//         while (file_exists($storagePath . '/' . $fileName)) {
+//             $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+//             $i++;
+//         }
+
+//         // Delete old file if it exists
+//         $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
+//         if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
+//             unlink($storagePath . '/' . $existingFile->file);
+//         }
+
+//         // Store new file
+//         $file->storeAs('doc_track', $fileName);
+
+//         // Update existing record (no duplicate)
+//         DoctrackFile::updateOrCreate(
+//             ['docslip_id' => $request->docslip_id], // match
+//             [
+//                 'doctrack_id' => $documentTrack->id,
+//                 'file' => $fileName,
+//             ]
+//         );
+//     } else {
+//         // No new file uploaded: retain existing file reference
+//         $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
+//         if ($existingFile) {
+//             $existingFile->update([
+//                 'doctrack_id' => $documentTrack->id,
+//             ]);
+//         }
+//     }
+
+//     return redirect()->route('doctrackSlip', ['id' => $documentTrack->id])
+//         ->with('success', 'New entry with tracking # ' . $documentTrack->docslip_id . ' was added successfully!');
+// }
+
+
 
 public function uploadFile(Request $request)
 {

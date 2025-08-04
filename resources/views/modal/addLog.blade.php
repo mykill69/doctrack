@@ -38,9 +38,25 @@
                                 <i class="fa fa-user"></i>
                             </span>
                         </div>
-                        <input type="text" name="user_name" class="form-control"
-                            value="{{ isset($documentTrack) ? $documentTrack->user_name : '' }}" readonly>
+                        <select name="update_by" id="update_by" class="form-control" required>
+                            <option value="" selected disabled hidden>— Select an Individual User —</option>
+                            @foreach ($users as $user)
+                                <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
+                            @endforeach
+                        </select>
                     </div>
+
+
+
+                    {{-- <div class="input-group mb-2">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">
+                                <i class="fa fa-user"></i>
+                            </span>
+                        </div> --}}
+                    <input type="hidden" name="user_name" class="form-control"
+                        value="{{ isset($documentTrack) ? $documentTrack->user_name : '' }}" readonly>
+                    {{-- </div> --}}
                     <div class="input-group mb-2">
                         <div class="custom-file">
                             <input type="file" name="file" class="custom-file-input" id="customFile">
