@@ -334,7 +334,7 @@ letter-spacing: 5px;
                                 {{-- Display e-signature if available and route_status is not 1 --}}
                                 @if (isset($reassigningUserEsig, $reassigningUserEsig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
                                     <div style="display: flex; align-items: center; margin-top: 35%;">
-                                        <img src="{{ asset('storage/esignature/' . $reassigningUserEsig->esig_file) }}"
+                                        <img src="{{ public_path('storage/esignature/' . $reassigningUserEsig->esig_file) }}"
                                             alt="Electronic Signature"
                                             style="width: 120px; height: auto; margin-bottom: -20px;">
                                     </div>
