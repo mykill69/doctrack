@@ -46,7 +46,8 @@
                                             <tr>
                                                 {{-- <td>{{ $no++ }}.</td> --}}
                                                 <td></td>
-                                                <td>{{ ucfirst(strtolower($user->fname)) }} {{ ucfirst(strtolower($user->mname)) }} {{ strtoupper($user->lname) }}</td>
+                                               <td>{{ ucwords(strtolower($user->fname)) }} {{ ucwords(strtolower($user->mname)) }} {{ strtoupper($user->lname) }}</td>
+
 
                                                 <td class="text-bold text-primary">{{ $user->email }}</td>
                                                 <td>{{ ucfirst(strtolower($user->department)) }}</td>
