@@ -46,10 +46,10 @@
                                             <tr>
                                                 {{-- <td>{{ $no++ }}.</td> --}}
                                                 <td></td>
-                                                <td>{{ $user->fname }} {{ $user->mname }} {{ $user->lname }}</td>
+                                                <td>{{ ucfirst(strtolower($user->fname)) }} {{ strtolower($user->mname) }} {{ ucfirst(strtolower($user->lname)) }}</td>
 
                                                 <td class="text-bold text-primary">{{ $user->email }}</td>
-                                                <td>{{ $user->department }}</td>
+                                                <td>{{ ucfirst(strtolower($user->department)) }}</td>
 
 
                                                 <td>
