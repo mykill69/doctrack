@@ -154,7 +154,7 @@
                                             @foreach ($groups as $group)
                                                 <option value="{{ $group->id }}"
                                                     {{ $user->groups->contains('id', $group->id) ? 'selected' : '' }}>
-                                                   {{ ucfirst(strtolower($group->group_name)) }}
+                                                    {{ $group->group_name }}
                                                 </option>
                                             @endforeach
                                         </select>
