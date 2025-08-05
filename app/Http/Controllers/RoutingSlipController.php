@@ -189,15 +189,45 @@ public function slipForm($id)
 
 //     return $pdf->stream('routing-slip.pdf');
 // }
+
 public function pdfSlip($id)
 {
     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
     $remarks = Remark::all();
     $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
-    // Set default user_id based on pres_dept value
-    $esigUserId = null;
+    // Get logs with action 're-assigned' and new_destination is not null
+    $logs = DB::table('logs')
+        ->where('route_id', $id)
+        ->where('action', 're-assigned')
+        ->whereNotNull('new_destination')
+        ->get();
 
+    // Get the department of the user who re-assigned the form
+    $reassignUserDept = DB::table('logs')
+        ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
+        ->join('users', 'assign_logs.new_user', '=', 'users.id')
+        ->where('logs.route_id', $id)
+        ->where('logs.action', 're-assigned')
+        ->select('users.department')
+        ->orderByDesc('assign_logs.id') // Get latest assign if multiple
+        ->value('department');
+
+
+        $reassigningUser = DB::table('logs')
+    ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
+    ->join('users', 'assign_logs.new_user', '=', 'users.id')
+    ->where('logs.route_id', $id)
+    ->where('logs.action', 're-assigned')
+    ->select('users.id', 'users.fname', 'users.lname', 'users.department')
+    ->orderByDesc('assign_logs.id')
+    ->first();
+
+
+    $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id ?? null)->first();
+
+    // Determine e-signature based on department
+    $esigUserId = null;
     if ($routingSlip->pres_dept === "PRESIDENT'S OFFICE") {
         $esigUserId = 38;
     } elseif ($routingSlip->pres_dept === 'VPAF') {
@@ -209,17 +239,27 @@ public function pdfSlip($id)
     $esig = null;
     if ($esigUserId) {
         $esig = Esig::where('user_id', $esigUserId)->first();
-
-        // Convert path for PDF use
         if ($esig && $esig->esig_file) {
             $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
         }
     }
 
-    $pdf = Pdf::loadView('slip.pdfSlip', compact('remarks', 'routingSlip', 'relatedDocuments', 'esig'));
+    // Pass department to view
+    $pdf = Pdf::loadView('slip.pdfSlip', compact(
+        'remarks', 
+        'routingSlip', 
+        'relatedDocuments', 
+        'esig', 
+        'logs', 
+        'reassignUserDept',
+        'reassigningUser',
+        'reassigningUserEsig'
+    ));
 
     return $pdf->stream('routing-slip.pdf');
 }
+
+
 
 
     // public function deletePdf($id)

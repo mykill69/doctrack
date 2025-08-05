@@ -138,13 +138,12 @@ letter-spacing: 5px;
                     </tr>
                 </thead>
                 <tbody>
-
+                    <!-- Original Slip -->
                     <tr style="border-bottom: 1px solid;padding-bottom: 0;font-family: Verdana, sans-serif;">
                         <td colspan="4" style="text-align: left;padding-bottom: 0; bottom: 0;">
                             <p style="font-weight: bold; font-size: 14px;font-style: italic;">From the Office of the
                                 University President</p>
                         </td>
-
                     </tr>
 
                     <tr>
@@ -153,27 +152,25 @@ letter-spacing: 5px;
                             <u>{{ \Carbon\Carbon::parse($routingSlip->date_received)->format('F d, Y') }}</u>
                         </td>
                     </tr>
-                    <tr>
 
+                    <tr>
                         <td colspan="2">
                             <img src="{{ public_path('template/img/to.png') }}" class="to-img">
                             <div class="routed-assign">
-                                <p>
-                                    @if ($routingSlip->assigned_to == null)
-                                        {{ $routingSlip->r_destination }}
-                                    @else
-                                        {{ $routingSlip->r_destination }} and was re-routed to
-                                        {{ $routingSlip->assigned_to }}
+                                {{-- <p>{{ $routingSlip->r_destination }} @if ($routingSlip->assigned_to)
+                                        and was re-routed to {{ $routingSlip->assigned_to }}
                                     @endif
-                                </p>
+                                </p> --}}
+                                <p>{{ $routingSlip->r_destination }}</p>
                             </div>
                         </td>
                     </tr>
+
                     <tr>
                         <td></td>
                     </tr>
+
                     <tr>
-                        <!-- Left Side -->
                         <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
                             @foreach (['Appropriate Action', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
                                 @if ($remarks->contains('remarks_dtls', $leftItem))
@@ -190,7 +187,7 @@ letter-spacing: 5px;
                                 @endif
                             @endforeach
                         </td>
-                        <!-- Right Side -->
+
                         <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
                             @foreach (['File', 'Information', 'Review/Study', 'See the Office', 'Others'] as $rightItem)
                                 @if ($remarks->contains('remarks_dtls', $rightItem))
@@ -214,17 +211,10 @@ letter-spacing: 5px;
                             style="text-align: left; border-top: 1px solid black; padding: 0; margin: 0;font-family: Verdana, sans-serif;">
                             <span style="margin: 0; padding: 5px;">REMARKS:</span>{{ $routingSlip->other_remarks }}
                         </td>
-                        </td>
-
                     </tr>
 
                     <tr>
                         <td colspan="4" style="padding: 0; margin: 0;">
-
-                            {{-- @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) && $esig->user_id == 38 && $routingSlip->route_status != 1)
-                                <img src="{{ $esig->esig_path }}" alt="Electronic Signature"
-                                    style="width: 200px; height: auto; margin-bottom: -20px; margin-top: 10%;">
-                            @endif --}}
                             @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
                                 <div style="display: flex; align-items: center; margin-top: 40%;">
                                     @if ($esig->user_id == 63 || $esig->user_id == 64)
@@ -235,16 +225,13 @@ letter-spacing: 5px;
                                 </div>
                             @endif
 
-
-
-
-
                             <p style="font-weight:bold; font-size: 18px;font-family: Verdana, sans-serif;"><u>ALADINO C.
                                     MORACA, Ph.D.</u></p>
                             <p style="margin-top: -20px;font-style: italic;font-family: Verdana, sans-serif;">SUC
                                 President</p>
                         </td>
                     </tr>
+
                     <tr style="font-size:13px;font-family: Verdana, sans-serif;">
                         <td style="text-align: center;width: 40%;">
                             <p>Doc Control Code:CPSU-F-QA-23</p>
@@ -256,7 +243,131 @@ letter-spacing: 5px;
                             <p>Page No.: 1 of 1</p>
                         </td>
                     </tr>
+
+                    <!-- Second Page (if re-routed) -->
+                    @if ($routingSlip->assigned_to)
+                        <div style="page-break-before: always;"></div>
+
+                        <tr style="border-bottom: 1px solid;padding-bottom: 0;font-family: Verdana, sans-serif;">
+                            <td colspan="4" style="text-align: left;padding-bottom: 0; bottom: 0;">
+                                @if (!empty($reassignUserDept))
+                                    <p style="font-weight: bold; font-size: 14px;font-style: italic;">From the Office of
+                                        the {{ $reassignUserDept }}</p>
+                                @endif
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="2"></td>
+                            <td colspan="2" style="text-align: right;font-family: Verdana, sans-serif;">Date:
+                                <u>{{ \Carbon\Carbon::parse($routingSlip->updated_at)->format('F d, Y') }}</u>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="2">
+                                <img src="{{ public_path('template/img/to.png') }}" class="to-img">
+                                <div class="routed-assign">
+                                    @if ($logs->count())
+                                        @foreach ($logs as $log)
+                                            <p style="font-family: Verdana, sans-serif;">{{ $log->new_destination }}
+                                            </p>
+                                        @endforeach
+                                    @else
+                                        <p>&nbsp;</p>
+                                    @endif
+
+
+                                </div> <!-- Blank for second copy -->
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td></td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
+                                @foreach (['Appropriate Action', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
+                                    @if ($remarks->contains('remarks_dtls', $leftItem))
+                                        <div style="padding: 4px;">
+                                            @if ($routingSlip->trans_remarks === $leftItem)
+                                                <img src="{{ public_path('template/img/square_check.png') }}"
+                                                    alt="Checkmark" style="width:20px;">
+                                            @else
+                                                <img src="{{ public_path('template/img/square.png') }}" alt="Unchecked"
+                                                    style="width:20px;">
+                                            @endif
+                                            &nbsp; {{ $leftItem }}
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </td>
+
+                            <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
+                                @foreach (['File', 'Information', 'Review/Study', 'See the Office', 'Others'] as $rightItem)
+                                    @if ($remarks->contains('remarks_dtls', $rightItem))
+                                        <div style="padding: 4px;">
+                                            @if ($routingSlip->trans_remarks === $rightItem)
+                                                <img src="{{ public_path('template/img/square_check.png') }}"
+                                                    alt="Checkmark" style="width:20px;">
+                                            @else
+                                                <img src="{{ public_path('template/img/square.png') }}" alt="Unchecked"
+                                                    style="width:20px;">
+                                            @endif
+                                            &nbsp; {{ $rightItem }}
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="4"
+                                style="text-align: left; border-top: 1px solid black; padding: 0; margin: 0;font-family: Verdana, sans-serif;">
+                                <span style="margin: 0; padding: 5px;">REMARKS:</span>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="4" style="padding: 0; margin: 0;">
+                                {{-- Display e-signature if available and route_status is not 1 --}}
+                                @if (isset($reassigningUserEsig, $reassigningUserEsig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
+                                    <div style="display: flex; align-items: center; margin-top: 35%;">
+                                        <img src="{{ asset('storage/esignature/' . $reassigningUserEsig->esig_file) }}"
+                                            alt="Electronic Signature"
+                                            style="width: 120px; height: auto; margin-bottom: -20px;">
+                                    </div>
+                                @endif
+
+                                {{-- Display user name --}}
+                                <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
+                                    <u>{{ $reassigningUser->fname ?? '' }} {{ $reassigningUser->lname ?? '' }}</u>
+                                </p>
+
+                                {{-- Display user department --}}
+                                <p style="margin-top: -20px; font-style: italic; font-family: Verdana, sans-serif;">
+                                    {{ $reassignUserDept ?? '' }}
+                                </p>
+                            </td>
+
+
+                        </tr>
+
+                        <tr style="font-size:13px;font-family: Verdana, sans-serif;">
+                            <td style="text-align: center;width: 40%;">
+                                <p>Doc Control Code:CPSU-F-QA-23</p>
+                            </td>
+                            <td colspan="2" style="text-align: left;width: 35%;">
+                                <p>Effective Date:09/12/2018</p>
+                            </td>
+                            <td style="text-align: left;width: 25%;">
+                                <p>Page No.: 1 of 1</p>
+                            </td>
+                        </tr>
+                    @endif
                 </tbody>
+
             </table>
         </div>
     </div>
