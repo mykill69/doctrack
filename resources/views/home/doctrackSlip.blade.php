@@ -46,6 +46,7 @@
                                                 <th>DATE CREATED</th>
                                                 <th>DATE RELEASED</th>
                                                 <th>TOTAL DURATION</th>
+                                                <th>ACTION</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -69,8 +70,8 @@
                                                         @else
                                                             <span class="text-muted">No file attached</span>
                                                         @endif
-                                                        
-                                                    </td> 
+
+                                                    </td>
                                                     <td>
                                                         @switch($record->doctrack_stat)
                                                             @case(1)
@@ -135,6 +136,42 @@
                                                             @endif
                                                         @endif
                                                     </td>
+
+                                                    <td>
+                                                        <div class="btn-group">
+                                                            <button type="button" class="btn btn-primary dropdown-toggle"
+                                                                data-toggle="dropdown" aria-haspopup="true"
+                                                                aria-expanded="false">
+                                                                Action
+                                                            </button>
+                                                            <div class="dropdown-menu">
+
+                                                                @if ($record->doctrack_stat == 1)
+                                                                    <!-- Delete Slip Form -->
+                                                                    <form
+                                                                        action="{{ route('deleteSlip', ['docslip_id' => $record->docslip_id]) }}"
+                                                                        method="POST"
+                                                                        onsubmit="return confirm('Are you sure you want to delete this document tracking slip?')">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="dropdown-item">
+                                                                            <i class="fas fa-trash-alt"></i> Delete
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+
+                                                                <!-- View Details -->
+                                                                <a class="dropdown-item"
+                                                                    href="{{ route('slipMonitoring', ['docslip_id' => $record->docslip_id]) }}"
+                                                                    target="_blank">
+                                                                    <i class="fas fa-eye"></i> View Details
+                                                                </a>
+
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+
                                                 </tr>
                                             @endforeach
                                         </tbody>

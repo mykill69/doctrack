@@ -16,6 +16,7 @@ use App\Models\LogsTracking;
 use App\Models\User;
 use App\Models\Esig;
 use App\Models\Doctrack;
+use App\Models\DoctrackFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
@@ -514,6 +515,41 @@ public function viewDistributionPdf($id)
 
 
 
+public function deleteSlip($docslip_id)
+{
+    // Find the document by ID
+    $documentTrack = Doctrack::where('docslip_id', $docslip_id)->firstOrFail();
 
+    // Capture necessary info for logging before deletion
+    $docslip_id = $documentTrack->docslip_id;
+    $user_id    = $documentTrack->user_id;
+    $update_by  = $documentTrack->update_by;
+    $doc_title  = $documentTrack->doc_title;
+    
+    // Log the deletion (status 0 = deleted, or use a specific code if preferred)
+    LogsTracking::create([
+        'docslip_id' => $docslip_id,
+        'user_id'    => $user_id,
+        'update_by'  => $update_by,
+        'doc_title'  => $doc_title,
+        'file_logs'  => null,
+        'logs_status'=> 6, // You can define 0 as "Deleted" in your UI logic
+        'comments'   => 'Document deleted.',
+    ]);
+
+    // Delete all associated files if necessary
+    $files = DoctrackFile::where('docslip_id', $docslip_id)->get();
+    foreach ($files as $file) {
+        Storage::delete('doc_track/' . $file->file);
+        $file->delete();
+    }
+
+    // Delete all related document records with the same docslip_id
+    Doctrack::where('docslip_id', $docslip_id)->delete();
+
+    // Redirect with message
+    return redirect()->route('doctrackSlip')
+        ->with('success', 'Document deleted and logged successfully!');
+}
 
 }

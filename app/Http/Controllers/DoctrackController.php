@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Mail\DoctrackNotification;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Group;
+use Illuminate\Support\Facades\Storage;
 
 class DoctrackController extends Controller
 {
@@ -652,18 +653,19 @@ public function updateSlipStatus(Request $request, $id)
     return back()->with('success', 'Status and comment saved successfully!');
 }
 
-public function deleteSlip($id)
-{
-    // Find the document by ID
-    $documentTrack = Doctrack::findOrFail($id);
+// public function deleteSlip($id)
+// {
+//     // Find the document by ID
+//     $documentTrack = Doctrack::findOrFail($id);
 
-    // Delete the document
-    $documentTrack->delete();
+//     // Delete the document
+//     $documentTrack->delete();
 
-    // Redirect to doctrackslip-list with a success message
-    return redirect()->route('doctrackSlip')
-        ->with('success', 'Document deleted successfully!');
-}
+//     // Redirect to doctrackslip-list with a success message
+//     return redirect()->route('doctrackSlip')
+//         ->with('success', 'Document deleted successfully!');
+// }
+
 
 
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoutingSlipController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\DoctrackController;
+use Dompdf\FrameDecorator\Page;
 
 /*
 |--------------------------------------------------------------------------
@@ -114,7 +115,7 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/pdf-slip/{id}', [DoctrackController::class, 'pdfDocSlip'])->name('pdfDocSlip');
     Route::get('/slip-monitoring/{docslip_id}', [DoctrackController::class, 'slipMonitoring'])->name('slipMonitoring');
     Route::get('/search', [DoctrackController::class, 'search'])->name('search');
-    Route::delete('/doc-slip/{id}', [DoctrackController::class, 'deleteSlip'])->name('deleteSlip');
+    Route::delete('/doc-slip/{docslip_id}', [PagesController::class, 'deleteSlip'])->name('deleteSlip');
     Route::put('/update-slip-status/{id}', [DoctrackController::class, 'updateSlipStatus'])->name('updateSlipStatus');
 
     Route::post('/upload-doc-file', [DoctrackController::class, 'uploadFile'])->name('uploadDoctrackFile');

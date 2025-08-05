@@ -36,7 +36,7 @@
                                                 <th>Date</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        {{-- <tbody>
                                             @forelse ($logsAll as $log)
                                                 @php
                                                     // Determine actor and target
@@ -106,8 +106,83 @@
                                                     <td colspan="2" class="text-center text-muted">No logs found.</td>
                                                 </tr>
                                             @endforelse
-                                        </tbody>
+                                        </tbody> --}}
+                                        <tbody>
+                                            @forelse ($logsAll as $log)
+                                                @php
+                                                    // Determine actor and target
+                                                    $actor = match ($log->logs_status) {
+                                                        3 => $log->updatedBy, // Acknowledged by recipient
+                                                        default => $log->createdBy,
+                                                    };
 
+                                                    $target = match ($log->logs_status) {
+                                                        1 => $log->updatedBy, // For "Created", show routed-to (if any)
+                                                        2 => $log->updatedBy, // Routed to
+                                                        default => null,
+                                                    };
+
+                                                    $fileName = $log->file_logs ?? 'N/A';
+
+                                                    $statusBadge = match ($log->logs_status) {
+                                                        1 => ['label' => 'Created', 'class' => 'badge-primary'],
+                                                        2 => ['label' => 'Forwarded', 'class' => 'badge-warning'],
+                                                        3 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
+                                                        4 => ['label' => 'Returned', 'class' => 'badge-danger'],
+                                                        5 => ['label' => 'Checked', 'class' => 'badge-info'],
+                                                        6 => [
+                                                            'label' => 'Deleted',
+                                                            'class' => 'badge-dark',
+                                                        ], // ✅ Added for deleted status
+                                                        default => [
+                                                            'label' => 'Updated',
+                                                            'class' => 'badge-secondary',
+                                                        ],
+                                                    };
+
+                                                @endphp
+
+                                                <tr>
+
+                                                    <td>
+                                                        {{ $log->docslip_id }} -
+                                                        <strong>{{ $actor->fname ?? 'N/A' }}
+                                                            {{ $actor->lname ?? '' }}</strong>
+                                                        <span
+                                                            class="badge {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>
+
+                                                        @if ($log->logs_status != 6)
+                                                            file: <span
+                                                                class="text-primary font-weight-bold">{{ $fileName }}</span>
+                                                        @endif
+
+                                                        @if ($target && !in_array($log->logs_status, [3, 4, 5, 6]))
+                                                            → Routed to <strong>{{ $target->fname }}
+                                                                {{ $target->lname }}</strong> and status is
+
+                                                            @if ($log->logs_status == 2)
+                                                                <span class="badge badge-warning">Pending</span>
+                                                            @elseif ($log->logs_status == 5)
+                                                                <span class="badge badge-info">Checked</span>
+                                                            @endif
+                                                        @endif
+
+                                                        @if ($log->comments)
+                                                            <br><em class="text-muted">Comment: "{{ $log->comments }}"</em>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        <strong>{{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i A') }}</strong>
+                                                    </td>
+                                                </tr>
+
+
+                                            @empty
+                                                <tr>
+                                                    <td colspan="2" class="text-center text-muted">No logs found.</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
                                     </table>
                                 </div>
                             </div> <!-- /.card-body -->
