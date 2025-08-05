@@ -511,12 +511,12 @@ public function updateAssign(Request $request, $routeId)
                 ]
             );
 
-            // // Log history
-            // LogsHistory::create([
-            //     'doc_id'        => $document->id,
-            //     'action'        => 're-assigned',
-            //     'status_update' => 2,
-            // ]);
+            // Log history
+            LogsHistory::create([
+                'doc_id'        => $document->id,
+                'action'        => 're-assigned',
+                'status_update' => 2,
+            ]);
 
             $redirectUrl = $request->input('redirectUrl', route('dashboard'));
 
