@@ -172,6 +172,15 @@
                                                     </option>
                                                 @endforeach
                                             </select>
+
+                                            {{-- <select class="form-control select2" name="new_destination[]"
+                                            id="new_destination" multiple required>
+                                            @foreach ($users as $user)
+                                                <option value="{{ $user->id }}">
+                                                    {{ $user->fname }} {{ $user->lname }}
+                                                </option>
+                                            @endforeach
+                                        </select> --}}
                                         </div>
                                     </div>
                                 </div>

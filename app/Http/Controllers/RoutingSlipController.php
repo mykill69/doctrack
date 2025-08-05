@@ -511,12 +511,12 @@ public function updateAssign(Request $request, $routeId)
                 ]
             );
 
-            // Log history
-            LogsHistory::create([
-                'doc_id'        => $document->id,
-                'action'        => 're-assigned',
-                'status_update' => 2,
-            ]);
+            // // Log history
+            // LogsHistory::create([
+            //     'doc_id'        => $document->id,
+            //     'action'        => 're-assigned',
+            //     'status_update' => 2,
+            // ]);
 
             $redirectUrl = $request->input('redirectUrl', route('dashboard'));
 
@@ -564,59 +564,136 @@ public function editAssign($id)
 
 
 
+// public function updateReroute(Request $request, $id)
+// {
+//     $routingSlip = RoutingSlip::findOrFail($id);
+
+//     // Get selected user IDs from the form
+//     $selectedUserIds = $request->input('new_destination', []);
+
+//     // Update routed_users column with full names for display (optional)
+//     $userNames = \App\Models\User::whereIn('id', $selectedUserIds)
+//         ->get()
+//         ->pluck('full_name') // If accessor exists
+//         // ->map(fn($u) => $u->fname . ' ' . $u->lname) // Use this if no accessor
+//         ->toArray();
+
+//     $routingSlip->update([
+//         'routed_users' => implode(', ', $userNames),
+//         'route_status' => 3,
+//     ]);
+
+//     // Find the related document
+//     $document = Document::where('route_id', $routingSlip->rslip_id)->first();
+
+//     if ($document) {
+//         $document->assn_code = null;
+//         $document->save();
+
+//         // Log each user routed
+//         foreach ($selectedUserIds as $userId) {
+//             $user = \App\Models\User::find($userId);
+//             if (!$user) continue;
+
+//             $fullName = $user->fname . ' ' . $user->lname;
+
+//             $existingLog = Log::where('route_id', $routingSlip->rslip_id)
+//                 ->where('doc_id', $document->id)
+//                 ->where('new_destination', $fullName)
+//                 ->first();
+
+//             if (!$existingLog) {
+//                 // Create log
+//                 Log::create([
+//                     'user_id'         => auth()->user()->id,
+//                     'doc_id'          => $document->id,
+//                     'route_id'        => $routingSlip->rslip_id,
+//                     'action'          => 're-assigned',
+//                     'new_destination' => $fullName,
+//                     'status_update'   => 2,
+//                     'new_file'        => $document->file_name,
+//                     'assigned_to'     => $routingSlip->assigned_to,
+//                     'created_at'      => now(),
+//                 ]);
+
+//                    // Send email notification if email is available
+//                 if (!empty($user->email)) {
+//                     Mail::to($user->email)->send(
+//                         new DocumentRoutedNotification($document, $fullName, $routingSlip->trans_remarks)
+//                     );
+//                 }
+//             }
+//         }
+//     }
+
+//     return redirect()->route('viewSlip')->with('success', 'Document rerouted successfully!');
+// }
+
+
 public function updateReroute(Request $request, $id)
 {
     $routingSlip = RoutingSlip::findOrFail($id);
+    $selectedDestinations = $request->input('new_destination', []);
+    $finalDestinations = [];
 
-    // Get selected user IDs from the form
-    $selectedUserIds = $request->input('new_destination', []);
-
-    // Update routed_users column with full names for display (optional)
-    $userNames = \App\Models\User::whereIn('id', $selectedUserIds)
-        ->get()
-        ->pluck('full_name') // If accessor exists
-        // ->map(fn($u) => $u->fname . ' ' . $u->lname) // Use this if no accessor
-        ->toArray();
-
-    $routingSlip->update([
-        'routed_users' => implode(', ', $userNames),
-        'route_status' => 3,
-    ]);
-
-    // Find the related document
     $document = Document::where('route_id', $routingSlip->rslip_id)->first();
 
     if ($document) {
         $document->assn_code = null;
         $document->save();
+    }
 
-        // Log each user routed
-        foreach ($selectedUserIds as $userId) {
-            $user = \App\Models\User::find($userId);
+    foreach ($selectedDestinations as $destination) {
+        // Handle by position
+        if (Str::startsWith($destination, 'position:')) {
+            $positionId = (int) Str::after($destination, 'position:');
+            $users = User::where('position', $positionId)->get();
+
+        // Handle by group
+        } elseif (Str::startsWith($destination, 'group:')) {
+            $groupName = Str::after($destination, 'group:');
+            $group = Group::where('group_name', $groupName)->first();
+            if (!$group) continue;
+
+            $users = $group->users;
+
+        // Handle by individual (assumes "Full Name")
+        } else {
+            $user = User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
+            $users = collect($user ? [$user] : []);
+        }
+
+        foreach ($users as $user) {
             if (!$user) continue;
 
             $fullName = $user->fname . ' ' . $user->lname;
 
+            // Prevent duplicate logs/notifications
+            if (in_array($fullName, $finalDestinations)) {
+                continue;
+            }
+
+            $finalDestinations[] = $fullName;
+
             $existingLog = Log::where('route_id', $routingSlip->rslip_id)
-                ->where('doc_id', $document->id)
+                ->where('doc_id', $document?->id)
                 ->where('new_destination', $fullName)
                 ->first();
 
             if (!$existingLog) {
-                // Create log
                 Log::create([
-                    'user_id'         => auth()->user()->id,
-                    'doc_id'          => $document->id,
+                    'user_id'         => auth()->id(),
+                    'doc_id'          => $document?->id,
                     'route_id'        => $routingSlip->rslip_id,
                     'action'          => 're-assigned',
                     'new_destination' => $fullName,
                     'status_update'   => 2,
-                    'new_file'        => $document->file_name,
+                    'new_file'        => $document?->file_name,
                     'assigned_to'     => $routingSlip->assigned_to,
                     'created_at'      => now(),
                 ]);
 
-                   // Send email notification if email is available
+                // Email Notification
                 if (!empty($user->email)) {
                     Mail::to($user->email)->send(
                         new DocumentRoutedNotification($document, $fullName, $routingSlip->trans_remarks)
@@ -625,6 +702,12 @@ public function updateReroute(Request $request, $id)
             }
         }
     }
+
+    // Update routing slip
+    $routingSlip->update([
+        'routed_users' => implode(', ', $finalDestinations),
+        'route_status' => 3,
+    ]);
 
     return redirect()->route('viewSlip')->with('success', 'Document rerouted successfully!');
 }
