@@ -146,7 +146,7 @@
                                         <label for="new_destination" class="col-md-3 col-form-label">Name of
                                             Users:</label>
                                         <div class="col-md-9">
-                                            <select class="form-control select2" name="new_destination[]"
+                                            {{-- <select class="form-control select2" name="new_destination[]"
                                                 id="new_destination" multiple required>
                                                 <option disabled>— Select by Position —</option>
                                                 <option value="position:1">President</option>
@@ -171,16 +171,16 @@
                                                         {{ $user->fname }} {{ $user->lname }}
                                                     </option>
                                                 @endforeach
-                                            </select>
+                                            </select> --}}
 
-                                            {{-- <select class="form-control select2" name="new_destination[]"
+                                            <select class="form-control select2" name="new_destination[]"
                                             id="new_destination" multiple required>
                                             @foreach ($users as $user)
                                                 <option value="{{ $user->id }}">
                                                     {{ $user->fname }} {{ $user->lname }}
                                                 </option>
                                             @endforeach
-                                        </select> --}}
+                                        </select>
                                         </div>
                                     </div>
                                 </div>
