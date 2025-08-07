@@ -146,7 +146,7 @@
             $trackingActive = request()->routeIs('doctrackSlip', 'incoming');
         @endphp
 
-        <li class="nav-item {{ $trackingActive ? 'menu-open menu-is-opening' : '' }}">
+        {{-- <li class="nav-item {{ $trackingActive ? 'menu-open menu-is-opening' : '' }}">
             <a href="#" class="nav-link">
                 <i class="nav-icon fas fa-route"></i>
                 <p>
@@ -175,7 +175,21 @@
                     </a>
                 </li>
             </ul>
+        </li> --}}
+
+        <li class="nav-item">
+            <a href="{{ route('doctrackSlip') }}"
+                class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-route"></i>
+                <p>
+                    Tracking Document
+                    <span class="right badge badge-primary">
+                        {{ $doctrackCount ?? 0 }}
+                    </span>
+                </p>
+            </a>
         </li>
+
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
                 <a href="{{ route('distributionList') }}"

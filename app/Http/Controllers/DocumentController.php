@@ -57,12 +57,32 @@ public function dashboard()
     $dpa = auth()->user()->dpa;
     $users = User::all();
 
-   $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
-    $query->where('user_id', $userId)
-          ->orWhere('update_by', $userId)
-          ->orWhere('user_name', $userFullName);
-})->distinct('docslip_id')->count();
+  // Get all Doctrack records (no grouping)
+    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+        ->where(function ($query) use ($userId, $userFullName) {
+            $query->where('user_id', $userId)
+                  ->orWhere('update_by', $userId)
+                  ->orWhere('user_name', $userFullName);
+        })
+        ->orderByDesc('created_at')
+        ->get();
 
+    // Calculate time_diff for each record here
+    $documentTrack->transform(function ($item) {
+        $start = \Carbon\Carbon::parse($item->created_at);
+        $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+        $diffInMinutes = $end->diffInMinutes($start);
+
+        $item->time_diff = [
+            'days' => floor($diffInMinutes / 1440),
+            'hours' => floor(($diffInMinutes % 1440) / 60),
+            'minutes' => $diffInMinutes % 60,
+        ];
+
+        return $item;
+    });
+
+    $doctrackCount = $documentTrack->count();
 
 
     return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount' , 'groups'));
