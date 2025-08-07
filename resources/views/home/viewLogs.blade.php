@@ -68,7 +68,7 @@
                                                 <tr>
                                                     <td>
                                                         <span style="font-weight:bold;">
-                                                           CTRL#: {{ $log->rslip_id ?? 'N/A' }} -
+                                                           CTRL#: {{ $log->rslip_id ?? ' ' }} -
                                                         </span>
                                                         <span style="font-weight:bold;">
                                                             {{ $displayName ?: ' ' }}
