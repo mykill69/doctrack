@@ -19,6 +19,7 @@ use App\Models\LogsHistory;
 use App\Models\AssignLogs;
 use App\Models\Remark;
 use App\Models\User;
+use App\Models\Doctrack;
 use App\Mail\DocumentRoutedNotification;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Group;
@@ -82,31 +83,46 @@ public function storeSlip(Request $request)
 
 public function viewSlip()
 {
-    /** @var \App\Models\User $user */
-    $user = auth()->user(); // hint to IDE
+
+    $user = auth()->user();
 
     $userRole = $user->id;
     $userDepartment = $user->department;
     $logs = Log::where('user_id', $userRole)->get();
 
-    // Count routing slips
-    // $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
-    //     ? RoutingSlip::where('route_status', 3)->count()
-    //     : 0;
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) 
+        ? RoutingSlip::where('route_status', 3)->count() 
+        : 0;
 
- $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
-$recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $userRole === 'super_user' 
+        ? RoutingSlip::where('route_status', 1)->count() 
+        : 0;
+
+    $recordsOfficerCount = $userRole === 'records_officer' 
+        ? RoutingSlip::where('route_status', 2)->count() 
+        : 0;
 
     $routingSlips = RoutingSlip::all();
     $offices = Office::all();
+
+    // ✅ Add Doctrack Count
+    $userFullName = $user->fname . ' ' . $user->lname;
+
+    $documentTrack = Doctrack::where(function ($query) use ($userRole, $userFullName) {
+            $query->where('user_id', $userRole)
+                  ->orWhere('update_by', $userRole)
+                  ->orWhere('user_name', $userFullName);
+        })->get();
+
+    $doctrackCount = $documentTrack->count();
 
     return view('slip.routingSlip', compact(
         'routingSlips',
         'routingSlipCount',
         'superUserCount',
         'offices',
-        'recordsOfficerCount'
+        'recordsOfficerCount',
+        'doctrackCount' // 👈 Pass to view
     ));
 }
 

@@ -247,43 +247,47 @@ public function viewLogs()
     $userRole = $user->role;
 
     $logsAll = DB::table('logs_history')
-        ->leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
-        ->leftJoin('assign_logs', 'assign_logs.new_user', '=', 'logs.new_user')
-        ->leftJoin('users as original_users', function ($join) {
-            $join->on('logs.user_id', '=', 'original_users.id')
-                 ->where('logs_history.status_update', '=', 2);
-        })
-        ->leftJoin('users as new_users', function ($join) {
-            $join->on('logs.new_user', '=', 'new_users.id')
-                 ->where('logs_history.status_update', '=', 3);
-        })
-        ->leftJoin('users as assign_users', 'assign_logs.new_user', '=', 'assign_users.id')
-        ->select(
-            'logs_history.*',
-            'logs.new_destination',
-            'logs.new_file',
+    ->leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
+    ->leftJoin('assign_logs', 'assign_logs.new_user', '=', 'logs.new_user')
+    ->leftJoin('routing_slip', 'routing_slip.id', '=', 'logs_history.doc_id') // ✅ Added
+    ->leftJoin('users as original_users', function ($join) {
+        $join->on('logs.user_id', '=', 'original_users.id')
+             ->where('logs_history.status_update', '=', 2);
+    })
+    ->leftJoin('users as new_users', function ($join) {
+        $join->on('logs.new_user', '=', 'new_users.id')
+             ->where('logs_history.status_update', '=', 3);
+    })
+    ->leftJoin('users as assign_users', 'assign_logs.new_user', '=', 'assign_users.id')
+    ->select(
+        'logs_history.*',
+        'logs.new_destination',
+        'logs.new_file',
 
-            'assign_logs.assigned_to as assign_to',
-            'assign_users.fname as assign_fname',
-            'assign_users.lname as assign_lname',
+        'assign_logs.assigned_to as assign_to',
+        'assign_users.fname as assign_fname',
+        'assign_users.lname as assign_lname',
 
-            'original_users.fname as original_fname',
-            'original_users.lname as original_lname',
-            'original_users.department as original_user_department',
+        'original_users.fname as original_fname',
+        'original_users.lname as original_lname',
+        'original_users.department as original_user_department',
 
-            'new_users.fname as new_fname',
-            'new_users.lname as new_lname',
-            'new_users.department as new_user_department'
-        )
-        ->where(function ($query) use ($userId, $userFullName) {
-            $query->where('logs.user_id', $userId)
-                  ->orWhere('logs.new_user', $userId)
-                  ->orWhere('logs.new_destination', $userFullName);
-        })
-        ->orWhereNull('logs.id') // Show all logs_history even if logs is missing
-        ->distinct()
-        ->orderBy('logs_history.created_at', 'desc')
-        ->get();
+        'new_users.fname as new_fname',
+        'new_users.lname as new_lname',
+        'new_users.department as new_user_department',
+
+        'routing_slip.rslip_id' // ✅ Add this to retrieve the slip ID
+    )
+    ->where(function ($query) use ($userId, $userFullName) {
+        $query->where('logs.user_id', $userId)
+              ->orWhere('logs.new_user', $userId)
+              ->orWhere('logs.new_destination', $userFullName);
+    })
+    ->orWhereNull('logs.id')
+    ->distinct()
+    ->orderBy('logs_history.created_at', 'desc')
+    ->get();
+
 
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
@@ -540,28 +544,32 @@ public function distributionList()
     }
 
     $logs = RoutingSlip::leftJoin('documents', 'routing_slip.rslip_id', '=', 'documents.route_id')
-    ->select('routing_slip.*', 'documents.id as doc_id', 'documents.file_name')
-    ->orderBy('routing_slip.created_at', 'desc')
-    ->get()
-    ->filter(function ($item) {
-        $routedUsers = $item->routed_users
-            ? array_filter(array_map('trim', explode(',', $item->routed_users)))
-            : [];
-        return count($routedUsers) >= 4;
-    });
-
-
+        ->select('routing_slip.*', 'documents.id as doc_id', 'documents.file_name')
+        ->orderBy('routing_slip.created_at', 'desc')
+        ->get()
+        ->filter(function ($item) {
+            $routedUsers = $item->routed_users
+                ? array_filter(array_map('trim', explode(',', $item->routed_users)))
+                : [];
+            return count($routedUsers) >= 4;
+        });
 
     $offices = Office::all();
 
-    $doctrackCount = Doctrack::where(function ($query) use ($user) {
-        $query->where('user_id', $user->id)
-              ->orWhere('update_by', $user->id)
-              ->orWhere('user_name', $user->fname . ' ' . $user->lname);
-    })->distinct('docslip_id')->count();
+    // ✅ Add doctrackCount similar to viewSlip
+    $userFullName = $user->fname . ' ' . $user->lname;
+
+    $documentTrack = Doctrack::where(function ($query) use ($user, $userFullName) {
+            $query->where('user_id', $user->id)
+                  ->orWhere('update_by', $user->id)
+                  ->orWhere('user_name', $userFullName);
+        })->get();
+
+    $doctrackCount = $documentTrack->count();
 
     return view('home.distList', compact('logs', 'offices', 'doctrackCount'));
 }
+
 
 public function viewDistribution($id)
 {

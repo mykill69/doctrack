@@ -68,7 +68,10 @@
                                                 <tr>
                                                     <td>
                                                         <span style="font-weight:bold;">
-                                                            {{ $displayName ?: 'Unknown User' }}
+                                                           CTRL#: {{ $log->rslip_id ?? 'N/A' }} -
+                                                        </span>
+                                                        <span style="font-weight:bold;">
+                                                            {{ $displayName ?: ' ' }}
                                                         </span>
 
                                                         @if ($isAssignLog)
