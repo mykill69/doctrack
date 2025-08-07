@@ -185,7 +185,8 @@
                                                                                     {{ ucwords(strtolower($destinationUser->lname)) }}</strong>
                                                                             @else
                                                                                 <strong
-                                                                                    class="text-danger">{{ $slip->r_destination }}</strong>
+                                                                                    class="text-danger">{{ ucwords(strtolower($destinationUser->fname)) }}
+                                                                                    {{ ucwords(strtolower($destinationUser->lname)) }}</strong>
                                                                             @endif
 
                                                                             @if ($assignedUser)

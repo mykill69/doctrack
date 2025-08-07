@@ -106,7 +106,7 @@
                                         <select class="form-control select2" name="r_destination[]" id="r_destination"
                                             multiple required>
                                             @foreach ($users as $user)
-                                                <option value="{{ $user->id }}"
+                                                <option value="{{ $user->fname }} {{ $user->lname }}"
                                                     {{ in_array($user->id, explode(',', $routingSlips->r_destination)) ? 'selected' : '' }}>
                                                     {{ $user->fname }} {{ $user->lname }}
                                                 </option>
