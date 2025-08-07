@@ -57,7 +57,7 @@
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link" href="#enroute" data-toggle="tab">
-                                                En Route
+                                                Pending
                                             </a>
                                         </li>
                                     </ul>
