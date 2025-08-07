@@ -200,27 +200,27 @@ public function pdfSlip($id)
 
     // Get logs with action 're-assigned' and new_destination is not null
     $logs = DB::table('logs')
-        ->where('route_id', $id)
-        ->where('action', 're-assigned')
-        ->whereNotNull('new_destination')
-        ->get();
+    ->where('route_id', $id)
+    ->whereIn('action', ['re-assigned', 'Acknowledged'])
+    ->whereNotNull('new_destination')
+    ->get();
 
     // Get the department of the user who re-assigned the form
     $reassignUserDept = DB::table('logs')
-        ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
-        ->join('users', 'assign_logs.new_user', '=', 'users.id')
-        ->where('logs.route_id', $id)
-        ->where('logs.action', 're-assigned')
-        ->select('users.department')
-        ->orderByDesc('assign_logs.id') // Get latest assign if multiple
-        ->value('department');
-
-
-        $reassigningUser = DB::table('logs')
     ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
     ->join('users', 'assign_logs.new_user', '=', 'users.id')
     ->where('logs.route_id', $id)
-    ->where('logs.action', 're-assigned')
+    ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
+    ->select('users.department')
+    ->orderByDesc('assign_logs.id') // Get latest assign if multiple
+    ->value('department');
+
+
+       $reassigningUser = DB::table('logs')
+    ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
+    ->join('users', 'assign_logs.new_user', '=', 'users.id')
+    ->where('logs.route_id', $id)
+    ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
     ->select('users.id', 'users.fname', 'users.lname', 'users.department')
     ->orderByDesc('assign_logs.id')
     ->first();
