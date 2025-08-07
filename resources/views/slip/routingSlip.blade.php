@@ -52,7 +52,7 @@
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link" href="#served" data-toggle="tab">
-                                                Served
+                                                Completed
                                             </a>
                                         </li>
                                         <li class="nav-item">

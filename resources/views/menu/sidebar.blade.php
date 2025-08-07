@@ -22,7 +22,7 @@
                 <a href="{{ route('viewSlip') }}"
                     class="nav-link {{ request()->routeIs('viewSlip') || request()->routeIs('editDest') || request()->routeIs('editSlip') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-receipt"></i>
-                    <p>Documnets for Action
+                    <p>Documents for Action
                         @php
                             $user = auth()->user();
                             $userRole = $user->role;
