@@ -252,8 +252,37 @@
                                                 </tr>
                                                 <tr>
                                                     <th>Recipient/s</th>
-                                                    <td>{{ $document->r_destination ?? 'N/A' }}</td>
+                                                    <td>
+                                                        @php
+                                                            $destinationUser = $users->firstWhere(
+                                                                'id',
+                                                                $document->r_destination ?? null,
+                                                            );
+                                                            $assignedUser = $users->firstWhere(
+                                                                'id',
+                                                                $document->assigned_to ?? null,
+                                                            );
+                                                        @endphp
+
+                                                        @if ($destinationUser)
+                                                            <strong class="text-danger">
+                                                                {{ ucwords(strtolower($destinationUser->fname)) }}
+                                                                {{ ucwords(strtolower($destinationUser->lname)) }}
+                                                            </strong>
+                                                        @else
+                                                            <strong
+                                                                class="text-danger">{{ $document->r_destination ?? 'N/A' }}</strong>
+                                                        @endif
+
+                                                        @if ($assignedUser)
+                                                            , was re-assigned to <strong class="text-danger">
+                                                                {{ ucwords(strtolower($assignedUser->fname)) }}
+                                                                {{ ucwords(strtolower($assignedUser->lname)) }}
+                                                            </strong>
+                                                        @endif
+                                                    </td>
                                                 </tr>
+
                                                 <tr>
                                                     <th>Created At</th>
                                                     <td>{{ $document->created_at->format('F j, Y h:i A') }}</td>

@@ -26,24 +26,24 @@
                                     <div class="form-group col-md-4">
                                         <label for="fname">First Name</label>
                                         <input type="text" name="fname" value="{{ $user->fname }}"
-                                            class="form-control">
+                                            class="form-control" readonly>
                                     </div>
                                     <div class="form-group col-md-4">
                                         <label for="mname">Middle Name</label>
                                         <input type="text" name="mname" value="{{ $user->mname }}"
-                                            class="form-control">
+                                            class="form-control" readonly>
                                     </div>
                                     <div class="form-group col-md-4">
                                         <label for="lname">Last Name</label>
                                         <input type="text" name="lname" value="{{ $user->lname }}"
-                                            class="form-control">
+                                            class="form-control" readonly>
                                     </div>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group col-md-4">
                                         <label for="email">Institutional Email</label>
                                         <input type="text" name="email" value="{{ $user->email }}"
-                                            class="form-control">
+                                            class="form-control" readonly>
                                     </div>
                                     <div class="form-group col-md-4">
                                         <label for="password">New Password</label>

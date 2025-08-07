@@ -160,69 +160,81 @@
                                 </div>
                                 <div class="form-group row">
                                     <label for="subject" class="col-md-3 col-form-label">This Document is For/To:</label>
+                                    @php
+                                        $destinationUser = $users->firstWhere('id', $routingSlips->r_destination);
+                                        $fullName = $destinationUser
+                                            ? ucwords(
+                                                strtolower($destinationUser->fname . ' ' . $destinationUser->lname),
+                                            )
+                                            : 'Unknown User';
+                                    @endphp
+
                                     <div class="col-md-9">
                                         <input type="text" class="form-control" id="subject" name="for_to"
-                                            rows="3" value="{{ $routingSlips->r_destination }}" readonly>
+                                            value="{{ $fullName }}" readonly>
                                     </div>
+
                                 </div>
-                                <div id="user-select-container" class="form-group row align-items-center">
-                                    <label for="routed_to" class="col-md-3 col-form-label">Name of Users:</label>
-                                    <div class="col-md-9">
-                                        <select class="form-control select2" name="routed_users[]" id="routed_users"
-                                            data-placeholder="Select users..." multiple required>
-
-                                            {{-- Static predefined positions --}}
-                                            <option disabled>— Select by Position —</option>
-                                            <option value="position:1">President</option>
-                                            <option value="position:2">VPAA</option>
-                                            <option value="position:3">VPAF</option>
-                                            <option value="position:4">Office Heads</option>
-                                            <option value="position:5">Deans</option>
-                                            <option value="position:6">Campus Administrators</option>
-                                            <option value="position:7">Directors</option>
-
-                                            {{-- Group list --}}
-                                            <option disabled>──────────</option>
-                                            <option disabled>— Select by Group —</option>
-                                            @foreach ($groups as $group)
-                                                <option value="group:{{ $group->group_name }}">{{ $group->group_name }}
-                                                </option>
-                                            @endforeach
-
-                                            {{-- Separator --}}
-                                            <option disabled>──────────</option>
-                                            <option disabled>— Select by Individual User —</option>
-
-                                            {{-- Dynamic users --}}
-                                            @foreach ($users as $user)
-                                                <option value="{{ $user->fname }} {{ $user->lname }}">
-                                                    {{ $user->fname }} {{ $user->lname }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-
-                                    </div>
-                                    <div id="additional-destinations"></div>
-                                    <div class="form-group row">
+                                    <div id="user-select-container" class="form-group row align-items-center">
+                                        <label for="routed_to" class="col-md-3 col-form-label">Name of Users:</label>
                                         <div class="col-md-9">
-                                            <input type="hidden" class="form-control" name="doc_stat" value="2"
-                                                readonly>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row">
-                                        <div class="col-md-9">
-                                            <input type="hidden" class="form-control" id="user_id" name="user_id"
-                                                value="{{ $routingSlips->user_id }}" readonly>
-                                        </div>
-                                    </div>
+                                            <select class="form-control select2" name="routed_users[]" id="routed_users"
+                                                data-placeholder="Select users..." multiple required>
 
-                                    <div class="form-group row">
-                                        <div class="col-md-3"></div>
-                                        <div class="col-md-9">
-                                            <button type="submit" class="btn btn-primary">Submit Routing Slip</button>
-                                            <a href="{{ route('viewSlip') }}" class="btn btn-danger">Cancel</a>
+                                                {{-- Static predefined positions --}}
+                                                <option disabled>— Select by Position —</option>
+                                                <option value="position:1">President</option>
+                                                <option value="position:2">VPAA</option>
+                                                <option value="position:3">VPAF</option>
+                                                <option value="position:4">Office Heads</option>
+                                                <option value="position:5">Deans</option>
+                                                <option value="position:6">Campus Administrators</option>
+                                                <option value="position:7">Directors</option>
+
+                                                {{-- Group list --}}
+                                                <option disabled>──────────</option>
+                                                <option disabled>— Select by Group —</option>
+                                                @foreach ($groups as $group)
+                                                    <option value="group:{{ $group->group_name }}">
+                                                        {{ $group->group_name }}
+                                                    </option>
+                                                @endforeach
+
+                                                {{-- Separator --}}
+                                                <option disabled>──────────</option>
+                                                <option disabled>— Select by Individual User —</option>
+
+                                                {{-- Dynamic users --}}
+                                                @foreach ($users as $user)
+                                                    <option value="{{ $user->fname }} {{ $user->lname }}">
+                                                        {{ $user->fname }} {{ $user->lname }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+
                                         </div>
-                                    </div>
+                                        <div id="additional-destinations"></div>
+                                        <div class="form-group row">
+                                            <div class="col-md-9">
+                                                <input type="hidden" class="form-control" name="doc_stat"
+                                                    value="2" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <div class="col-md-9">
+                                                <input type="hidden" class="form-control" id="user_id" name="user_id"
+                                                    value="{{ $routingSlips->user_id }}" readonly>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group row">
+                                            <div class="col-md-3"></div>
+                                            <div class="col-md-9">
+                                                <button type="submit" class="btn btn-primary">Submit Routing
+                                                    Slip</button>
+                                                <a href="{{ route('viewSlip') }}" class="btn btn-danger">Cancel</a>
+                                            </div>
+                                        </div>
                             </form>
                         </div>
                     </div>
@@ -233,7 +245,7 @@
     </div>
 
 
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
@@ -293,6 +305,4 @@
             });
         });
     </script>
-
-    
 @endsection

@@ -168,13 +168,33 @@
                                                                         <td>{{ $slip->trans_remarks }}</td>
                                                                         <td>{{ $slip->other_remarks }}</td>
                                                                         <td>
-                                                                            <strong
-                                                                                class="text-danger">{{ $slip->r_destination }}</strong>
-                                                                            @if ($slip->assigned_to != null)
+                                                                            @php
+                                                                                $destinationUser = $users->firstWhere(
+                                                                                    'id',
+                                                                                    $slip->r_destination,
+                                                                                );
+                                                                                $assignedUser = $users->firstWhere(
+                                                                                    'id',
+                                                                                    $slip->assigned_to,
+                                                                                );
+                                                                            @endphp
+
+                                                                            @if ($destinationUser)
+                                                                                <strong
+                                                                                    class="text-danger">{{ ucwords(strtolower($destinationUser->fname)) }}
+                                                                                    {{ ucwords(strtolower($destinationUser->lname)) }}</strong>
+                                                                            @else
+                                                                                <strong
+                                                                                    class="text-danger">{{ $slip->r_destination }}</strong>
+                                                                            @endif
+
+                                                                            @if ($assignedUser)
                                                                                 , was re-assigned to <strong
-                                                                                    class="text-danger">{{ $slip->assigned_to }}</strong>
+                                                                                    class="text-danger">{{ $assignedUser->fname }}
+                                                                                    {{ $assignedUser->lname }}</strong>
                                                                             @endif
                                                                         </td>
+
                                                                         <td>
                                                                             @switch($slip->route_status)
                                                                                 @case(1)

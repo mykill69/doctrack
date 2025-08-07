@@ -28,6 +28,21 @@
         z-index: 9999 !important;
     }
 
+    #page-loader {
+        z-index: 99999 !important;
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
     .progress-loader {
         width: 200px;
         height: 10px;
@@ -42,6 +57,14 @@
         height: 100%;
         background-color: #0d6efd;
         transition: width 0.5s ease;
+    }
+
+    #page-loader p {
+        margin-top: 1.5rem;
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #343a40;
+        animation: fadeIn 0.6s ease-in-out;
     }
 
     @keyframes fadeIn {
@@ -61,14 +84,18 @@
     <div id="page-loader"
         class="position-fixed top-0 start-0 w-100 h-100 flex-column justify-content-center align-items-center"
         style="z-index:1055; display:none; background:linear-gradient(135deg,#f8f9fa,#e9ecef); font-family:'Segoe UI',Tahoma,sans-serif">
+
         <img src="{{ asset('template/img/cpsu_logo.png') }}" alt="MIS logo" style="width:110px;height:auto;margin-bottom:28px">
+
         <div class="progress-loader" style="width:220px;height:12px;background:#dee2e6;border-radius:6px;overflow:hidden">
             <div id="progress-bar" style="width:0;height:100%;background:#0d6efd;transition:width .4s ease"></div>
         </div>
+
         <p style="margin-top:1.3rem;font-size:1.15rem;font-weight:500;color:#343a40">
             Sending notification, please wait...
         </p>
     </div>
+
 
 
     <div class="content-wrapper">
@@ -146,41 +173,16 @@
                                         <label for="new_destination" class="col-md-3 col-form-label">Name of
                                             Users:</label>
                                         <div class="col-md-9">
-                                            {{-- <select class="form-control select2" name="new_destination[]"
+                                            
+
+                                            <select class="form-control select2" name="new_destination[]"
                                                 id="new_destination" multiple required>
-                                                <option disabled>— Select by Position —</option>
-                                                <option value="position:1">President</option>
-                                                <option value="position:2">VPAA</option>
-                                                <option value="position:3">VPAF</option>
-                                                <option value="position:4">Office Heads</option>
-                                                <option value="position:5">Deans</option>
-                                                <option value="position:6">Campus Administrators</option>
-                                                <option value="position:7">Directors</option>
-
-                                                <option disabled>──────────</option>
-                                                <option disabled>— Select by Group —</option>
-                                                @foreach ($groups as $group)
-                                                    <option value="group:{{ $group->group_name }}">
-                                                        {{ $group->group_name }}</option>
-                                                @endforeach
-
-                                                <option disabled>──────────</option>
-                                                <option disabled>— Select by Individual User —</option>
                                                 @foreach ($users as $user)
                                                     <option value="{{ $user->fname }} {{ $user->lname }}">
                                                         {{ $user->fname }} {{ $user->lname }}
                                                     </option>
                                                 @endforeach
-                                            </select> --}}
-
-                                            <select class="form-control select2" name="new_destination[]"
-                                            id="new_destination" multiple required>
-                                            @foreach ($users as $user)
-                                                <option value="{{ $user->id }}">
-                                                    {{ $user->fname }} {{ $user->lname }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>

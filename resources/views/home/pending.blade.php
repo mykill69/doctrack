@@ -65,16 +65,29 @@
                                                     <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
                                                     </td>
                                                     <td>
-                                                        <strong class="text-danger">{{ $log->for_to }}</strong>
+                                                        @php
+                                                            $destinationUser = $users->firstWhere(
+                                                                'id',
+                                                                $log->r_destination,
+                                                            );
+                                                            $assignedUser = $users->firstWhere(
+                                                                'id',
+                                                                $log->assigned_to,
+                                                            );
+                                                        @endphp
 
-                                                        @if ($log->routingSlip && $log->routingSlip->r_destination)
+                                                        @if ($destinationUser)
                                                             <strong
-                                                                class="text-primary">{{ $log->routingSlip->r_destination }}</strong>
+                                                                class="text-danger">{{ ucwords(strtolower($destinationUser->fname)) }}
+                                                                {{ ucwords(strtolower($destinationUser->lname)) }}</strong>
+                                                        @else
+                                                            <strong class="text-danger">{{ $log->r_destination }}</strong>
                                                         @endif
 
-                                                        @if ($log->assigned_to)
-                                                            , was re-rerouted to <strong
-                                                                class="text-danger">{{ $log->assigned_to }}</strong>
+                                                        @if ($assignedUser)
+                                                            , was re-assigned to <strong
+                                                                class="text-danger">{{ $assignedUser->fname }}
+                                                                {{ $assignedUser->lname }}</strong>
                                                         @endif
                                                     </td>
 

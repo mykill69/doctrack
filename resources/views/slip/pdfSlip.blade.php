@@ -157,11 +157,19 @@ letter-spacing: 5px;
                         <td colspan="2">
                             <img src="{{ public_path('template/img/to.png') }}" class="to-img">
                             <div class="routed-assign">
-                                {{-- <p>{{ $routingSlip->r_destination }} @if ($routingSlip->assigned_to)
-                                        and was re-routed to {{ $routingSlip->assigned_to }}
+
+                                @php
+                                    $destinationUser = $users->firstWhere('id', $routingSlip->r_destination);
+                                @endphp
+
+                                <p>
+                                    @if ($destinationUser)
+                                        {{ ucwords(strtolower($destinationUser->fname)) }}
+                                        {{ ucwords(strtolower($destinationUser->lname)) }}
+                                    @else
+                                        {{ $routingSlip->r_destination }}
                                     @endif
-                                </p> --}}
-                                <p>{{ $routingSlip->r_destination }}</p>
+                                </p>
                             </div>
                         </td>
                     </tr>

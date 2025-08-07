@@ -83,16 +83,31 @@
                                                         <td>
                                                             <strong class="text-danger">{{ $document->for_to }}</strong>
 
-                                                            @if ($document->routingSlip && $document->routingSlip->r_destination)
-                                                                <strong
-                                                                    class="text-danger">{{ $document->routingSlip->r_destination }}</strong>
+                                                            @php
+                                                                $destinationUser = $users->firstWhere(
+                                                                    'id',
+                                                                    $document->routingSlip->r_destination ?? null,
+                                                                );
+                                                                $assignedUser = $users->firstWhere(
+                                                                    'id',
+                                                                    $document->routingSlip->assigned_to ?? null,
+                                                                );
+                                                            @endphp
+
+                                                            @if ($document->routingSlip && $destinationUser)
+                                                                <strong class="text-danger">
+                                                                    {{ ucwords(strtolower($destinationUser->fname)) }}
+                                                                    {{ ucwords(strtolower($destinationUser->lname)) }}
+                                                                </strong>
                                                             @endif
 
                                                             @if ($document->routingSlip && $document->routingSlip->assigned_to)
-                                                                , was re-rerouted to <strong
+                                                                , was re-rerouted to
+                                                                <strong
                                                                     class="text-danger">{{ $document->routingSlip->assigned_to }}</strong>
                                                             @endif
                                                         </td>
+
 
                                                         <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
