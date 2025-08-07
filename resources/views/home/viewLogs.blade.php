@@ -51,12 +51,14 @@
                                                     $badgeClass = match ($log->status_update) {
                                                         2 => 'badge-warning',
                                                         3 => 'badge-success',
+                                                        4 => 'badge-danger',
                                                         default => 'badge-secondary',
                                                     };
 
                                                     $badgeLabel = match ($log->status_update) {
                                                         2 => 'uploaded',
                                                         3 => 'acknowledged',
+                                                        4 => 'returned to the OP with correction',
                                                         default => 'action',
                                                     };
 

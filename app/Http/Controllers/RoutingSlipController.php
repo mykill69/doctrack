@@ -334,7 +334,7 @@ public function editSlip($id)
         'trans_remarks'   => 'required|string',
         'other_remarks'   => 'nullable|string',
         'r_destination' => 'nullable|array',
-        'r_destination.*' => 'integer',
+        'r_destination.*' => 'string',
         'route_status'    => 'required|string',
         'received_name'   => 'required|array',
         'received_name.*' => 'required|string',
@@ -375,6 +375,33 @@ public function editSlip($id)
     $routingSlip->save();
 
     return redirect()->route('viewSlip')->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
+}
+
+public function routeBackToPresident($id)
+{
+    $routingSlip = RoutingSlip::findOrFail($id);
+
+    // Reset fields to NULL
+    $routingSlip->op_ctrl        = null;
+    $routingSlip->trans_remarks  = null;
+    $routingSlip->other_remarks  = null;
+    $routingSlip->r_destination  = null;
+    // $routingSlip->received_name  = null; // Assuming received_name is a column
+
+    $routingSlip->route_status = 1;
+    $routingSlip->save();
+
+    // Assuming you can get the related document ID from routing slip
+     $documentId = $routingSlip->id; // Make sure doc_id exists in your routing_slip table
+
+    // Insert into logs_history
+    LogsHistory::create([
+        'doc_id'        => $documentId,
+        'action'        => 'Routed back to Edit',
+        'status_update' => 4
+    ]);
+
+    return redirect()->route('viewSlip')->with('success', 'Routing Slip routed back to the President.');
 }
 
 

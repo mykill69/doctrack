@@ -21,7 +21,7 @@
                         auth()->user()->hasRole('records_officer')))
                 <a href="{{ route('viewSlip') }}"
                     class="nav-link {{ request()->routeIs('viewSlip') || request()->routeIs('editDest') || request()->routeIs('editSlip') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-receipt"></i>
+                    <i class="nav-icon fas fa-exclamation-circle"></i>
                     <p>Documents for Action
                         @php
                             $user = auth()->user();

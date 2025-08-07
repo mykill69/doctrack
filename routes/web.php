@@ -91,6 +91,7 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/routingSlip/edit/{id}', [RoutingSlipController::class, 'editSlip'])->name('editSlip');
     Route::put('/routingSlip/update/{id}', [RoutingSlipController::class, 'updateSlip'])->name('updateSlip');
     Route::get('/routingSlip', [RoutingSlipController::class, 'viewSlip'])->name('viewSlip');
+    Route::put('/route-back/{id}', [RoutingSlipController::class, 'routeBackToPresident'])->name('routeBackToPresident');
     Route::get('/routingSlip/view/{id}', [RoutingSlipController::class, 'viewPdfslip'])->name('viewPdfslip');
     // Route::delete('/routingSlip/{id}', [RoutingSlipController::class, 'deletePdf'])->name('deletePdf');
     Route::delete('/routingSlip/{id}', [RoutingSlipController::class, 'destroy'])->name('routingSlip.destroy');
