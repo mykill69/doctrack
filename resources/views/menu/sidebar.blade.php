@@ -22,7 +22,7 @@
                 <a href="{{ route('viewSlip') }}"
                     class="nav-link {{ request()->routeIs('viewSlip') || request()->routeIs('editDest') || request()->routeIs('editSlip') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-receipt"></i>
-                    <p>Routing Slip
+                    <p>Documnets for Action
                         @php
                             $user = auth()->user();
                             $userRole = $user->role;
@@ -102,7 +102,7 @@
         <li class="nav-item">
             <a href="{{ route('served') }}" class="nav-link {{ request()->routeIs('served') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-check"></i>
-                <p>Served
+                <p>Completed
 
                     @php
 
