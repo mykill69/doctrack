@@ -216,44 +216,35 @@
                                         <span class="d-none d-sm-inline text-bold"> Transaction</span>
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li class="dropdown-item" data-toggle="modal" data-target="#routslip"><a
-                                                href="#">Create Routing Slip</a></li>
+                                        <li class="dropdown-item" data-toggle="modal" data-target="#routslip">
+                                            <a href="#">Create Routing Slip</a>
+                                        </li>
                                         <li class="dropdown-item">
                                             <a href="#" onclick="openDoctrackForm()">Document Tracking Slip</a>
                                         </li>
                                     </ul>
                                 </div>
                             @elseif (in_array($user_role, ['super_user', 'staff']))
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-warning dropdown-toggle"
-                                        data-toggle="dropdown" aria-expanded="false">
-                                        <i class="fa fa-plus"></i>
-                                        <span class="d-none d-sm-inline text-bold"> Transaction</span>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li class="dropdown-item">
-                                            <a href="#" onclick="openDoctrackForm()">Document Tracking Slip</a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                {{-- Simple Button for Document Tracking Slip --}}
+                                <button type="button" class="btn btn-warning" onclick="openDoctrackForm()">
+                                    <i class="fa fa-plus"></i>
+                                    <span class="d-none d-sm-inline text-bold"> Document Tracking Slip</span>
+                                </button>
                             @endif
 
                             {{-- QR Scanner Button (mobile only) --}}
-                            <!-- Hidden file input to trigger camera -->
-                            <input type="file" id="qrInput" accept="image/*" capture="environment"
+                            {{-- <input type="file" id="qrInput" accept="image/*" capture="environment"
                                 style="display: none;" onchange="scanQRCode(this)">
 
-                            <!-- Trigger button -->
                             <button type="button" class="btn btn-default ml-1"
                                 onclick="document.getElementById('qrInput').click();">
                                 <i class="fa fa-qrcode"></i>
-                            </button>
-
-
+                            </button> --}}
 
                         </div>
                     @endif
                 </li>
+
             </ul>
 
 
@@ -381,8 +372,6 @@
     <!-- SweetAlert2 -->
     <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
-
-    <script src="{{ asset('template/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
     <!-- jQuery (required by Select2) -->
 
@@ -692,7 +681,7 @@
                         .then(data => {
                             if (loader) loader.style.display = 'none';
                             window.location.href =
-                            "{{ route('doctrackSlip') }}"; // ✅ REDIRECT TO THE LIST PAGE
+                                "{{ route('doctrackSlip') }}"; // ✅ REDIRECT TO THE LIST PAGE
                         })
 
                         .catch(error => {
