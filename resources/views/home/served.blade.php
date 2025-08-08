@@ -99,10 +99,19 @@
                                                                     {{ ucwords(strtolower($destinationUser->fname)) }}
                                                                     {{ ucwords(strtolower($destinationUser->lname)) }}
                                                                 </strong>
+                                                            @elseif ($document->routingSlip && $document->routingSlip->r_destination)
+                                                                <strong
+                                                                    class="text-danger">{{ $document->routingSlip->r_destination }}</strong>
                                                             @endif
 
-                                                            @if ($document->routingSlip && $document->routingSlip->assigned_to)
-                                                                , was re-rerouted to
+                                                            @if ($document->routingSlip && $assignedUser)
+                                                                , was re-assigned to
+                                                                <strong class="text-danger">
+                                                                    {{ ucwords(strtolower($assignedUser->fname)) }}
+                                                                    {{ ucwords(strtolower($assignedUser->lname)) }}
+                                                                </strong>
+                                                            @elseif ($document->routingSlip && $document->routingSlip->assigned_to)
+                                                                , was re-assigned to
                                                                 <strong
                                                                     class="text-danger">{{ $document->routingSlip->assigned_to }}</strong>
                                                             @endif

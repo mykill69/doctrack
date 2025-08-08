@@ -184,6 +184,7 @@ public function pending()
     $userDepartment = $user->department;
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
+$users = User::all();
 
     $logs = Log::with('document', 'document.routingSlip')
         ->whereNotNull('new_user')
@@ -236,7 +237,7 @@ public function pending()
         ? RoutingSlip::where('route_status', 1)->count()
         : 0;
 
-    return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount'));
+    return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount', 'users'));
     }
 
 public function viewLogs() 
