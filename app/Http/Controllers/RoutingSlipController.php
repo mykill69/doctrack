@@ -864,6 +864,85 @@ public function editAssign($id)
 
 //     return redirect()->route('viewSlip')->with('success', 'Document rerouted successfully!');
 // }
+
+
+// 08-11-2025 update
+
+// public function updateReroute(Request $request, $id)
+// {
+//     $routingSlip = RoutingSlip::findOrFail($id);
+//     $selectedDestinations = $request->input('new_destination', []);
+//     $finalDestinations = [];
+
+//     $document = Document::where('route_id', $routingSlip->rslip_id)->first();
+
+//     if ($document) {
+//         $document->assn_code = null;
+//         $document->save();
+//     }
+
+//     foreach ($selectedDestinations as $destination) {
+//         // Handle by position
+//         if (Str::startsWith($destination, 'position:')) {
+//             $positionId = (int) Str::after($destination, 'position:');
+//             $users = User::where('position', $positionId)->get();
+
+//         // Handle by individual (assumes "Full Name")
+//         } else {
+//             $user = User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
+//             $users = collect($user ? [$user] : []);
+//         }
+
+//         foreach ($users as $user) {
+//             if (!$user) continue;
+
+//             $fullName = $user->fname . ' ' . $user->lname;
+
+//             // Prevent duplicate logs/notifications
+//             if (in_array($fullName, $finalDestinations)) {
+//                 continue;
+//             }
+
+//             $finalDestinations[] = $fullName;
+
+//             $existingLog = Log::where('route_id', $routingSlip->rslip_id)
+//                 ->where('doc_id', $document?->id)
+//                 ->where('new_destination', $fullName)
+//                 ->first();
+
+//             if (!$existingLog) {
+//                 Log::create([
+//                     'user_id'         => auth()->id(),
+//                     'doc_id'          => $document?->id,
+//                     'route_id'        => $routingSlip->rslip_id,
+//                     'action'          => 're-assigned',
+//                     'new_destination' => $fullName,
+//                     'status_update'   => 2,
+//                     'new_file'        => $document?->file_name,
+//                     'assigned_to'     => $routingSlip->assigned_to,
+//                     'created_at'      => now(),
+//                 ]);
+
+//                 // Email Notification
+//                 if (!empty($user->email)) {
+//                     Mail::to($user->email)->send(
+//                         new DocumentRoutedNotification($document, $fullName, $routingSlip->trans_remarks)
+//                     );
+//                 }
+//             }
+//         }
+//     }
+
+//     // Update routing slip
+//     $routingSlip->update([
+//         'routed_users' => implode(', ', $finalDestinations),
+//         'route_status' => 3,
+//     ]);
+
+//     return redirect()->route('viewSlip')->with('success', 'Document rerouted successfully!');
+// }
+
+
 public function updateReroute(Request $request, $id)
 {
     $routingSlip = RoutingSlip::findOrFail($id);
@@ -883,7 +962,18 @@ public function updateReroute(Request $request, $id)
             $positionId = (int) Str::after($destination, 'position:');
             $users = User::where('position', $positionId)->get();
 
-        // Handle by individual (assumes "Full Name")
+        // Handle by group
+        } elseif (Str::startsWith($destination, 'group:')) {
+            $groupName = Str::after($destination, 'group:');
+            $group = Group::where('group_name', $groupName)->first();
+
+            if (!$group) {
+                continue;
+            }
+
+            $users = $group->users; // Pivot relationship
+
+        // Handle by individual full name
         } else {
             $user = User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
             $users = collect($user ? [$user] : []);
@@ -937,6 +1027,5 @@ public function updateReroute(Request $request, $id)
 
     return redirect()->route('viewSlip')->with('success', 'Document rerouted successfully!');
 }
-
 
 }

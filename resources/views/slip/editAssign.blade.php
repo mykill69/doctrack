@@ -173,10 +173,45 @@
                                         <label for="new_destination" class="col-md-3 col-form-label">Name of
                                             Users:</label>
                                         <div class="col-md-9">
-                                            
+
+
+                                            {{-- <select class="form-control select2" name="new_destination[]"
+                                                id="new_destination" multiple required>
+                                                @foreach ($users as $user)
+                                                    <option value="{{ $user->fname }} {{ $user->lname }}">
+                                                        {{ $user->fname }} {{ $user->lname }}
+                                                    </option>
+                                                @endforeach
+                                            </select> --}}
 
                                             <select class="form-control select2" name="new_destination[]"
-                                                id="new_destination" multiple required>
+                                                id="new_destination" data-placeholder="Select destinations..." multiple
+                                                required>
+
+                                                {{-- Static predefined positions --}}
+                                                <option disabled>— Select by Position —</option>
+                                                <option value="position:1">President</option>
+                                                <option value="position:2">VPAA</option>
+                                                <option value="position:3">VPAF</option>
+                                                <option value="position:4">Office Heads</option>
+                                                <option value="position:5">Deans</option>
+                                                <option value="position:6">Campus Administrators</option>
+                                                <option value="position:7">Directors</option>
+
+                                                {{-- Group list --}}
+                                                <option disabled>──────────</option>
+                                                <option disabled>— Select by Group —</option>
+                                                @foreach ($groups as $group)
+                                                    <option value="group:{{ $group->group_name }}">
+                                                        {{ $group->group_name }}
+                                                    </option>
+                                                @endforeach
+
+                                                {{-- Separator --}}
+                                                <option disabled>──────────</option>
+                                                <option disabled>— Select by Individual User —</option>
+
+                                                {{-- Dynamic users --}}
                                                 @foreach ($users as $user)
                                                     <option value="{{ $user->fname }} {{ $user->lname }}">
                                                         {{ $user->fname }} {{ $user->lname }}
