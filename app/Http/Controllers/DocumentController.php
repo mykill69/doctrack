@@ -332,18 +332,44 @@ public function update(Request $request, $id)
             return redirect()->back()->with('error', 'File not found.');
         }
     }
-    // View PDF in the browser
+    // // View PDF in the browser
+    // public function viewPdf($id)
+    // {
+    //     $document = Document::findOrFail($id);
+
+    //     $filePath = storage_path('app/documents/' . $document->file_name);
+
+    //     if (file_exists($filePath)) {
+    //         return response()->file($filePath);
+    //     } else {
+    //         return redirect()->back()->with('error', 'File not found.');
+    //     }
+    // }
+
     public function viewPdf($id)
-    {
-        $document = Document::findOrFail($id);
+{
+    $document = Document::findOrFail($id);
 
-        $filePath = storage_path('app/documents/' . $document->file_name);
+    // Find the latest log record for this document and user
+    $log = Log::where('doc_id', $id)
+        ->where('new_destination', auth()->user()->fname . ' ' . auth()->user()->lname)
+        ->latest()
+        ->first();
 
-        if (file_exists($filePath)) {
-            return response()->file($filePath);
-        } else {
-            return redirect()->back()->with('error', 'File not found.');
-        }
+    if ($log && !$log->viewed_status) {
+        $log->update([
+            'viewed_status' => 1,
+            'viewed_at' => now(),
+        ]);
     }
+
+    $filePath = storage_path('app/documents/' . $document->file_name);
+
+    if (file_exists($filePath)) {
+        return response()->file($filePath);
+    } else {
+        return redirect()->back()->with('error', 'File not found.');
+    }
+}
 
 }

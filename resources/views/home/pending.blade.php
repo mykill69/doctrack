@@ -48,18 +48,42 @@
                                         <tbody>
                                             @foreach ($logs as $log)
                                                 <tr>
-                                                    <td><a href="{{ route('slipForm', $log->route_id) }}" target="_blank"
-                                                            style="color: #007bff;">{{ $log->route_id }}</a></td>
+                                                    <td>
+                                                        <a href="{{ route('slipForm', $log->route_id) }}" target="_blank"
+                                                            style="color: #007bff;">{{ $log->route_id }}
+                                                        </a>
+
                                                     <td>{{ $log->date_received ? \Carbon\Carbon::parse($log->date_received)->format('F d, Y') : 'N/A' }}
                                                     </td>
                                                     <td>{{ $log->source ?? 'N/A' }}</td>
                                                     <td>{{ $log->subject ?? 'N/A' }}</td>
+                                                    {{-- <td>
+                                                        <a href="{{ route('documents.viewPdf', $log->doc_id) }}"
+                                                            target="_blank" style="color: #007bff;">
+                                                            <i class="fas fa-file-pdf text-danger"></i>
+                                                            {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
+                                                        </a>
+                                                        <p><small class="text-muted">Viewed <br>
+                                                                Date & Time</small> </p>
+                                                    </td> --}}
                                                     <td>
                                                         <a href="{{ route('documents.viewPdf', $log->doc_id) }}"
                                                             target="_blank" style="color: #007bff;">
                                                             <i class="fas fa-file-pdf text-danger"></i>
                                                             {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
                                                         </a>
+                                                        <p>
+                                                            <small class="text-muted">
+                                                                @if ($log->viewed_status)
+                                                                    Viewed on <br>
+                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
+                                                                @else
+                                                                    
+                                                                @endif
+                                                            </small>
+                                                        </p>
+                                                    </td>
+
                                                     </td>
                                                     <td>{{ $log->pres_dept ?? 'N/A' }}</td>
                                                     <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
@@ -70,10 +94,7 @@
                                                                 'id',
                                                                 $log->r_destination,
                                                             );
-                                                            $assignedUser = $users->firstWhere(
-                                                                'id',
-                                                                $log->assigned_to,
-                                                            );
+                                                            $assignedUser = $users->firstWhere('id', $log->assigned_to);
                                                         @endphp
 
                                                         @if ($destinationUser)

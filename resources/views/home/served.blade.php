@@ -76,6 +76,16 @@
                                                                 <i class="fas fa-file-pdf text-danger"></i>
                                                                 {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
                                                             </a>
+                                                             <p>
+                                                            <small class="text-muted">
+                                                                @if ($log->viewed_status)
+                                                                    Viewed on <br>
+                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
+                                                                @else
+                                                                    
+                                                                @endif
+                                                            </small>
+                                                        </p>
                                                         </td>
                                                         <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
                                                         <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}

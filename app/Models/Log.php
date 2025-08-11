@@ -20,7 +20,9 @@ class Log extends Model
         'new_destination',
         'comments',
         'assigned_to',
-        'created_at',
+        'viewed_status',
+        'viewed_at',
+        'created_at'
     ];   
 
      public function user()
