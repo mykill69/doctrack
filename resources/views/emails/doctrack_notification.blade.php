@@ -21,8 +21,8 @@
     </p>
 
     <p style="margin-top: 25px;">
-        Regards,<br><br>
-        {{ $document->user_name }},<br>
+        Very truly yours,<br><br>
+        {{ $document->user_name }}<br>
         Central Philippines State University<br>
         Kabankalan City, Negros Occidental
     </p>
