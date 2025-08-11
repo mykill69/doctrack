@@ -357,11 +357,13 @@ public function update(Request $request, $id)
         ->first();
 
     if ($log && !$log->viewed_status) {
-        $log->update([
-            'viewed_status' => 1,
-            'viewed_at' => now(),
-        ]);
-    }
+    $log->timestamps = false; // Prevent updated_at from changing
+    $log->update([
+        'viewed_status' => 1,
+        'viewed_at' => now(),
+    ]);
+}
+
 
     $filePath = storage_path('app/documents/' . $document->file_name);
 
