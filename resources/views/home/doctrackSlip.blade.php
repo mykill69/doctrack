@@ -57,7 +57,26 @@
                                                             target="_blank" style="color: #007bff;">
                                                             {{ $record->docslip_id }}
                                                         </a>
+                                                        @php
+                                                            $log = \App\Models\LogsTracking::where(
+                                                                'docslip_id',
+                                                                $record->docslip_id,
+                                                            )
+                                                                ->where('update_by', auth()->id())
+                                                                ->latest()
+                                                                ->first();
+                                                        @endphp
+                                                        <p>
+                                                            <small class="text-muted">
+                                                                @if ($log && $log->viewed_status)
+                                                                    Viewed on <br>
+                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
+                                                                @else
+                                                                @endif
+                                                            </small>
+                                                        </p>
                                                     </td>
+
                                                     <td>{{ $record->doc_type }}</td>
                                                     <td>{{ $record->doc_title }}</td>
                                                     <td>

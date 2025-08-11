@@ -550,6 +550,35 @@ public function pdfDocSlip($id)
     }
 }
 
+// public function slipMonitoring($docslip_id)
+// {
+//     $documentTrackid = Doctrack::with('doctrackFile')
+//         ->where('docslip_id', $docslip_id)
+//         ->get();
+
+//     $user = auth()->user(); // authenticated user
+
+//     // ✅ Get the creator's user_id (first entry assumes the creator)
+//     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
+
+//     // ✅ Role-based counts
+//     $recordsOfficerCount = $user->role === 'records_officer' 
+//         ? RoutingSlip::where('route_status', 2)->count() 
+//         : 0;
+
+//     $superUserCount = $user->role === 'super_user' 
+//         ? RoutingSlip::where('route_status', 1)->count() 
+//         : 0;
+
+//     return view('slip.docMonitoring', compact(
+//         'documentTrackid',
+//         'superUserCount',
+//         'recordsOfficerCount',
+//         'docslip_id',
+//         'creatorId' // 👈 pass to the blade
+//     ));
+// }
+
 public function slipMonitoring($docslip_id)
 {
     $documentTrackid = Doctrack::with('doctrackFile')
@@ -558,7 +587,21 @@ public function slipMonitoring($docslip_id)
 
     $user = auth()->user(); // authenticated user
 
-    // ✅ Get the creator's user_id (first entry assumes the creator)
+    // ✅ Update viewed status if not yet viewed
+    $log = LogsTracking::where('docslip_id', $docslip_id)
+        ->where('update_by', $user->id) // or 'user_id' depending on your use case
+        ->latest()
+        ->first();
+
+    if ($log && !$log->viewed_status) {
+        $log->timestamps = false; // prevent updated_at from changing
+        $log->update([
+            'viewed_status' => 1,
+            'viewed_at' => now(),
+        ]);
+    }
+
+    // ✅ Get the creator's user_id
     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
 
     // ✅ Role-based counts
@@ -575,9 +618,10 @@ public function slipMonitoring($docslip_id)
         'superUserCount',
         'recordsOfficerCount',
         'docslip_id',
-        'creatorId' // 👈 pass to the blade
+        'creatorId'
     ));
 }
+
 
 
 public function search(Request $request)

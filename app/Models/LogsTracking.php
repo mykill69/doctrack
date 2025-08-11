@@ -19,6 +19,8 @@ class LogsTracking extends Model
         'file_logs',
         'logs_status',
         'comments',
+        'viewed_status',
+        'viewed_at',
     ];
     public function updatedBy()
     {

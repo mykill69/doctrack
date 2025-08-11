@@ -41,6 +41,7 @@
                                                             style="color: #007bff;">
                                                             {{ $log->rslip_id }}
                                                         </a>
+                                                        
                                                     </td>
 
                                                     <td>{{ $log->source ?? 'N/A' }}</td>
