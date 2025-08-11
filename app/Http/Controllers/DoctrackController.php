@@ -579,32 +579,81 @@ public function pdfDocSlip($id)
 //     ));
 // }
 
+// updated on 08/11/2025
+
+// public function slipMonitoring($docslip_id)
+// {
+//     $documentTrackid = Doctrack::with('doctrackFile')
+//         ->where('docslip_id', $docslip_id)
+//         ->get();
+
+//     $user = auth()->user(); // authenticated user
+
+//     // ✅ Update viewed status if not yet viewed
+//     $log = LogsTracking::where('docslip_id', $docslip_id)
+//         ->where('update_by', $user->id) // or 'user_id' depending on your use case
+//         ->latest()
+//         ->first();
+
+//     if ($log && !$log->viewed_status) {
+//         $log->timestamps = false; // prevent updated_at from changing
+//         $log->update([
+//             'viewed_status' => 1,
+//             'viewed_at' => now(),
+//         ]);
+//     }
+
+//     // ✅ Get the creator's user_id
+//     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
+
+//     // ✅ Role-based counts
+//     $recordsOfficerCount = $user->role === 'records_officer' 
+//         ? RoutingSlip::where('route_status', 2)->count() 
+//         : 0;
+
+//     $superUserCount = $user->role === 'super_user' 
+//         ? RoutingSlip::where('route_status', 1)->count() 
+//         : 0;
+
+//     return view('slip.docMonitoring', compact(
+//         'documentTrackid',
+//         'superUserCount',
+//         'recordsOfficerCount',
+//         'docslip_id',
+//         'creatorId'
+//     ));
+// }
+
 public function slipMonitoring($docslip_id)
 {
     $documentTrackid = Doctrack::with('doctrackFile')
         ->where('docslip_id', $docslip_id)
         ->get();
 
-    $user = auth()->user(); // authenticated user
+    $user = auth()->user();
 
-    // ✅ Update viewed status if not yet viewed
+    // Update viewed status for this user if not yet viewed
     $log = LogsTracking::where('docslip_id', $docslip_id)
-        ->where('update_by', $user->id) // or 'user_id' depending on your use case
+        ->where('update_by', $user->id)
         ->latest()
         ->first();
 
     if ($log && !$log->viewed_status) {
-        $log->timestamps = false; // prevent updated_at from changing
+        $log->timestamps = false;
         $log->update([
             'viewed_status' => 1,
             'viewed_at' => now(),
         ]);
     }
 
-    // ✅ Get the creator's user_id
+    // Get latest viewed date for this slip (by any user)
+    $lastViewed = LogsTracking::where('docslip_id', $docslip_id)
+        ->whereNotNull('viewed_at')
+        ->orderByDesc('viewed_at')
+        ->first();
+
     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
 
-    // ✅ Role-based counts
     $recordsOfficerCount = $user->role === 'records_officer' 
         ? RoutingSlip::where('route_status', 2)->count() 
         : 0;
@@ -618,10 +667,10 @@ public function slipMonitoring($docslip_id)
         'superUserCount',
         'recordsOfficerCount',
         'docslip_id',
-        'creatorId'
+        'creatorId',
+        'lastViewed' // ✅ pass to view
     ));
 }
-
 
 
 public function search(Request $request)

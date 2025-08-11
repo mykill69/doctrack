@@ -104,6 +104,39 @@ public function doctrackSlip()
         return $item;
     });
 
+
+$documentTrack->transform(function ($item) {
+    $query = LogsTracking::where('docslip_id', $item->docslip_id)
+        ->whereNotNull('viewed_status')
+        ->whereNotNull('viewed_at');
+
+    // Match this specific row's person
+    if (!is_null($item->update_by)) {
+        // If updated_by exists → show logs for that updater
+        $query->where('update_by', $item->update_by);
+    } else {
+        // If no updater → show logs for the original owner
+        $query->where('user_id', $item->user_id);
+    }
+
+    $item->views = $query->orderByDesc('viewed_at')->get();
+
+    // Duration calculation
+    $start = \Carbon\Carbon::parse($item->created_at);
+    $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+    $diffInMinutes = $end->diffInMinutes($start);
+
+    $item->time_diff = [
+        'days' => floor($diffInMinutes / 1440),
+        'hours' => floor(($diffInMinutes % 1440) / 60),
+        'minutes' => $diffInMinutes % 60,
+    ];
+
+    return $item;
+});
+
+
+
     $doctrackCount = $documentTrack->count();
 
     return view('home.doctrackSlip', compact(
