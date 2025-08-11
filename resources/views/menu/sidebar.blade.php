@@ -233,7 +233,7 @@
             <li class="nav-item">
                 <a href="{{ route('userView') }}"
                     class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">
-                    <i class="fas fa-users nav-icon"></i>
+                    <i class="fas fa-users-cog nav-icon"></i>
                     <p>Users
                         @php
                             $userCount = \App\Models\User::count();
@@ -251,5 +251,16 @@
             </a>
         </li>
         @endif --}}
+
+
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                {{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
+                <i class="nav-icon fas fa-archive"></i>
+                <p>
+                    Routed Files Archive
+                </p>
+            </a>
+        </li>
     </ul>
 </nav>
