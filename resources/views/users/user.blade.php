@@ -32,7 +32,7 @@
                                             <th>NO.</th>
                                             <th>FULLNAME</th>
                                             <th>EMAIL</th>
-                                            <th>DEPARTMENT</th>
+                                            <th>OFFICE</th>
                                             <th>ROLE</th>
                                             <th>GROUP</th>
                                             <th>DATE CREATED</th>
@@ -49,7 +49,7 @@
 
 
                                                 <td class="text-bold text-primary">{{ $user->email }}</td>
-                                                <td>{{ ucfirst(strtolower($user->department)) }}</td>
+                                                <td>{{ ucwords(strtolower($user->department)) }}</td>
 
 
                                                 <td>
