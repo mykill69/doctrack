@@ -76,16 +76,15 @@
                                                                 <i class="fas fa-file-pdf text-danger"></i>
                                                                 {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
                                                             </a>
-                                                             <p>
-                                                            <small class="text-muted">
-                                                                @if ($log->viewed_status)
-                                                                    Viewed on <br>
-                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
-                                                                @else
-                                                                    
-                                                                @endif
-                                                            </small>
-                                                        </p>
+                                                            <p>
+                                                                <small class="text-muted">
+                                                                    @if ($log->viewed_status)
+                                                                        Viewed on <br>
+                                                                        {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
+                                                                    @else
+                                                                    @endif
+                                                                </small>
+                                                            </p>
                                                         </td>
                                                         <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
                                                         <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}
@@ -131,15 +130,19 @@
                                                         <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td style="font-size:10px;width:5%;">
-                                                            <span class="badge badge-success"
-                                                                style="font-size:10px; display: block;">
-                                                                {{ $document->routingSlip->trans_remarks }}
-                                                            </span>
+                                                            @if (!empty($document->routingSlip->trans_remarks))
+                                                                <span class="badge badge-success"
+                                                                    style="font-size:10px; display: block;">
+                                                                    {{ $document->routingSlip->trans_remarks }}
+                                                                </span>
+                                                            @endif
 
-                                                            <span class="badge badge-danger"
-                                                                style="font-size:10px; display: block;">
-                                                                {{ $document->routingSlip->other_remarks ?? '' }}
-                                                            </span>
+                                                            @if (!empty($document->routingSlip->other_remarks))
+                                                                <span class="badge badge-danger"
+                                                                    style="font-size:10px; display: block;">
+                                                                    {{ $document->routingSlip->other_remarks }}
+                                                                </span>
+                                                            @endif
 
                                                             @php
                                                                 $comment = $log->comments ?? '';
@@ -150,10 +153,13 @@
                                                                 );
                                                             @endphp
 
-                                                            <span class="badge badge-warning"
-                                                                style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
-                                                                {!! $wrappedComment !!}
-                                                            </span>
+                                                            @if (!empty($comment))
+                                                                <span class="badge badge-warning"
+                                                                    style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                                    {!! $wrappedComment !!}
+                                                                </span>
+                                                            @endif
+
                                                         </td>
 
                                                         <td>
