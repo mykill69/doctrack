@@ -263,15 +263,7 @@
         @endif --}}
         {{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
 
-        {{-- <li class="nav-item">
-            <a href="#" class="nav-link">
-                
-                <i class="nav-icon fas fa-archive"></i>
-                <p>
-                    Routed Files Archive
-                </p>
-            </a>
-        </li> --}}
+
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
                 <a href="{{ route('offices') }}" class="nav-link {{ request()->routeIs('offices') ? 'active' : '' }}">
@@ -280,7 +272,17 @@
                 </a>
             </li>
         @endif
+        
+        @if ($user_role == 'Administrator')
+        <li class="nav-item">
+            <a href="#" class="nav-link">
 
-
+                <i class="nav-icon fas fa-archive"></i>
+                <p>
+                    Routed Files Archive
+                </p>
+            </a>
+        </li>
+        @endif
     </ul>
 </nav>
