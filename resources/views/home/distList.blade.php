@@ -8,7 +8,7 @@
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">DISTRIBUTION LIST</h3>
+                                <h3 class="card-title">ROUTED DISTRIBUTION LIST</h3>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">

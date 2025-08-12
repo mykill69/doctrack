@@ -57,14 +57,26 @@ class PagesController extends Controller
     $offices = Office::all();
 
     // Get all Doctrack records (no grouping)
+    // $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+    //     ->where(function ($query) use ($userId, $userFullName) {
+    //         $query->where('user_id', $userId)
+    //               ->orWhere('update_by', $userId)
+    //               ->orWhere('user_name', $userFullName);
+    //     })
+    //     ->orderByDesc('created_at')
+    //     ->get();
+
     $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
-        ->where(function ($query) use ($userId, $userFullName) {
-            $query->where('user_id', $userId)
-                  ->orWhere('update_by', $userId)
-                  ->orWhere('user_name', $userFullName);
-        })
-        ->orderByDesc('created_at')
-        ->get();
+    ->where('user_id', 56) // Only for this creator
+    ->whereNotNull('update_by') // Exclude creator rows (no updates)
+    ->where(function ($query) use ($userId, $userFullName) {
+        $query->where('user_id', $userId)
+              ->orWhere('update_by', $userId)
+              ->orWhere('user_name', $userFullName);
+    })
+    ->orderByDesc('created_at')
+    ->get();
+
 
     // Calculate time_diff for each record here
     $documentTrack->transform(function ($item) {
@@ -555,70 +567,6 @@ public function userPassword($id)
         'userEsig' // pass it to the view
     ));
 }
-
-// public function passChange(Request $request, $id)
-// {
-//     $validator = Validator::make($request->all(), [
-//         'email' => 'nullable|string|max:255|unique:users,email,' . $id,
-//         'password' => 'nullable|string|min:8|confirmed',
-//         'department' => 'nullable|string|max:255',
-//         'esig_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf',
-//     ]);
-
-//     if ($validator->fails()) {
-//         return redirect()->back()->withErrors($validator)->withInput();
-//     }
-
-//     $user = User::find($id);
-//     if (!$user) {
-//         return redirect()->back()->with('error', 'User not found');
-//     }
-
-//     // Update only fields that were filled
-//     if ($request->filled('fname')) $user->fname = $request->input('fname');
-//     if ($request->filled('mname')) $user->mname = $request->input('mname');
-//     if ($request->filled('lname')) $user->lname = $request->input('lname');
-//     if ($request->filled('email')) $user->email = $request->input('email');
-//     if ($request->filled('department')) $user->department = $request->input('department');
-//     if ($request->filled('password')) $user->password = Hash::make($request->input('password'));
-
-//     $user->save();
-
-//     // ✅ Handle E-signature upload
-//     if ($request->hasFile('esig_file')) {
-//         $file = $request->file('esig_file');
-//         $filename = $user->fname . '_' . $file->getClientOriginalName();
-//         $destinationPath = public_path('esignature');
-
-//         // Ensure destination folder exists
-//         if (!File::exists($destinationPath)) {
-//             File::makeDirectory($destinationPath, 0755, true);
-//         }
-
-//         // Retrieve existing esig row
-//         $existingEsig = Esig::where('user_id', $user->id)->first();
-
-//         // If exists, delete old file before replacing
-//         if ($existingEsig && $existingEsig->esig_file) {
-//             $oldFilePath = $destinationPath . '/' . $existingEsig->esig_file;
-//             if (File::exists($oldFilePath)) {
-//                 File::delete($oldFilePath);
-//             }
-//         }
-
-//         // Move the new file
-//         $file->move($destinationPath, $filename);
-
-//         // Update or create the Esig row
-//         Esig::updateOrCreate(
-//             ['user_id' => $user->id],
-//             ['esig_file' => $filename]
-//         );
-//     }
-
-//     return redirect()->route('userPassword', ['id' => $id])
-//         ->with('success', 'User updated successfully.');
-// }
 public function passChange(Request $request, $id)
 {
     $validator = Validator::make($request->all(), [
@@ -750,6 +698,97 @@ public function viewDistributionPdf($id)
     $title = 'DISTRIBUTION/RETRIEVAL LIST';
 
     return PDF::loadView('slip.distPdf', compact('routingSlip', 'logs', 'title'))
+        ->stream('distribution_list.pdf');
+}
+
+public function trackingDistributionList()
+{
+    $user = auth()->user();
+    $userRole = $user->role;
+
+    if (!in_array($userRole, ['Administrator', 'records_officer'])) {
+        abort(403, 'Unauthorized');
+    }
+
+    // ✅ Fetch Doctrack with relationships for better performance
+   $logs = Doctrack::with(['updatedBy', 'doctrackFile'])
+    ->orderBy('created_at', 'desc')
+    ->whereNotNull('update_by')
+    ->where('user_id', 56) // 👈 filter here
+    ->get()
+    ->groupBy('docslip_id')// Group by docslip_id
+        ->filter(function ($group) {
+            // Only keep groups with 4 or more entries
+            return $group->count() >= 4;
+        })
+        ->map(function ($group) {
+            // Get the first record to use as the "main" row
+            $first = $group->first();
+
+            // Combine all update_by names
+            $names = $group->map(function ($item) {
+                return $item->updatedBy ? $item->updatedBy->fname . ' ' . $item->updatedBy->lname : null;
+            })
+            ->filter() // Remove nulls
+            ->unique() // Remove duplicates
+            ->implode(', '); // Combine into one string
+
+            // Attach the combined names as a new property
+            $first->combined_names = $names;
+
+            return $first;
+        })
+        ->values(); // Reset array keys
+
+    $offices = Office::all();
+
+    $userFullName = $user->fname . ' ' . $user->lname;
+
+    $documentTrack = Doctrack::where(function ($query) use ($user, $userFullName) {
+        $query->where('user_id', $user->id)
+              ->orWhere('update_by', $user->id)
+              ->orWhere('user_name', $userFullName);
+    })->get();
+
+    $doctrackCount = $documentTrack->count();
+
+    return view('home.trackingDistList', compact('logs', 'offices', 'doctrackCount'));
+}
+
+public function viewTrackingDistributionPdf($id)
+{
+    $title = 'DISTRIBUTION/RETRIEVAL LIST';
+
+    // Get the doc_title from the first matching record
+    $docTitle = Doctrack::where('docslip_id', $id)->value('doc_title');
+
+    // Eager-load updatedBy and exclude rows where update_by is NULL
+    $logs = Doctrack::with('updatedBy')
+        ->where('docslip_id', $id)
+        ->whereNotNull('update_by')
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($log) {
+            // department from user referenced by update_by (if exists)
+            $log->user_department = $log->updatedBy->department ?? null;
+
+            // readable name for update_by
+            $log->update_by_name = $log->updatedBy
+                ? trim($log->updatedBy->fname . ' ' . $log->updatedBy->lname)
+                : null;
+
+            // load e-signature when doctrack_stat is 3 or 5
+            if (in_array($log->doctrack_stat, [3, 5])) {
+                $esig = \App\Models\Esig::where('user_id', $log->update_by)->first();
+                $log->esig_file = $esig ? $esig->esig_file : null;
+            } else {
+                $log->esig_file = null;
+            }
+
+            return $log;
+        });
+
+    return PDF::loadView('slip.distTrackPdf', compact('logs', 'title', 'docTitle'))
         ->stream('distribution_list.pdf');
 }
 

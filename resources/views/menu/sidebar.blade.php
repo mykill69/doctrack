@@ -190,7 +190,7 @@
             </a>
         </li>
         {{-- @if ($user_role == 'Administrator' || $user_role == 'records_officer') --}}
-        @if ($user_role == 'Administrator')
+        @if ($user_role == 'Administrator'|| $user_role == 'records_officer')
             <li class="nav-item">
                 <a href="{{ route('outgoingDocs') }}"
                     class="nav-link {{ request()->routeIs('outgoingDocs') ? 'active' : '' }}">
@@ -201,12 +201,33 @@
         @endif
 
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')
-            <li class="nav-item">
+            @php
+            $distributionActive = request()->routeIs('distributionList', 'trackingDistributionList');
+            @endphp
+            <li class="nav-item {{ $distributionActive ? 'menu-open menu-is-opening' : '' }}">
+            <a href="#" class="nav-link">
+                <i class="fas fa-list nav-icon"></i>
+                <p>
+                Distribution List
+                <i class="right fas fa-angle-left"></i>
+                </p>
+            </a>
+            <ul class="nav nav-treeview" style="{{ $distributionActive ? 'display: block;' : 'display: none;' }}">
+                <li class="nav-item">
                 <a href="{{ route('distributionList') }}"
                     class="nav-link {{ request()->routeIs('distributionList') ? 'active' : '' }}">
-                    <i class="fas fa-list nav-icon"></i>
-                    <p>Distribution List</p>
+                    <i class="fas fa-share nav-icon"></i>
+                    <p>Routed Distribution List</p>
                 </a>
+                </li>
+                <li class="nav-item">
+                <a href="{{ route('trackingDistributionList') }}"
+                    class="nav-link {{ request()->routeIs('trackingDistributionList') ? 'active' : '' }}">
+                    <i class="fas fa-map nav-icon"></i>
+                    <p>Tracking Distribution List</p>
+                </a>
+                </li>
+            </ul>
             </li>
         @endif
 

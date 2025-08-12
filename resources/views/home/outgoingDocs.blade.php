@@ -36,24 +36,138 @@
                                         style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
-
-                                                <th>TRACKING CODE</th>
-                                                <th>DOCUMENT TYPE</th>
-                                                <th>DOCUMENT TITLE</th>
+                                                <th>CTRL #</th>
+                                                <th>DATE RECEIVED</th>
+                                                <th>SOURCE</th>
+                                                <th>SUBJECT MATTER</th>
                                                 {{-- <th>FILE NAME</th> --}}
-                                                <th>STATUS</th>
-                                                <th>CREATED BY</th>
-                                                <th>COMMENTS</th>
-                                                <th>DATE CREATED</th>
+                                                <th>ACTION UNIT</th>
+                                                <th>RECEIVED BY/DATE</th>
+                                                <th>ACTION TAKEN</th>
                                                 <th>DATE RELEASED</th>
+                                                <th>REMARKS</th>
+                                                <th>STATUS</th>
                                                 <th>TOTAL DURATION</th>
+                                                <th>TRACKING CODE</th>
                                                 <th>ACTION</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($documentTrack as $record)
                                                 <tr>
+                                                    <td><input type="text" class="form-control" value=""></td>
 
+                                                    <td data-order="{{ $record->created_at->timestamp }}">
+                                                        {{ $record->created_at->format('M j, Y') }}
+                                                    </td>
+
+
+
+                                                    <td></td>
+                                                    <td>{{ $record->doc_title }}</td>
+                                                    {{-- <td>
+                                                        @if ($record->doctrackFile)
+                                                            <a href="{{ asset('storage/doc_track/' . $record->doctrackFile->file) }}"
+                                                                target="_blank">
+                                                                <i class="fas fa-file-pdf text-danger"></i>
+                                                                <span>{{ $record->doctrackFile->file }}</span>
+                                                            </a>
+                                                        @else
+                                                            <span class="text-muted">No file attached</span>
+                                                        @endif
+
+                                                    </td> --}}
+
+                                                    <td class="text-center">--</td>
+                                                    <td class="text-center">--</td>
+                                                    <td> @php
+                                                        $user = $record->update_by
+                                                            ? \App\Models\User::find($record->update_by)
+                                                            : \App\Models\User::find($record->user_id);
+                                                    @endphp
+                                                        @if ($user)
+                                                            <p class="text-red text-bold">
+                                                                {{ ucwords(strtolower($user->fname)) }}
+                                                                {{ ucwords(strtolower($user->lname)) }}
+                                                            </p>
+                                                        @else
+                                                            <p class="text-muted"><i>User not found</i></p>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $record->updated_at->format('M d, Y') }} </td>
+
+
+                                                    <td>
+                                                        @php $commentsDisplayed = false; @endphp
+
+                                                        @foreach ($record->all_comments as $comment)
+                                                            @if (!is_null($record->update_by))
+                                                                <span
+                                                                    class="badge badge-warning m-1">{{ $comment->comments }}</span><br>
+
+                                                                <small class="text-muted">
+                                                                    
+                                                                    {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
+                                                                </small>
+                                                                <br>
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @else
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @endif
+                                                        @endforeach
+
+                                                        @if (!$commentsDisplayed && !is_null($record->update_by))
+                                                            <span class="text-muted">No comments</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @switch($record->doctrack_stat)
+                                                            @case(1)
+                                                                <span class="badge badge-primary">Created</span>
+                                                            @break
+
+                                                            @case(2)
+                                                                <span class="badge badge-warning">Pending</span>
+                                                            @break
+
+                                                            @case(3)
+                                                                <span class="badge badge-success">Signed</span>
+                                                            @break
+
+                                                            @case(5)
+                                                                <span class="badge badge-info">Checked</span>
+                                                            @break
+
+                                                            @default
+                                                                <span class="badge badge-danger">Returned with comments</span>
+                                                        @endswitch
+                                                    </td>
+                                                    <td>
+                                                        @php
+                                                            $diff = $record->time_diff ?? [
+                                                                'days' => 0,
+                                                                'hours' => 0,
+                                                                'minutes' => 0,
+                                                            ];
+                                                        @endphp
+                                                        @if ($diff['days'] === 0 && $diff['hours'] === 0)
+                                                            {{ $diff['minutes'] }}
+                                                            {{ Str::plural('minute', $diff['minutes']) }}
+                                                        @else
+                                                            @if ($diff['days'] > 0)
+                                                                {{ $diff['days'] }}
+                                                                {{ Str::plural('day', $diff['days']) }}
+                                                            @endif
+                                                            @if ($diff['hours'] > 0)
+                                                                {{ $diff['days'] > 0 ? ', ' : '' }}{{ $diff['hours'] }}
+                                                                {{ Str::plural('hr', $diff['hours']) }}
+                                                            @endif
+                                                            @if ($diff['minutes'] > 0)
+                                                                {{ $diff['days'] > 0 || $diff['hours'] > 0 ? ' and ' : '' }}{{ $diff['minutes'] }}
+                                                                {{ Str::plural('minute', $diff['minutes']) }}
+                                                            @endif
+                                                        @endif
+                                                    </td>
                                                     <td>
                                                         <a href="{{ route('slipMonitoring', ['docslip_id' => $record->docslip_id]) }}"
                                                             target="_blank" style="color: #007bff;">
@@ -81,113 +195,6 @@
                                                             <small class="text-muted">Not yet viewed</small>
                                                         @endif
 
-                                                    </td>
-
-
-
-                                                    <td>{{ $record->doc_type }}</td>
-                                                    <td>{{ $record->doc_title }}</td>
-                                                    {{-- <td>
-                                                        @if ($record->doctrackFile)
-                                                            <a href="{{ asset('storage/doc_track/' . $record->doctrackFile->file) }}"
-                                                                target="_blank">
-                                                                <i class="fas fa-file-pdf text-danger"></i>
-                                                                <span>{{ $record->doctrackFile->file }}</span>
-                                                            </a>
-                                                        @else
-                                                            <span class="text-muted">No file attached</span>
-                                                        @endif
-
-                                                    </td> --}}
-                                                    <td>
-                                                        @switch($record->doctrack_stat)
-                                                            @case(1)
-                                                                <span class="badge badge-primary">Created</span>
-                                                            @break
-
-                                                            @case(2)
-                                                                <span class="badge badge-warning">Pending</span>
-                                                            @break
-
-                                                            @case(3)
-                                                                <span class="badge badge-success">Signed</span>
-                                                            @break
-
-                                                            @case(5)
-                                                                <span class="badge badge-info">Checked</span>
-                                                            @break
-
-                                                            @default
-                                                                <span class="badge badge-danger">Returned with comments</span>
-                                                        @endswitch
-                                                    </td>
-                                                    <td>
-                                                        @php
-                                                            $user = $record->update_by
-                                                                ? \App\Models\User::find($record->update_by)
-                                                                : \App\Models\User::find($record->user_id);
-                                                        @endphp
-                                                        @if ($user)
-                                                            <p class="text-red text-bold">
-                                                                {{ ucwords(strtolower($user->fname)) }}
-                                                                {{ ucwords(strtolower($user->lname)) }}
-                                                            </p>
-                                                        @else
-                                                            <p class="text-muted"><i>User not found</i></p>
-                                                        @endif
-                                                    </td>
-
-                                                    <td>
-                                                        @php $commentsDisplayed = false; @endphp
-
-                                                        @foreach ($record->all_comments as $comment)
-                                                            @if (!is_null($record->update_by))
-                                                                <span
-                                                                    class="badge badge-warning m-1">{{ $comment->comments }}</span>
-                                                                <small class="text-muted">
-                                                                    - {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
-                                                                </small>
-                                                                <br>
-                                                                @php $commentsDisplayed = true; @endphp
-                                                            @else
-                                                                @php $commentsDisplayed = true; @endphp
-                                                            @endif
-                                                        @endforeach
-
-                                                        @if (!$commentsDisplayed && !is_null($record->update_by))
-                                                            <span class="text-muted">No comments</span>
-                                                        @endif
-                                                    </td>
-
-                                                    <td data-order="{{ $record->created_at->timestamp }}">
-                                                        {{ $record->created_at->format('M j, Y h:i A') }}
-                                                    </td>
-                                                    <td>{{ $record->updated_at }}</td>
-                                                    <td>
-                                                        @php
-                                                            $diff = $record->time_diff ?? [
-                                                                'days' => 0,
-                                                                'hours' => 0,
-                                                                'minutes' => 0,
-                                                            ];
-                                                        @endphp
-                                                        @if ($diff['days'] === 0 && $diff['hours'] === 0)
-                                                            {{ $diff['minutes'] }}
-                                                            {{ Str::plural('minute', $diff['minutes']) }}
-                                                        @else
-                                                            @if ($diff['days'] > 0)
-                                                                {{ $diff['days'] }}
-                                                                {{ Str::plural('day', $diff['days']) }}
-                                                            @endif
-                                                            @if ($diff['hours'] > 0)
-                                                                {{ $diff['days'] > 0 ? ', ' : '' }}{{ $diff['hours'] }}
-                                                                {{ Str::plural('hr', $diff['hours']) }}
-                                                            @endif
-                                                            @if ($diff['minutes'] > 0)
-                                                                {{ $diff['days'] > 0 || $diff['hours'] > 0 ? ' and ' : '' }}{{ $diff['minutes'] }}
-                                                                {{ Str::plural('minute', $diff['minutes']) }}
-                                                            @endif
-                                                        @endif
                                                     </td>
 
                                                     <td>

@@ -35,4 +35,11 @@ class Doctrack extends Model
 {
     return $this->hasOne(DoctrackFile::class, 'docslip_id', 'docslip_id'); // Adjust foreign key if different
 }
+
+public function routingSlips()
+{
+    return $this->hasMany(RoutingSlip::class, 'rslip_id', 'docslip_id');
+}
+
+
 }

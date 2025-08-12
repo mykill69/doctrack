@@ -48,9 +48,16 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/viewLogs-Tracking', [PagesController::class, 'viewLogsTracking'])->name('viewLogsTracking');
     Route::get('/viewPdfRoute', [PagesController::class, 'viewPdfRoute'])->name('viewPdfRoute');
     Route::get('/doctrackslip-list', [PagesController::class, 'doctrackSlip'])->name('doctrackSlip');
+
+    // Routed Distribution list
     Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
     Route::get('/distribution-List/view/{id}', [PagesController::class, 'viewDistribution'])->name('viewDistribution');
     Route::get('/distributionList/pdf/{id}', [PagesController::class, 'viewDistributionPdf'])->name('viewDistributionPdf');
+
+    // Tracking Distribution list
+    Route::get('/trackingDistributionList', [PagesController::class, 'trackingDistributionList'])->name('trackingDistributionList');
+    Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewTrackingDistributionPdf'])->name('viewTrackingDistributionPdf');
+
     // offices
     Route::get('/offices', [PagesController::class, 'offices'])->name('offices');
     Route::put('/offices/{office}', [PagesController::class, 'update'])->name('offices.update');

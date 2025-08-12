@@ -144,8 +144,8 @@
                                                             @if (!is_null($record->update_by))
                                                                 <span
                                                                     class="badge badge-warning m-1">{{ $comment->comments }}</span>
-                                                                <small class="text-muted">
-                                                                    - {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
+                                                                <small class="text-muted"><br>
+                                                                     {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
                                                                 </small>
                                                                 <br>
                                                                 @php $commentsDisplayed = true; @endphp
