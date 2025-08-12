@@ -40,7 +40,7 @@
                                                 <th>TRACKING CODE</th>
                                                 <th>DOCUMENT TYPE</th>
                                                 <th>DOCUMENT TITLE</th>
-                                                <th>FILE NAME</th>
+                                                {{-- <th>FILE NAME</th> --}}
                                                 <th>STATUS</th>
                                                 <th>CREATED BY</th>
                                                 <th>COMMENTS</th>
