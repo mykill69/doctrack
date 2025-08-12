@@ -130,15 +130,19 @@
                                                     </td>
                                                     <td>
                                                         @if ($log->routingSlip)
-                                                            <strong
-                                                                class="text-danger">{{ $log->routingSlip->r_destination }}</strong>
+                                                            <strong class="text-danger">
+                                                                {{ ucwords(strtolower($log->routingSlip->r_destination)) }}
+                                                            </strong>
                                                         @endif
 
                                                         @if ($log->assigned_to != null)
-                                                            , was re-assigned to <strong
-                                                                class="text-danger">{{ $log->assigned_to }}</strong>
+                                                            , was re-assigned to
+                                                            <strong class="text-danger">
+                                                                {{ ucwords(strtolower($log->assigned_to)) }}
+                                                            </strong>
                                                         @endif
                                                     </td>
+
                                                     <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td style="font-size:10px;">

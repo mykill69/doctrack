@@ -36,6 +36,7 @@
                                         style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
+
                                                 <th>TRACKING CODE</th>
                                                 <th>DOCUMENT TYPE</th>
                                                 <th>DOCUMENT TITLE</th>
@@ -52,6 +53,7 @@
                                         <tbody>
                                             @foreach ($documentTrack as $record)
                                                 <tr>
+
                                                     <td>
                                                         <a href="{{ route('slipMonitoring', ['docslip_id' => $record->docslip_id]) }}"
                                                             target="_blank" style="color: #007bff;">
@@ -126,14 +128,19 @@
                                                                 : \App\Models\User::find($record->user_id);
                                                         @endphp
                                                         @if ($user)
-                                                            <p class="text-red text-bold">{{ $user->fname }}
-                                                                {{ $user->lname }}</p>
+                                                            <p class="text-red text-bold">
+                                                                {{ ucwords(strtolower($user->fname)) }}
+                                                                {{ ucwords(strtolower($user->lname)) }}
+                                                            </p>
                                                         @else
                                                             <p class="text-muted"><i>User not found</i></p>
                                                         @endif
                                                     </td>
+
                                                     <td>{{ $record->comments ?? 'No comments' }}</td>
-                                                    <td>{{ $record->created_at }}</td>
+                                                    <td data-order="{{ $record->created_at->timestamp }}">
+                                                        {{ $record->created_at->format('M j, Y h:i A') }}
+                                                    </td>
                                                     <td>{{ $record->updated_at }}</td>
                                                     <td>
                                                         @php
@@ -229,7 +236,19 @@
     <!-- SweetAlert2 -->
     <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
-
+    <script>
+        $('#example1').DataTable({
+            "responsive": true,
+            "autoWidth": false,
+            "order": [
+                [0, "desc"]
+            ],
+            "columnDefs": [{
+                "type": "num",
+                "targets": 0
+            }]
+        });
+    </script>
 
     @include('modal.docAdd')
     @include('modal.docEdit')

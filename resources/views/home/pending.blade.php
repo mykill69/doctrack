@@ -78,7 +78,6 @@
                                                                     Viewed on <br>
                                                                     {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
                                                                 @else
-                                                                    
                                                                 @endif
                                                             </small>
                                                         </p>
@@ -98,11 +97,13 @@
                                                         @endphp
 
                                                         @if ($destinationUser)
-                                                            <strong
-                                                                class="text-danger">{{ ucwords(strtolower($destinationUser->fname)) }}
-                                                                {{ ucwords(strtolower($destinationUser->lname)) }}</strong>
+                                                            <strong class="text-danger">
+                                                                {{ ucwords(strtolower($destinationUser->fname)) }}
+                                                                {{ ucwords(strtolower($destinationUser->lname)) }}
+                                                            </strong>
                                                         @else
-                                                            <strong class="text-danger">{{ $log->r_destination }}</strong>
+                                                            <strong
+                                                                class="text-danger">{{ ucwords(strtolower($log->r_destination)) }}</strong>
                                                         @endif
 
                                                         @if ($assignedUser)

@@ -90,7 +90,8 @@
                                                         <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}
                                                         </td>
                                                         <td>
-                                                            <strong class="text-danger">{{ $document->for_to }}</strong>
+                                                            <strong
+                                                                class="text-danger">{{ ucwords(strtolower($document->for_to)) }}</strong>
 
                                                             @php
                                                                 $destinationUser = $users->firstWhere(
@@ -109,8 +110,9 @@
                                                                     {{ ucwords(strtolower($destinationUser->lname)) }}
                                                                 </strong>
                                                             @elseif ($document->routingSlip && $document->routingSlip->r_destination)
-                                                                <strong
-                                                                    class="text-danger">{{ $document->routingSlip->r_destination }}</strong>
+                                                                <strong class="text-danger">
+                                                                    {{ ucwords(strtolower($document->routingSlip->r_destination)) }}
+                                                                </strong>
                                                             @endif
 
                                                             @if ($document->routingSlip && $assignedUser)
@@ -121,10 +123,12 @@
                                                                 </strong>
                                                             @elseif ($document->routingSlip && $document->routingSlip->assigned_to)
                                                                 , was re-assigned to
-                                                                <strong
-                                                                    class="text-danger">{{ $document->routingSlip->assigned_to }}</strong>
+                                                                <strong class="text-danger">
+                                                                    {{ ucwords(strtolower($document->routingSlip->assigned_to)) }}
+                                                                </strong>
                                                             @endif
                                                         </td>
+
 
 
                                                         <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>

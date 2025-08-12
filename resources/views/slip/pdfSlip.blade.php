@@ -149,7 +149,7 @@ letter-spacing: 5px;
                     <tr>
                         <td colspan="2"></td>
                         <td colspan="2" style="text-align: right;font-family: Verdana, sans-serif;">Date:
-                            <u>{{ \Carbon\Carbon::parse($routingSlip->date_received)->format('F d, Y') }}</u>
+                            <u>{{ \Carbon\Carbon::parse($routingSlip->updated_at)->format('F d, Y') }}</u>
                         </td>
                     </tr>
 
