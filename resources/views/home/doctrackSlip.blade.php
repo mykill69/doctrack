@@ -87,7 +87,7 @@
 
                                                     <td>{{ $record->doc_type }}</td>
                                                     <td>{{ $record->doc_title }}</td>
-                                                    <td>
+                                                    {{-- <td>
                                                         @if ($record->doctrackFile)
                                                             <a href="{{ asset('storage/doc_track/' . $record->doctrackFile->file) }}"
                                                                 target="_blank">
@@ -98,7 +98,7 @@
                                                             <span class="text-muted">No file attached</span>
                                                         @endif
 
-                                                    </td>
+                                                    </td> --}}
                                                     <td>
                                                         @switch($record->doctrack_stat)
                                                             @case(1)
