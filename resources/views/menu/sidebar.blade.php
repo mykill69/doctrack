@@ -251,16 +251,16 @@
             </a>
         </li>
         @endif --}}
+{{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
 
-
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a href="#" class="nav-link">
-                {{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
+                
                 <i class="nav-icon fas fa-archive"></i>
                 <p>
                     Routed Files Archive
                 </p>
             </a>
-        </li>
+        </li> --}}
     </ul>
 </nav>

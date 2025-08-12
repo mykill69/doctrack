@@ -115,13 +115,12 @@
                                                             <i class="fas fa-file-pdf text-danger"></i>
                                                             {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
                                                         </a>
-                                                         <p>
+                                                        <p>
                                                             <small class="text-muted">
                                                                 @if ($log->viewed_status)
                                                                     Viewed on <br>
                                                                     {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
                                                                 @else
-                                                                    
                                                                 @endif
                                                             </small>
                                                         </p>
@@ -150,7 +149,7 @@
                                                 @else
                                                 <span class="badge badge-danger">En route</span>
                                                 @endif --}}
-                                                        <span class="badge badge-success"
+                                                        {{-- <span class="badge badge-success"
                                                             style="font-size:10px;display: block;">{{ $document->routingSlip->trans_remarks ?? '' }}</span><span
                                                             class="badge badge-warning"
                                                             style="font-size:10px;">{{ $document->routingSlip->assign_com ?? '' }}</span>
@@ -169,12 +168,46 @@
                                                         <span class="badge badge-warning"
                                                             style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
                                                             {!! $wrappedComment !!}
-                                                        </span>
+                                                        </span> --}}
 
                                                         {{-- <span class="badge badge-warning"
                                                             style="margin-top: 2px; font-size:10px;">{{ $log->comments ?? '' }}</span>
 
                                                     </td> --}}
+
+                                                        {{-- Display trans_remarks if not empty --}}
+                                                        @if (!empty($document->routingSlip->trans_remarks))
+                                                            <span class="badge badge-success"
+                                                                style="font-size:10px; display: block;">
+                                                                {{ $document->routingSlip->trans_remarks }}
+                                                            </span>
+                                                        @endif
+
+                                                        {{-- Display other_remarks if not empty --}}
+                                                        @if (!empty($document->routingSlip->other_remarks))
+                                                            <span class="badge badge-danger"
+                                                                style="font-size:10px; display: block;">
+                                                                {{ $document->routingSlip->other_remarks }}
+                                                            </span>
+                                                        @endif
+
+                                                        {{-- Process and display logs.comments if not empty --}}
+                                                        @php
+                                                            $comment = $log->comments ?? '';
+                                                            $wrappedComment = preg_replace(
+                                                                '/((?:\S+\s+){4})/',
+                                                                '$1<br>',
+                                                                $comment,
+                                                            );
+                                                        @endphp
+
+                                                        @if (!empty($comment))
+                                                            <span class="badge badge-warning"
+                                                                style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                                {!! $wrappedComment !!}
+                                                            </span>
+                                                        @endif
+
                                                     <td>
                                                         @php
                                                             $documentCreatedAt = \Carbon\Carbon::parse(
