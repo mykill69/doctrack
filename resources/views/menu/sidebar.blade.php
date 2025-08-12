@@ -146,37 +146,6 @@
             $trackingActive = request()->routeIs('doctrackSlip', 'incoming');
         @endphp
 
-        {{-- <li class="nav-item {{ $trackingActive ? 'menu-open menu-is-opening' : '' }}">
-            <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-route"></i>
-                <p>
-                    Tracking Documents
-                    <i class="right fas fa-angle-left"></i>
-                </p>
-            </a>
-            <ul class="nav nav-treeview" style="{{ $trackingActive ? 'display: block;' : 'display: none;' }}">
-                <li class="nav-item">
-                    <a href="{{ route('doctrackSlip') }}"
-                        class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : '' }}">
-                        <i class="fas fa-map-marker-alt nav-icon"></i>
-                        <p>
-                            Tracking Code List
-                            <span class="right badge badge-primary">
-                                {{ $doctrackCount ?? 0 }}
-                            </span>
-                        </p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ route('incoming') }}"
-                        class="nav-link {{ request()->routeIs('incoming') ? 'active' : '' }}">
-                        <i class="fa fa-search nav-icon"></i>
-                        <p>Search Tracking Code</p>
-                    </a>
-                </li>
-            </ul>
-        </li> --}}
-
         <li class="nav-item">
             <a href="{{ route('doctrackSlip') }}"
                 class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : '' }}">
@@ -190,7 +159,7 @@
             </a>
         </li>
         {{-- @if ($user_role == 'Administrator' || $user_role == 'records_officer') --}}
-        @if ($user_role == 'Administrator'|| $user_role == 'records_officer')
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
                 <a href="{{ route('outgoingDocs') }}"
                     class="nav-link {{ request()->routeIs('outgoingDocs') ? 'active' : '' }}">
@@ -202,32 +171,78 @@
 
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             @php
-            $distributionActive = request()->routeIs('distributionList', 'trackingDistributionList');
+                $distributionActive = request()->routeIs('distributionList', 'trackingDistributionList');
             @endphp
             <li class="nav-item {{ $distributionActive ? 'menu-open menu-is-opening' : '' }}">
-            <a href="#" class="nav-link">
-                <i class="fas fa-list nav-icon"></i>
-                <p>
-                Distribution List
-                <i class="right fas fa-angle-left"></i>
-                </p>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-list nav-icon"></i>
+                    <p>
+                        Distribution List
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview" style="{{ $distributionActive ? 'display: block;' : 'display: none;' }}">
+                    <li class="nav-item">
+                        <a href="{{ route('distributionList') }}"
+                            class="nav-link {{ request()->routeIs('distributionList') ? 'active' : '' }}">
+                            <i class="fas fa-share nav-icon"></i>
+                            <p>Routed Distribution List</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('trackingDistributionList') }}"
+                            class="nav-link {{ request()->routeIs('trackingDistributionList') ? 'active' : '' }}">
+                            <i class="fas fa-map nav-icon"></i>
+                            <p>Tracking Distribution List</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        @endif
+
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+            <li class="nav-item">
+                <a href="{{ route('userView') }}"
+                    class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">
+                    <i class="fas fa-users-cog nav-icon"></i>
+                    <p>User Management
+                        @php
+                            $userCount = \App\Models\User::count();
+                        @endphp
+                        <span class="badge badge-danger ml-2">{{ $userCount ?? 0 }}</span>
+                    </p>
+                </a>
+            </li>
+        @endif
+        {{-- @if (auth()->check() && auth()->user()->role !== 'Administrator')
+        <li class="nav-item">
+            <a href="{{ route('userPassword', ['id' => Auth::user()->id]) }}" class="nav-link {{ request()->routeIs('userPassword') ? 'active' : '' }}">
+                <i class="fas fa-user-edit nav-icon"></i>
+                <p>Edit Account</p>
             </a>
-            <ul class="nav nav-treeview" style="{{ $distributionActive ? 'display: block;' : 'display: none;' }}">
-                <li class="nav-item">
-                <a href="{{ route('distributionList') }}"
-                    class="nav-link {{ request()->routeIs('distributionList') ? 'active' : '' }}">
-                    <i class="fas fa-share nav-icon"></i>
-                    <p>Routed Distribution List</p>
+        </li>
+        @endif --}}
+        {{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
+
+
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+            <li class="nav-item">
+                <a href="{{ route('offices') }}" class="nav-link {{ request()->routeIs('offices') ? 'active' : '' }}">
+                    <i class="fas fa-building nav-icon"></i>
+                    <p>Office List</p>
                 </a>
-                </li>
-                <li class="nav-item">
-                <a href="{{ route('trackingDistributionList') }}"
-                    class="nav-link {{ request()->routeIs('trackingDistributionList') ? 'active' : '' }}">
-                    <i class="fas fa-map nav-icon"></i>
-                    <p>Tracking Distribution List</p>
+            </li>
+        @endif
+
+        @if ($user_role == 'Administrator')
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+
+                    <i class="nav-icon fas fa-archive"></i>
+                    <p>
+                        Routed Files Archive
+                    </p>
                 </a>
-                </li>
-            </ul>
             </li>
         @endif
 
@@ -258,52 +273,5 @@
                 </li>
             </ul>
         </li>
-
-
-        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
-            <li class="nav-item">
-                <a href="{{ route('userView') }}"
-                    class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">
-                    <i class="fas fa-users-cog nav-icon"></i>
-                    <p>Users
-                        @php
-                            $userCount = \App\Models\User::count();
-                        @endphp
-                        <span class="badge badge-danger ml-2">{{ $userCount ?? 0 }}</span>
-                    </p>
-                </a>
-            </li>
-        @endif
-        {{-- @if (auth()->check() && auth()->user()->role !== 'Administrator')
-        <li class="nav-item">
-            <a href="{{ route('userPassword', ['id' => Auth::user()->id]) }}" class="nav-link {{ request()->routeIs('userPassword') ? 'active' : '' }}">
-                <i class="fas fa-user-edit nav-icon"></i>
-                <p>Edit Account</p>
-            </a>
-        </li>
-        @endif --}}
-        {{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
-
-
-        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
-            <li class="nav-item">
-                <a href="{{ route('offices') }}" class="nav-link {{ request()->routeIs('offices') ? 'active' : '' }}">
-                    <i class="fas fa-building nav-icon"></i>
-                    <p>Offices</p>
-                </a>
-            </li>
-        @endif
-        
-        @if ($user_role == 'Administrator')
-        <li class="nav-item">
-            <a href="#" class="nav-link">
-
-                <i class="nav-icon fas fa-archive"></i>
-                <p>
-                    Routed Files Archive
-                </p>
-            </a>
-        </li>
-        @endif
     </ul>
 </nav>
