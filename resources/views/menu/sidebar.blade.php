@@ -189,6 +189,16 @@
                 </p>
             </a>
         </li>
+        {{-- @if ($user_role == 'Administrator' || $user_role == 'records_officer') --}}
+        @if ($user_role == 'Administrator')
+            <li class="nav-item">
+                <a href="{{ route('outgoingDocs') }}"
+                    class="nav-link {{ request()->routeIs('outgoingDocs') ? 'active' : '' }}">
+                    <i class="fas fa-share-square nav-icon"></i>
+                    <p>Outgoing Document</p>
+                </a>
+            </li>
+        @endif
 
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
@@ -270,5 +280,7 @@
                 </a>
             </li>
         @endif
+
+
     </ul>
 </nav>

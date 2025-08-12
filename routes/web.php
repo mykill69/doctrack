@@ -41,7 +41,7 @@ Route::group(['middleware'=>['login_auth']],function(){
     //Main page
     Route::get('/', [DocumentController::class, 'dashboard'])->name('dashboard');
     //pages
-    Route::get('/incoming', [PagesController::class, 'incoming'])->name('incoming');
+    Route::get('/outgoingDocs', [PagesController::class, 'outgoingDocs'])->name('outgoingDocs');
     Route::get('/pending', [PagesController::class, 'pending'])->name('pending');
     Route::get('/served', [PagesController::class, 'served'])->name('served');
     Route::get('/viewLogs', [PagesController::class, 'viewLogs'])->name('viewLogs');

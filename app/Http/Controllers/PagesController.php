@@ -28,27 +28,117 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class PagesController extends Controller
 {
    
-    public function incoming()
+    public function outgoingDocs()
 {
     $user = auth()->user();
-    $userDepartment = $user->department;
     $userId = $user->id;
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
-    $logs = Log::where(function ($query) use ($userId, $userDepartment) {
+    // Logs for routing slip counts
+    $logs = Log::where(function ($query) use ($userId) {
         $query->where('new_user', $userId)
-              ->orWhere('user_id', $userId)
-              ->orWhere('new_destination', $userDepartment);
-    })->get(); 
+              ->orWhere('user_id', $userId);
+    })->get();
 
-    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) ? RoutingSlip::where('route_status', 3)->count() : 0;
-    $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
-    $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+    // Routing slip counts
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) 
+        ? RoutingSlip::where('route_status', 3)->count() 
+        : 0;
+
+    $superUserCount = $userRole === 'super_user' 
+        ? RoutingSlip::where('route_status', 1)->count() 
+        : 0;
+
+    $recordsOfficerCount = $userRole === 'records_officer' 
+        ? RoutingSlip::where('route_status', 2)->count() 
+        : 0;
 
     $offices = Office::all();
 
-    return view('home.incoming', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount'));
+    // Get all Doctrack records (no grouping)
+    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+        ->where(function ($query) use ($userId, $userFullName) {
+            $query->where('user_id', $userId)
+                  ->orWhere('update_by', $userId)
+                  ->orWhere('user_name', $userFullName);
+        })
+        ->orderByDesc('created_at')
+        ->get();
+
+    // Calculate time_diff for each record here
+    $documentTrack->transform(function ($item) {
+        $start = \Carbon\Carbon::parse($item->created_at);
+        $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+        $diffInMinutes = $end->diffInMinutes($start);
+
+        $item->time_diff = [
+            'days' => floor($diffInMinutes / 1440),
+            'hours' => floor(($diffInMinutes % 1440) / 60),
+            'minutes' => $diffInMinutes % 60,
+        ];
+
+        return $item;
+    });
+
+
+$documentTrack->transform(function ($item) {
+    $query = LogsTracking::where('docslip_id', $item->docslip_id)
+        ->whereNotNull('viewed_status')
+        ->whereNotNull('viewed_at');
+
+    // Match this specific row's person
+    if (!is_null($item->update_by)) {
+        // If updated_by exists → show logs for that updater
+        $query->where('update_by', $item->update_by);
+    } else {
+        // If no updater → show logs for the original owner
+        $query->where('user_id', $item->user_id);
+    }
+
+   $item->views = $query->orderBy('viewed_at', 'asc')->limit(1)->get();
+
+
+    // Duration calculation
+    $start = \Carbon\Carbon::parse($item->created_at);
+    $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+    $diffInMinutes = $end->diffInMinutes($start);
+
+    $item->time_diff = [
+        'days' => floor($diffInMinutes / 1440),
+        'hours' => floor(($diffInMinutes % 1440) / 60),
+        'minutes' => $diffInMinutes % 60,
+    ];
+
+    return $item;
+});
+
+
+$documentTrack->transform(function ($item) {
+    $query = LogsTracking::where('docslip_id', $item->docslip_id)
+        ->whereNotNull('comments');
+
+    if (!is_null($item->update_by)) {
+        $query->where('update_by', $item->update_by);
+    } else {
+        $query->where('user_id', $item->user_id);
+    }
+
+    // Get both comment text and created_at
+    $item->all_comments = $query->get(['comments', 'created_at']);
+
+    return $item;
+});
+
+
+
+    $doctrackCount = $documentTrack->count();
+
+    return view('home.outgoingDocs', compact(
+        'documentTrack', 'offices',
+        'logs', 'routingSlipCount', 'superUserCount', 
+        'recordsOfficerCount', 'doctrackCount'
+    ));
 }
 
 public function doctrackSlip()
