@@ -251,7 +251,7 @@
             </a>
         </li>
         @endif --}}
-{{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
+        {{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
 
         {{-- <li class="nav-item">
             <a href="#" class="nav-link">
@@ -262,12 +262,13 @@
                 </p>
             </a>
         </li> --}}
-
-        <li class="nav-item">
-            <a href="{{ route('offices') }}" class="nav-link {{ request()->routeIs('offices') ? 'active' : '' }}">
-                <i class="fas fa-building nav-icon"></i>
-                <p>Offices</p>
-            </a>
-        </li>
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+            <li class="nav-item">
+                <a href="{{ route('offices') }}" class="nav-link {{ request()->routeIs('offices') ? 'active' : '' }}">
+                    <i class="fas fa-building nav-icon"></i>
+                    <p>Offices</p>
+                </a>
+            </li>
+        @endif
     </ul>
 </nav>
