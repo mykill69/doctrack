@@ -137,7 +137,28 @@
                                                         @endif
                                                     </td>
 
-                                                    <td>{{ $record->comments ?? 'No comments' }}</td>
+                                                    <td>
+                                                        @php $commentsDisplayed = false; @endphp
+
+                                                        @foreach ($record->all_comments as $comment)
+                                                            @if (!is_null($record->update_by))
+                                                                <span
+                                                                    class="badge badge-warning m-1">{{ $comment->comments }}</span>
+                                                                <small class="text-muted">
+                                                                    - {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
+                                                                </small>
+                                                                <br>
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @else
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @endif
+                                                        @endforeach
+
+                                                        @if (!$commentsDisplayed && !is_null($record->update_by))
+                                                            <span class="text-muted">No comments</span>
+                                                        @endif
+                                                    </td>
+
                                                     <td data-order="{{ $record->created_at->timestamp }}">
                                                         {{ $record->created_at->format('M j, Y h:i A') }}
                                                     </td>

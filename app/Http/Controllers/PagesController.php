@@ -119,7 +119,8 @@ $documentTrack->transform(function ($item) {
         $query->where('user_id', $item->user_id);
     }
 
-    $item->views = $query->orderByDesc('viewed_at')->get();
+   $item->views = $query->orderBy('viewed_at', 'asc')->limit(1)->get();
+
 
     // Duration calculation
     $start = \Carbon\Carbon::parse($item->created_at);
@@ -131,6 +132,23 @@ $documentTrack->transform(function ($item) {
         'hours' => floor(($diffInMinutes % 1440) / 60),
         'minutes' => $diffInMinutes % 60,
     ];
+
+    return $item;
+});
+
+
+$documentTrack->transform(function ($item) {
+    $query = LogsTracking::where('docslip_id', $item->docslip_id)
+        ->whereNotNull('comments');
+
+    if (!is_null($item->update_by)) {
+        $query->where('update_by', $item->update_by);
+    } else {
+        $query->where('user_id', $item->user_id);
+    }
+
+    // Get both comment text and created_at
+    $item->all_comments = $query->get(['comments', 'created_at']);
 
     return $item;
 });
