@@ -34,13 +34,13 @@
                                                 <th>DATE RECEIVED</th>
                                                 <th>SOURCE</th>
                                                 <th>SUBJECT MATTER</th>
-                                                <th>FILE NAME</th>
                                                 <th>ACTION UNIT</th>
                                                 <th>RECEIVED BY/DATE</th>
                                                 <th>ACTION TAKEN</th>
                                                 <th>DATE RELEASED</th>
-                                                <th>DATE UPDATED</th>
                                                 <th>REMARKS</th>
+                                                <th>FILE NAME</th>
+                                                <th>DATE UPDATED</th>
                                                 <th>TOTAL DURATION</th>
                                             </tr>
                                         </thead>
@@ -109,22 +109,7 @@
                                                     </td>
                                                     <td>{{ optional($document->routingSlip)->subject ?? ($document->subject ?? 'N/A') }}
                                                     </td>
-                                                    <td>
-                                                        <a href="{{ route('documents.viewPdf', $document->id) }}"
-                                                            target="_blank" style="color: #007bff;">
-                                                            <i class="fas fa-file-pdf text-danger"></i>
-                                                            {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
-                                                        </a>
-                                                        <p>
-                                                            <small class="text-muted">
-                                                                @if ($log->viewed_status)
-                                                                    Viewed on <br>
-                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
-                                                                @else
-                                                                @endif
-                                                            </small>
-                                                        </p>
-                                                    </td>
+
                                                     <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
                                                     <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}
                                                     </td>
@@ -144,15 +129,15 @@
                                                     </td>
 
                                                     <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
-                                                    <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
+
                                                     <td style="font-size:10px;">
                                                         {{--  @if ($document->assn_code != null && $log->status_update == 2)
-                                                <span class="badge badge-info">Routed back to <br> Records Office</span>
-                                                @elseif($log->status_update == 3)
-                                                <span class="badge badge-success">Served</span>
-                                                @else
-                                                <span class="badge badge-danger">En route</span>
-                                                @endif --}}
+                                                        <span class="badge badge-info">Routed back to <br> Records Office</span>
+                                                        @elseif($log->status_update == 3)
+                                                        <span class="badge badge-success">Served</span>
+                                                        @else
+                                                        <span class="badge badge-danger">En route</span>
+                                                        @endif --}}
                                                         {{-- <span class="badge badge-success"
                                                             style="font-size:10px;display: block;">{{ $document->routingSlip->trans_remarks ?? '' }}</span><span
                                                             class="badge badge-warning"
@@ -177,7 +162,7 @@
                                                         {{-- <span class="badge badge-warning"
                                                             style="margin-top: 2px; font-size:10px;">{{ $log->comments ?? '' }}</span>
 
-                                                    </td> --}}
+                                                     --}}
 
                                                         {{-- Display trans_remarks if not empty --}}
                                                         @if (!empty($document->routingSlip->trans_remarks))
@@ -211,7 +196,24 @@
                                                                 {!! $wrappedComment !!}
                                                             </span>
                                                         @endif
-
+                                                    </td>
+                                                    <td>
+                                                        <a href="{{ route('documents.viewPdf', $document->id) }}"
+                                                            target="_blank" style="color: #007bff;">
+                                                            <i class="fas fa-file-pdf text-danger"></i>
+                                                            {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
+                                                        </a>
+                                                        <p>
+                                                            <small class="text-muted">
+                                                                @if ($log->viewed_status)
+                                                                    Viewed on <br>
+                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
+                                                                @else
+                                                                @endif
+                                                            </small>
+                                                        </p>
+                                                    </td>
+                                                    <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td>
                                                         @php
                                                             $documentCreatedAt = \Carbon\Carbon::parse(

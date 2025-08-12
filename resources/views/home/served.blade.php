@@ -26,7 +26,7 @@
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">SERVED DOCUMENTS</h3>
+                                <h3 class="card-title">DOCUMENT LOGBOOK</h3>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -38,13 +38,13 @@
                                                 <th>DATE RECEIVED</th>
                                                 <th>SOURCE</th>
                                                 <th>SUBJECT MATTER</th>
-                                                <th>FILE NAME</th>
                                                 <th>ACTION UNIT</th>
                                                 <th>RECEIVED BY/DATE</th>
                                                 <th>ACTION TAKEN</th>
                                                 <th>DATE RELEASED</th>
-                                                <th>DATE UPDATED</th>
                                                 <th>REMARKS</th>
+                                                <th>FILE NAME</th>
+                                                <th>DATE UPDATED</th>
                                                 <th>TOTAL DURATION</th>
                                             </tr>
                                         </thead>
@@ -70,22 +70,7 @@
                                                         </td>
                                                         <td>{{ $document->routingSlip->source }}</td>
                                                         <td>{{ $document->routingSlip->subject }}</td>
-                                                        <td>
-                                                            <a href="{{ route('documents.viewPdf', $document->id) }}"
-                                                                style="color: #007bff;" target="_blank">
-                                                                <i class="fas fa-file-pdf text-danger"></i>
-                                                                {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
-                                                            </a>
-                                                            <p>
-                                                                <small class="text-muted">
-                                                                    @if ($log->viewed_status)
-                                                                        Viewed on <br>
-                                                                        {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
-                                                                    @else
-                                                                    @endif
-                                                                </small>
-                                                            </p>
-                                                        </td>
+
                                                         <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
                                                         <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}
                                                         </td>
@@ -132,7 +117,7 @@
 
 
                                                         <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
-                                                        <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
+
                                                         <td style="font-size:10px;width:5%;">
                                                             @if (!empty($document->routingSlip->trans_remarks))
                                                                 <span class="badge badge-success"
@@ -165,7 +150,23 @@
                                                             @endif
 
                                                         </td>
-
+                                                        <td>
+                                                            <a href="{{ route('documents.viewPdf', $document->id) }}"
+                                                                style="color: #007bff;" target="_blank">
+                                                                <i class="fas fa-file-pdf text-danger"></i>
+                                                                {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
+                                                            </a>
+                                                            <p>
+                                                                <small class="text-muted">
+                                                                    @if ($log->viewed_status)
+                                                                        Viewed on <br>
+                                                                        {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
+                                                                    @else
+                                                                    @endif
+                                                                </small>
+                                                            </p>
+                                                        </td>
+                                                        <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
                                                         <td>
                                                             @php
                                                                 $created = $document->created_at;

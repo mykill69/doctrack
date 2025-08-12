@@ -51,6 +51,12 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
     Route::get('/distribution-List/view/{id}', [PagesController::class, 'viewDistribution'])->name('viewDistribution');
     Route::get('/distributionList/pdf/{id}', [PagesController::class, 'viewDistributionPdf'])->name('viewDistributionPdf');
+    // offices
+    Route::get('/offices', [PagesController::class, 'offices'])->name('offices');
+    Route::put('/offices/{office}', [PagesController::class, 'update'])->name('offices.update');
+    Route::delete('/offices/{office}', [PagesController::class, 'destroy'])->name('offices.destroy');
+    Route::post('/offices', [PagesController::class, 'store'])->name('offices.store');
+
 
 
     //tracking page

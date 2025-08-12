@@ -684,4 +684,71 @@ public function deleteSlip($docslip_id)
         ->with('success', 'Document deleted and logged successfully!');
 }
 
+public function offices()
+{
+    $user = auth()->user();
+    $userRole = $user->role;
+
+    // Only allow certain roles to access this page
+    if (!in_array($userRole, ['Administrator', 'records_officer', 'super_user'])) {
+        abort(403, 'Unauthorized');
+    }
+
+    $offices = Office::orderBy('office_name')->get();
+
+    // For sidebar counts
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+
+    $documentTrack = Doctrack::where(function ($query) use ($user, $userFullName) {
+        $query->where('user_id', $user->id)
+              ->orWhere('update_by', $user->id)
+              ->orWhere('user_name', $userFullName);
+    })->get();
+
+    $doctrackCount = $documentTrack->count();
+
+    $recordsOfficerCount = $userRole === 'records_officer'
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
+
+    $superUserCount = $userRole === 'super_user'
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
+    return view('home.offices', compact('offices', 'doctrackCount', 'recordsOfficerCount', 'superUserCount'));
+}
+
+
+public function update(Request $request, Office $office)
+{
+    $request->validate([
+        'office_name' => 'string|max:255',
+        'office_abbr' => 'string|max:50',
+    ]);
+
+    $office->update($request->only(['office_name', 'office_abbr']));
+
+    return response()->json(['success' => true, 'message' => 'Office updated successfully.']);
+}
+
+public function destroy(Office $office)
+{
+    $office->delete();
+
+    return response()->json(['success' => 'Office deleted successfully.']);
+}
+
+public function store(Request $request)
+{
+    $request->validate([
+        'office_name' => 'required|string|max:255',
+        'office_abbr' => 'required|string|max:50',
+    ]);
+
+    Office::create($request->only('office_name', 'office_abbr'));
+
+    return response()->json(['success' => 'Office added successfully.']);
+}
+
 }

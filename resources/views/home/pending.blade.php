@@ -35,12 +35,12 @@
                                                 <th>DATE RECEIVED</th>
                                                 <th>SOURCE</th>
                                                 <th>SUBJECT MATTER</th>
-                                                <th>FILE NAME</th>
                                                 <th>ACTION UNIT</th>
                                                 <th>RECEIVED BY/DATE</th>
                                                 <th>ACTION TAKEN</th>
                                                 <th>DATE RELEASED</th>
                                                 <th>REMARKS</th>
+                                                <th>FILE NAME</th>
                                                 {{-- <th>OFFICE</th> --}}
                                                 <th>ACTION</th>
                                             </tr>
@@ -66,24 +66,9 @@
                                                         <p><small class="text-muted">Viewed <br>
                                                                 Date & Time</small> </p>
                                                     </td> --}}
-                                                    <td>
-                                                        <a href="{{ route('documents.viewPdf', $log->doc_id) }}"
-                                                            target="_blank" style="color: #007bff;">
-                                                            <i class="fas fa-file-pdf text-danger"></i>
-                                                            {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
-                                                        </a>
-                                                        <p>
-                                                            <small class="text-muted">
-                                                                @if ($log->viewed_status)
-                                                                    Viewed on <br>
-                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
-                                                                @else
-                                                                @endif
-                                                            </small>
-                                                        </p>
-                                                    </td>
 
-                                                    </td>
+
+
                                                     <td>{{ $log->pres_dept ?? 'N/A' }}</td>
                                                     <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
                                                     </td>
@@ -119,6 +104,22 @@
                                                             class="badge badge-success">{{ $log->trans_remarks ?? 'N/A' }}</span>
                                                         <span
                                                             class="badge badge-warning">{{ $log->assign_com ?? '' }}</span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="{{ route('documents.viewPdf', $log->doc_id) }}"
+                                                            target="_blank" style="color: #007bff;">
+                                                            <i class="fas fa-file-pdf text-danger"></i>
+                                                            {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
+                                                        </a>
+                                                        <p>
+                                                            <small class="text-muted">
+                                                                @if ($log->viewed_status)
+                                                                    Viewed on <br>
+                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
+                                                                @else
+                                                                @endif
+                                                            </small>
+                                                        </p>
                                                     </td>
                                                     {{-- <td>{{ $log->new_destination }}</td> --}}
                                                     <td>

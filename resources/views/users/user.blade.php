@@ -31,7 +31,6 @@
                                         <tr>
                                             <th>NO.</th>
                                             <th>FULLNAME</th>
-
                                             <th>EMAIL</th>
                                             <th>DEPARTMENT</th>
                                             <th>ROLE</th>

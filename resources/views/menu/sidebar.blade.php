@@ -262,5 +262,12 @@
                 </p>
             </a>
         </li> --}}
+
+        <li class="nav-item">
+            <a href="{{ route('offices') }}" class="nav-link {{ request()->routeIs('offices') ? 'active' : '' }}">
+                <i class="fas fa-building nav-icon"></i>
+                <p>Offices</p>
+            </a>
+        </li>
     </ul>
 </nav>
