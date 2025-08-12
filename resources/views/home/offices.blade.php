@@ -14,7 +14,7 @@
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h3 class="card-title">List of Registered Users</h3>
+                            <h3 class="card-title">List of Registered Offices</h3>
                             <button type="button" class="btn btn-success" data-toggle="modal" data-target="#addOfficeModal"
                                 style="margin-left: auto; margin-right: 20px;">
                                 <i class="fa fa-plus"></i> Add Office
