@@ -258,6 +258,7 @@ letter-spacing: 5px;
 
                         <tr style="border-bottom: 1px solid; padding-bottom: 0; font-family: Verdana, sans-serif;">
                             <td colspan="4" style="text-align: left; padding-bottom: 0; bottom: 0;">
+                                {{-- Display the reassignUserDept if available --}}
                                 @if (!empty($reassignUserDept))
                                     <p style="font-weight: bold; font-size: 14px; font-style: italic;">
                                         From the Office of the {{ $reassignUserDept }}
@@ -278,23 +279,17 @@ letter-spacing: 5px;
                                 <img src="{{ public_path('template/img/to.png') }}" class="to-img">
                                 <div class="routed-assign">
                                     @if ($logs->count())
+                                        {{-- Display each log's new_destination --}}
                                         @foreach ($logs as $log)
                                             <p style="font-family: Verdana, sans-serif;">{{ $log->new_destination }}
                                             </p>
                                         @endforeach
+                                    @elseif (!empty($groupName))
+                                        {{-- If no logs, display groupName --}}
+                                        <p style="font-family: Verdana, sans-serif;">{{ $groupName }}</p>
                                     @else
-                                        {{-- logs empty or invalid, check if assigned_to is a group and display --}}
-                                        @php
-                                            $assignedTo = $routingSlip->assigned_to ?? '';
-                                            $displayGroup = in_array($assignedTo, $groupName) ? $assignedTo : '';
-                                        @endphp
-                                        @if ($displayGroup)
-                                            <p style="font-family: Verdana, sans-serif;">{{ $displayGroup }}</p>
-                                        @else
-                                            <p>&nbsp;</p>
-                                        @endif
+                                        <p>&nbsp;</p>
                                     @endif
-
                                 </div>
                             </td>
                         </tr>
@@ -381,6 +376,7 @@ letter-spacing: 5px;
                             </td>
                         </tr>
                     @endif
+
                 </tbody>
 
             </table>
