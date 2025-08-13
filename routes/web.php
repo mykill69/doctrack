@@ -64,6 +64,13 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::delete('/offices/{office}', [PagesController::class, 'destroy'])->name('offices.destroy');
     Route::post('/offices', [PagesController::class, 'store'])->name('offices.store');
 
+    // user groups
+    Route::get('/userGroups', [PagesController::class, 'userGroups'])->name('userGroups');
+    Route::put('/groups/{group}', [PagesController::class, 'updateGroup'])->name('groups.update');
+    Route::delete('/groups/{group}', [PagesController::class, 'destroyGroup'])->name('groups.destroy');
+    Route::post('/groups', [PagesController::class, 'storeGroup'])->name('groups.store');
+
+
 
 
     //tracking page

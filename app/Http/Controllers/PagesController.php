@@ -898,4 +898,81 @@ public function store(Request $request)
     return response()->json(['success' => 'Office added successfully.']);
 }
 
+public function userGroups()
+{
+    $user = auth()->user();
+    $userRole = $user->role;
+
+    // Access control similar to offices
+    if (!in_array($userRole, ['Administrator', 'records_officer', 'super_user'])) {
+        abort(403, 'Unauthorized');
+    }
+
+    // Fetch groups ordered by group_name
+    $groups = \App\Models\Group::orderBy('group_name')->get();
+
+    // Sidebar counts or other data as needed
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+
+    $documentTrack = Doctrack::where(function ($query) use ($user, $userFullName) {
+        $query->where('user_id', $user->id)
+              ->orWhere('update_by', $user->id)
+              ->orWhere('user_name', $userFullName);
+    })->get();
+
+    $doctrackCount = $documentTrack->count();
+
+    $recordsOfficerCount = $userRole === 'records_officer'
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
+
+    $superUserCount = $userRole === 'super_user'
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
+    return view('home.userGroups', compact(
+        'groups', 'doctrackCount', 'recordsOfficerCount', 'superUserCount'
+    ));
+}
+
+// Update group
+public function updateGroup(Request $request, \App\Models\Group $group)
+{
+    $request->validate([
+        'group_name' => 'required|string|max:255',
+    ]);
+
+    $group->update($request->only('group_name'));
+
+    return response()->json(['success' => true, 'message' => 'Group updated successfully.']);
+}
+
+// Delete group
+public function destroyGroup(\App\Models\Group $group)
+{
+    $group->delete();
+
+    return response()->json(['success' => 'Group deleted successfully.']);
+}
+
+// Store new group
+public function storeGroup(Request $request)
+{
+    $request->validate([
+        'group_name' => 'required|string|max:255',
+    ]);
+
+    \App\Models\Group::create($request->only('group_name'));
+
+    return response()->json(['success' => 'Group added successfully.']);
+}
+
+
+
+
+
+
+
+
 }

@@ -234,6 +234,15 @@
             </li>
         @endif
 
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+            <li class="nav-item">
+                <a href="{{ route('userGroups') }}" class="nav-link {{ request()->routeIs('userGroups') ? 'active' : '' }}">
+                    <i class="fas fa-users nav-icon"></i>
+                    <p>Group List</p>
+                </a>
+            </li>
+        @endif
+
         @if ($user_role == 'Administrator')
             <li class="nav-item">
                 <a href="#" class="nav-link">
