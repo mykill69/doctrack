@@ -159,7 +159,7 @@
             </a>
         </li>
         {{-- @if ($user_role == 'Administrator' || $user_role == 'records_officer') --}}
-        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+        @if ($user_role == 'Administrator')
             <li class="nav-item">
                 <a href="{{ route('outgoingDocs') }}"
                     class="nav-link {{ request()->routeIs('outgoingDocs') ? 'active' : '' }}">
