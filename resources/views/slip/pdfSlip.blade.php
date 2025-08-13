@@ -256,19 +256,20 @@ letter-spacing: 5px;
                     @if ($routingSlip->assigned_to)
                         <div style="page-break-before: always;"></div>
 
-                        <tr style="border-bottom: 1px solid;padding-bottom: 0;font-family: Verdana, sans-serif;">
-                            <td colspan="4" style="text-align: left;padding-bottom: 0; bottom: 0;">
+                        <tr style="border-bottom: 1px solid; padding-bottom: 0; font-family: Verdana, sans-serif;">
+                            <td colspan="4" style="text-align: left; padding-bottom: 0; bottom: 0;">
                                 @if (!empty($reassignUserDept))
-                                    <p style="font-weight: bold; font-size: 14px;font-style: italic;">From the Office of
-                                        the {{ $reassignUserDept }}</p>
+                                    <p style="font-weight: bold; font-size: 14px; font-style: italic;">
+                                        From the Office of the {{ $reassignUserDept }}
+                                    </p>
                                 @endif
                             </td>
                         </tr>
 
                         <tr>
                             <td colspan="2"></td>
-                            <td colspan="2" style="text-align: right;font-family: Verdana, sans-serif;">Date:
-                                <u>{{ \Carbon\Carbon::parse($routingSlip->updated_at)->format('F d, Y') }}</u>
+                            <td colspan="2" style="text-align: right; font-family: Verdana, sans-serif;">
+                                Date: <u>{{ \Carbon\Carbon::parse($routingSlip->updated_at)->format('F d, Y') }}</u>
                             </td>
                         </tr>
 
@@ -284,9 +285,7 @@ letter-spacing: 5px;
                                     @else
                                         <p>&nbsp;</p>
                                     @endif
-
-
-                                </div> <!-- Blank for second copy -->
+                                </div>
                             </td>
                         </tr>
 
@@ -295,7 +294,7 @@ letter-spacing: 5px;
                         </tr>
 
                         <tr>
-                            <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
+                            <td colspan="2" style="text-align: left; font-family: Verdana, sans-serif;">
                                 @foreach (['Appropriate Action', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
                                     @if ($remarks->contains('remarks_dtls', $leftItem))
                                         <div style="padding: 4px;">
@@ -312,7 +311,7 @@ letter-spacing: 5px;
                                 @endforeach
                             </td>
 
-                            <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
+                            <td colspan="2" style="text-align: left; font-family: Verdana, sans-serif;">
                                 @foreach (['File', 'Information', 'Review/Study', 'See the Office', 'Others'] as $rightItem)
                                     @if ($remarks->contains('remarks_dtls', $rightItem))
                                         <div style="padding: 4px;">
@@ -332,14 +331,14 @@ letter-spacing: 5px;
 
                         <tr>
                             <td colspan="4"
-                                style="text-align: left; border-top: 1px solid black; padding: 0; margin: 0;font-family: Verdana, sans-serif;">
+                                style="text-align: left; border-top: 1px solid black; padding: 0; margin: 0; font-family: Verdana, sans-serif;">
                                 <span style="margin: 0; padding: 5px;">REMARKS:</span>
                             </td>
                         </tr>
 
                         <tr>
                             <td colspan="4" style="padding: 0; margin: 0;">
-                                {{-- Display e-signature if available and route_status is not 1 --}}
+                                {{-- Show e-signature if available and route_status != 1 --}}
                                 @if (isset($reassigningUserEsig, $reassigningUserEsig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
                                     <div style="display: flex; align-items: center; margin-top: 35%;">
                                         <img src="{{ public_path('storage/esignature/' . $reassigningUserEsig->esig_file) }}"
@@ -348,28 +347,26 @@ letter-spacing: 5px;
                                     </div>
                                 @endif
 
-                                {{-- Display user name --}}
+                                {{-- Display assigned user's name --}}
                                 <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
                                     <u>{{ $reassigningUser->fname ?? '' }} {{ $reassigningUser->lname ?? '' }}</u>
                                 </p>
 
-                                {{-- Display user department --}}
+                                {{-- Display assigned user's department --}}
                                 <p style="margin-top: -20px; font-style: italic; font-family: Verdana, sans-serif;">
                                     {{ $reassignUserDept ?? '' }}
                                 </p>
                             </td>
-
-
                         </tr>
 
-                        <tr style="font-size:13px;font-family: Verdana, sans-serif;">
-                            <td style="text-align: center;width: 40%;">
-                                <p>Doc Control Code:CPSU-F-QA-23</p>
+                        <tr style="font-size:13px; font-family: Verdana, sans-serif;">
+                            <td style="text-align: center; width: 40%;">
+                                <p>Doc Control Code: CPSU-F-QA-23</p>
                             </td>
-                            <td colspan="2" style="text-align: left;width: 35%;">
-                                <p>Effective Date:09/12/2018</p>
+                            <td colspan="2" style="text-align: left; width: 35%;">
+                                <p>Effective Date: 09/12/2018</p>
                             </td>
-                            <td style="text-align: left;width: 25%;">
+                            <td style="text-align: left; width: 25%;">
                                 <p>Page No.: 1 of 1</p>
                             </td>
                         </tr>
