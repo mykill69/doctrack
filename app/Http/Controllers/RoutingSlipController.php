@@ -285,7 +285,11 @@ public function pdfSlip($id)
         }
     }
 
-    $groupName = \App\Models\Group::pluck('group_name')->toArray();
+    $group = \App\Models\Group::where('group_name', $assignedTo)->first();
+if ($group) {
+    $groupName = $group->group_name;  // string, not object
+}
+
     // Pass data to view including $groupName
     $pdf = Pdf::loadView('slip.pdfSlip', compact(
         'remarks',
