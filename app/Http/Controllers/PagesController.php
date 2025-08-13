@@ -638,8 +638,8 @@ public function distributionList()
         ->orderBy('routing_slip.created_at', 'desc')
         ->get()
         ->filter(function ($item) {
-            $routedUsers = $item->routed_users
-                ? array_filter(array_map('trim', explode(',', $item->routed_users)))
+            $routedUsers = $item->new_destination
+                ? array_filter(array_map('trim', explode(',', $item->new_destination)))
                 : [];
             return count($routedUsers) >= 4;
         });
