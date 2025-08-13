@@ -262,10 +262,6 @@ letter-spacing: 5px;
                                     <p style="font-weight: bold; font-size: 14px; font-style: italic;">
                                         From the Office of the {{ $reassignUserDept }}
                                     </p>
-                                @elseif (!empty($groupName))
-                                    <p style="font-weight: bold; font-size: 14px; font-style: italic;">
-                                        From the Group: {{ $groupName }}
-                                    </p>
                                 @endif
                             </td>
                         </tr>
@@ -283,12 +279,20 @@ letter-spacing: 5px;
                                 <div class="routed-assign">
                                     @if ($logs->count())
                                         @foreach ($logs as $log)
-                                            <p style="font-family: Verdana, sans-serif;">{{ $log->new_destination }}
-                                            </p>
+                                            @php
+                                                // If logs.assigned_to matches a group name, show that; else show new_destination
+                                                $displayDest = $log->new_destination;
+
+                                                if (!empty($groupNames) && in_array($log->assigned_to, $groupNames)) {
+                                                    $displayDest = $log->assigned_to; // group name from logs.assigned_to
+                                                }
+                                            @endphp
+                                            <p style="font-family: Verdana, sans-serif;">{{ $displayDest }}</p>
                                         @endforeach
                                     @else
                                         <p>&nbsp;</p>
                                     @endif
+
                                 </div>
                             </td>
                         </tr>
@@ -351,19 +355,15 @@ letter-spacing: 5px;
                                     </div>
                                 @endif
 
-                                {{-- Display assigned user's name OR group name --}}
-                                @if ($reassigningUser)
-                                    <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
-                                        <u>{{ $reassigningUser->fname }} {{ $reassigningUser->lname }}</u>
-                                    </p>
-                                    <p style="margin-top: -20px; font-style: italic; font-family: Verdana, sans-serif;">
-                                        {{ $reassignUserDept }}
-                                    </p>
-                                @elseif (!empty($groupName))
-                                    <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
-                                        <u>{{ $groupName }}</u>
-                                    </p>
-                                @endif
+                                {{-- Display assigned user's name --}}
+                                <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
+                                    <u>{{ $reassigningUser->fname ?? '' }} {{ $reassigningUser->lname ?? '' }}</u>
+                                </p>
+
+                                {{-- Display assigned user's department --}}
+                                <p style="margin-top: -20px; font-style: italic; font-family: Verdana, sans-serif;">
+                                    {{ $reassignUserDept ?? '' }}
+                                </p>
                             </td>
                         </tr>
 
@@ -379,7 +379,6 @@ letter-spacing: 5px;
                             </td>
                         </tr>
                     @endif
-
                 </tbody>
 
             </table>
