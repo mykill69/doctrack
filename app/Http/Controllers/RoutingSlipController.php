@@ -226,7 +226,7 @@ public function pdfSlip($id)
         ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
         ->join('users', 'assign_logs.new_user', '=', 'users.id')
         ->where('logs.route_id', $id)
-        ->whereIn('logs.action', ['re-assigned', 'Acknowledged','uploaded'])
+        ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
         ->select('users.department')
         ->orderByDesc('assign_logs.id')
         ->value('department');
@@ -236,7 +236,7 @@ public function pdfSlip($id)
         ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
         ->join('users', 'assign_logs.new_user', '=', 'users.id')
         ->where('logs.route_id', $id)
-        ->whereIn('logs.action', ['re-assigned', 'Acknowledged','uploaded'])
+        ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
         ->select('users.id', 'users.fname', 'users.lname', 'users.department')
         ->orderByDesc('assign_logs.id')
         ->first();
@@ -256,15 +256,31 @@ public function pdfSlip($id)
 
             if ($group) {
                 $groupName = $group->group_name;
-                // Nullify the user data so blade can detect to show groupName instead
-                $reassigningUser = null;
-                $reassignUserDept = null;
+
+                // --- NEW: Fetch user info & dept and esig related to this group ---
+
+                // Let's assume your Group model has a user_id or some link to user:
+                // If not, replace this with the appropriate way to get a user for this group.
+                $userForGroup = \App\Models\User::where('department', $groupName)->first();
+
+                if ($userForGroup) {
+                    $reassigningUser = $userForGroup;
+                    $reassignUserDept = $userForGroup->department;
+
+                    // Get esignature for that user
+                    $reassigningUserEsig = Esig::where('user_id', $userForGroup->id)->first();
+                } else {
+                    // If no user found, nullify to avoid showing stale info
+                    $reassigningUser = null;
+                    $reassignUserDept = null;
+                    $reassigningUserEsig = null;
+                }
             }
         }
+    } else {
+        // If logs exist, still get the esig for current $reassigningUser (existing logic)
+        $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id ?? null)->first();
     }
-
-    // Get e-signature of reassigning user if any
-    $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id ?? null)->first();
 
     // Determine e-signature based on president department (existing)
     $esigUserId = null;
@@ -284,7 +300,7 @@ public function pdfSlip($id)
         }
     }
 
-    // Pass data to view including $groupName
+    // Pass data to view including $groupName and user info
     $pdf = Pdf::loadView('slip.pdfSlip', compact(
         'remarks',
         'routingSlip',
