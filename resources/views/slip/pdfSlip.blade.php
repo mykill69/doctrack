@@ -286,7 +286,7 @@ letter-spacing: 5px;
                                         {{-- logs empty or invalid, check if assigned_to is a group and display --}}
                                         @php
                                             $assignedTo = $routingSlip->assigned_to ?? '';
-                                            $displayGroup = in_array($assignedTo, $groupNames) ? $assignedTo : '';
+                                            $displayGroup = in_array($assignedTo, $groupName) ? $assignedTo : '';
                                         @endphp
                                         @if ($displayGroup)
                                             <p style="font-family: Verdana, sans-serif;">{{ $displayGroup }}</p>
