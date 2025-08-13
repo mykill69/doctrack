@@ -256,17 +256,22 @@ letter-spacing: 5px;
                     @if ($routingSlip->assigned_to)
                         <div style="page-break-before: always;"></div>
 
+                        {{-- Display department --}}
                         <tr style="border-bottom: 1px solid; padding-bottom: 0; font-family: Verdana, sans-serif;">
                             <td colspan="4" style="text-align: left; padding-bottom: 0; bottom: 0;">
-                                {{-- Display the reassignUserDept if available --}}
                                 @if (!empty($reassignUserDept))
                                     <p style="font-weight: bold; font-size: 14px; font-style: italic;">
                                         From the Office of the {{ $reassignUserDept }}
+                                    </p>
+                                @elseif (!empty($groupName))
+                                    <p style="font-weight: bold; font-size: 14px; font-style: italic;">
+                                        {{ $groupName }}
                                     </p>
                                 @endif
                             </td>
                         </tr>
 
+                        {{-- Date --}}
                         <tr>
                             <td colspan="2"></td>
                             <td colspan="2" style="text-align: right; font-family: Verdana, sans-serif;">
@@ -274,18 +279,17 @@ letter-spacing: 5px;
                             </td>
                         </tr>
 
+                        {{-- Destination --}}
                         <tr>
                             <td colspan="2">
                                 <img src="{{ public_path('template/img/to.png') }}" class="to-img">
                                 <div class="routed-assign">
                                     @if ($logs->count())
-                                        {{-- Display each log's new_destination --}}
                                         @foreach ($logs as $log)
                                             <p style="font-family: Verdana, sans-serif;">{{ $log->new_destination }}
                                             </p>
                                         @endforeach
                                     @elseif (!empty($groupName))
-                                        {{-- If no logs, display groupName --}}
                                         <p style="font-family: Verdana, sans-serif;">{{ $groupName }}</p>
                                     @else
                                         <p>&nbsp;</p>
@@ -298,6 +302,7 @@ letter-spacing: 5px;
                             <td></td>
                         </tr>
 
+                        {{-- Remarks checkboxes --}}
                         <tr>
                             <td colspan="2" style="text-align: left; font-family: Verdana, sans-serif;">
                                 @foreach (['Appropriate Action', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
@@ -334,6 +339,7 @@ letter-spacing: 5px;
                             </td>
                         </tr>
 
+                        {{-- Remarks header --}}
                         <tr>
                             <td colspan="4"
                                 style="text-align: left; border-top: 1px solid black; padding: 0; margin: 0; font-family: Verdana, sans-serif;">
@@ -341,10 +347,15 @@ letter-spacing: 5px;
                             </td>
                         </tr>
 
+                        {{-- Signature + name + department --}}
                         <tr>
                             <td colspan="4" style="padding: 0; margin: 0;">
-                                {{-- Show e-signature if available and route_status != 1 --}}
-                                @if (isset($reassigningUserEsig, $reassigningUserEsig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
+
+                                {{-- E-signature --}}
+                                @if (isset($reassigningUserEsig) &&
+                                        isset($reassigningUserEsig->esig_file) &&
+                                        isset($routingSlip) &&
+                                        $routingSlip->route_status != 1)
                                     <div style="display: flex; align-items: center; margin-top: 35%;">
                                         <img src="{{ public_path('storage/esignature/' . $reassigningUserEsig->esig_file) }}"
                                             alt="Electronic Signature"
@@ -352,18 +363,27 @@ letter-spacing: 5px;
                                     </div>
                                 @endif
 
-                                {{-- Display assigned user's name --}}
+                                {{-- Name display logic (priority: reassigningUser → groupName) --}}
                                 <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
-                                    <u>{{ $reassigningUser->fname ?? '' }} {{ $reassigningUser->lname ?? '' }}</u>
+                                    <u>
+                                        @if (!empty($reassigningUser?->fname) || !empty($reassigningUser?->lname))
+                                            {{ $reassigningUser->fname ?? '' }} {{ $reassigningUser->lname ?? '' }}
+                                        @elseif (!empty($groupName))
+                                            {{ $groupName }}
+                                        @else
+                                            ____________________
+                                        @endif
+                                    </u>
                                 </p>
 
-                                {{-- Display assigned user's department --}}
+                                {{-- Department --}}
                                 <p style="margin-top: -20px; font-style: italic; font-family: Verdana, sans-serif;">
                                     {{ $reassignUserDept ?? '' }}
                                 </p>
                             </td>
                         </tr>
 
+                        {{-- Footer --}}
                         <tr style="font-size:13px; font-family: Verdana, sans-serif;">
                             <td style="text-align: center; width: 40%;">
                                 <p>Doc Control Code: CPSU-F-QA-23</p>
@@ -376,6 +396,7 @@ letter-spacing: 5px;
                             </td>
                         </tr>
                     @endif
+
 
                 </tbody>
 
