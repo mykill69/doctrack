@@ -638,10 +638,14 @@ public function distributionList()
         ->orderBy('routing_slip.created_at', 'desc')
         ->get()
         ->filter(function ($item) {
-            $routedUsers = $item->new_destination
-                ? array_filter(array_map('trim', explode(',', $item->new_destination)))
-                : [];
-            return count($routedUsers) >= 4;
+            // Get all logs for this routing slip
+            $destinations = \App\Models\Log::where('route_id', $item->rslip_id)
+                ->pluck('new_destination')
+                ->filter(function ($val) {
+                    return !empty(trim($val));
+                })
+                ->unique();
+            return $destinations->count() >= 4;
         });
 
     $offices = Office::all();
