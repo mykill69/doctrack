@@ -170,8 +170,7 @@
                                 </div>
                                 <div id="destination-select-container">
                                     <div class="form-group row">
-                                        <label for="new_destination" class="col-md-3 col-form-label">Name of
-                                            Users:</label>
+                                        <label for="new_destination" class="col-md-3 col-form-label">Name of Personnel and Group Name:</label>
                                         <div class="col-md-9">
 
 

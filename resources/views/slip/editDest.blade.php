@@ -182,7 +182,7 @@
 
                                 </div>
                                 <div id="user-select-container" class="form-group row align-items-center">
-                                    <label for="routed_to" class="col-md-3 col-form-label">Name of Users:</label>
+                                    <label for="routed_to" class="col-md-3 col-form-label">Name of Personnel and Group Name:</label>
                                     <div class="col-md-9">
                                         <select class="form-control select2" name="routed_users[]" id="routed_users"
                                             data-placeholder="Select users..." multiple required>
