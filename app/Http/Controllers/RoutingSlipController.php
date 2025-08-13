@@ -221,7 +221,7 @@ public function pdfSlip($id)
         ->whereNotNull('new_destination')
         ->get();
 
-    // Get department of user who re-assigned
+    // Original: Get department of user via assign_logs
     $reassignUserDept = DB::table('logs')
         ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
         ->join('users', 'assign_logs.new_user', '=', 'users.id')
@@ -231,7 +231,7 @@ public function pdfSlip($id)
         ->orderByDesc('assign_logs.id')
         ->value('department');
 
-    // Get user who re-assigned
+    // Original: Get user via assign_logs
     $reassigningUser = DB::table('logs')
         ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
         ->join('users', 'assign_logs.new_user', '=', 'users.id')
@@ -240,6 +240,22 @@ public function pdfSlip($id)
         ->select('users.id', 'users.fname', 'users.lname', 'users.department')
         ->orderByDesc('assign_logs.id')
         ->first();
+
+    // 🔹 NEW LOGIC: Directly check logs.new_user -> users.id (in case assign_logs is not the source)
+    if (!$reassigningUser) {
+        $directUser = DB::table('logs')
+            ->join('users', 'logs.new_user', '=', 'users.id')
+            ->where('logs.route_id', $id)
+            ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
+            ->select('users.id', 'users.fname', 'users.lname', 'users.department')
+            ->orderByDesc('logs.id')
+            ->first();
+
+        if ($directUser) {
+            $reassigningUser = $directUser;
+            $reassignUserDept = $directUser->department;
+        }
+    }
 
     $reassigningUserEsig = null;
     $groupName = null;
@@ -257,8 +273,6 @@ public function pdfSlip($id)
 
             if ($group) {
                 $groupName = $group->group_name;
-
-                // Use Eloquent relationship to get the first user in the group
                 $userForGroup = $group->users()->select('users.id', 'users.fname', 'users.lname', 'users.department')->first();
 
                 if ($userForGroup) {
@@ -308,6 +322,7 @@ public function pdfSlip($id)
 
     return $pdf->stream('routing-slip.pdf');
 }
+
 
 
 // 08/13/2025
