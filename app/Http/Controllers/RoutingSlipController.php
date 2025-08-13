@@ -217,7 +217,7 @@ public function pdfSlip($id)
     // Get logs with action 're-assigned' and new_destination is not null
     $logs = DB::table('logs')
     ->where('route_id', $id)
-    ->whereIn('action', ['re-assigned', 'Acknowledged'])
+    ->whereIn('action', ['re-assigned', 'Acknowledged','uploaded'])
     ->whereNotNull('new_destination')
     ->get();
 
@@ -226,7 +226,7 @@ public function pdfSlip($id)
     ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
     ->join('users', 'assign_logs.new_user', '=', 'users.id')
     ->where('logs.route_id', $id)
-    ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
+    ->whereIn('logs.action', ['re-assigned', 'Acknowledged','uploaded'])
     ->select('users.department')
     ->orderByDesc('assign_logs.id') // Get latest assign if multiple
     ->value('department');
@@ -236,7 +236,7 @@ public function pdfSlip($id)
     ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
     ->join('users', 'assign_logs.new_user', '=', 'users.id')
     ->where('logs.route_id', $id)
-    ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
+    ->whereIn('logs.action', ['re-assigned', 'Acknowledged','uploaded'])
     ->select('users.id', 'users.fname', 'users.lname', 'users.department')
     ->orderByDesc('assign_logs.id')
     ->first();
