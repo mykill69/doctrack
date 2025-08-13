@@ -241,10 +241,10 @@ public function pdfSlip($id)
         ->orderByDesc('assign_logs.id')
         ->first();
 
-    // If no reassign logs, check logs.assigned_to and match with groups
-    $groupName = null;
+    $groupName = null; // default null
+
+    // Only if no logs found, try to get groupName by assigned_to
     if ($logs->isEmpty()) {
-        // Get the latest assigned_to from logs
         $assignedTo = DB::table('logs')
             ->where('route_id', $id)
             ->whereNotNull('assigned_to')
@@ -252,7 +252,6 @@ public function pdfSlip($id)
             ->value('assigned_to');
 
         if ($assignedTo) {
-            // Check if assigned_to matches any group_name in groups table
             $group = \App\Models\Group::where('group_name', $assignedTo)->first();
 
             if ($group) {
@@ -285,11 +284,6 @@ public function pdfSlip($id)
         }
     }
 
-    $group = \App\Models\Group::where('group_name', $assignedTo)->first();
-if ($group) {
-    $groupName = $group->group_name;  // string, not object
-}
-
     // Pass data to view including $groupName
     $pdf = Pdf::loadView('slip.pdfSlip', compact(
         'remarks',
@@ -300,12 +294,12 @@ if ($group) {
         'reassignUserDept',
         'reassigningUser',
         'reassigningUserEsig',
-        'groupName',
-        
+        'groupName'
     ));
 
     return $pdf->stream('routing-slip.pdf');
 }
+
 
 // 08/13/2025
 
