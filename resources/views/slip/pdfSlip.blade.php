@@ -279,18 +279,20 @@ letter-spacing: 5px;
                                 <div class="routed-assign">
                                     @if ($logs->count())
                                         @foreach ($logs as $log)
-                                            @php
-                                                // If logs.assigned_to matches a group name, show that; else show new_destination
-                                                $displayDest = $log->new_destination;
-
-                                                if (!empty($groupNames) && in_array($log->assigned_to, $groupNames)) {
-                                                    $displayDest = $log->assigned_to; // group name from logs.assigned_to
-                                                }
-                                            @endphp
-                                            <p style="font-family: Verdana, sans-serif;">{{ $displayDest }}</p>
+                                            <p style="font-family: Verdana, sans-serif;">{{ $log->new_destination }}
+                                            </p>
                                         @endforeach
                                     @else
-                                        <p>&nbsp;</p>
+                                        {{-- logs empty or invalid, check if assigned_to is a group and display --}}
+                                        @php
+                                            $assignedTo = $routingSlip->assigned_to ?? '';
+                                            $displayGroup = in_array($assignedTo, $groupNames) ? $assignedTo : '';
+                                        @endphp
+                                        @if ($displayGroup)
+                                            <p style="font-family: Verdana, sans-serif;">{{ $displayGroup }}</p>
+                                        @else
+                                            <p>&nbsp;</p>
+                                        @endif
                                     @endif
 
                                 </div>
