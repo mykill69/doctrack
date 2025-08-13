@@ -221,17 +221,7 @@ public function pdfSlip($id)
         ->whereNotNull('new_destination')
         ->get();
 
-    // Original: Get department of user via assign_logs
-    $reassignUserDept = DB::table('logs')
-        ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
-        ->join('users', 'assign_logs.new_user', '=', 'users.id')
-        ->where('logs.route_id', $id)
-        ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
-        ->select('users.department')
-        ->orderByDesc('assign_logs.id')
-        ->value('department');
-
-    // Original: Get user via assign_logs
+    // First try via assign_logs
     $reassigningUser = DB::table('logs')
         ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
         ->join('users', 'assign_logs.new_user', '=', 'users.id')
@@ -241,8 +231,10 @@ public function pdfSlip($id)
         ->orderByDesc('assign_logs.id')
         ->first();
 
-    // 🔹 NEW LOGIC: Directly check logs.new_user -> users.id (in case assign_logs is not the source)
-    if (!$reassigningUser) {
+    $reassignUserDept = $reassigningUser->department ?? null;
+
+    // Fallback: check logs.new_user if assign_logs gave no valid user
+    if (!$reassigningUser || empty($reassigningUser->id)) {
         $directUser = DB::table('logs')
             ->join('users', 'logs.new_user', '=', 'users.id')
             ->where('logs.route_id', $id)
@@ -260,7 +252,7 @@ public function pdfSlip($id)
     $reassigningUserEsig = null;
     $groupName = null;
 
-    // If no logs found, check assigned_to and group
+    // If no logs found at all, check assigned_to and group
     if ($logs->isEmpty()) {
         $assignedTo = DB::table('logs')
             ->where('route_id', $id)
@@ -279,16 +271,14 @@ public function pdfSlip($id)
                     $reassigningUser = $userForGroup;
                     $reassignUserDept = $userForGroup->department;
                     $reassigningUserEsig = Esig::where('user_id', $userForGroup->id)->first();
-                } else {
-                    $reassigningUser = null;
-                    $reassignUserDept = null;
-                    $reassigningUserEsig = null;
                 }
             }
         }
-    } else {
-        // Logs exist, get esig for the reassigning user
-        $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id ?? null)->first();
+    }
+
+    // Always fetch esig if we have a valid reassigningUser
+    if ($reassigningUser && !isset($reassigningUserEsig)) {
+        $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id)->first();
     }
 
     // Determine e-signature based on president department
@@ -322,6 +312,7 @@ public function pdfSlip($id)
 
     return $pdf->stream('routing-slip.pdf');
 }
+
 
 
 
