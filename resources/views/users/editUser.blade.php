@@ -93,7 +93,7 @@
                                 <div class="form-row">
                                     {{-- Department --}}
                                     <div class="form-group col-md-4">
-                                        <label for="department">Department</label>
+                                        <label for="department">Office/College</label>
                                         <select class="form-control" id="department" name="department">
                                             <option value="" disabled
                                                 {{ empty($user->department) ? 'selected' : '' }}>Select Office</option>
