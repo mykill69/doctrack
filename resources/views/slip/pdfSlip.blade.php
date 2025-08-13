@@ -262,6 +262,10 @@ letter-spacing: 5px;
                                     <p style="font-weight: bold; font-size: 14px; font-style: italic;">
                                         From the Office of the {{ $reassignUserDept }}
                                     </p>
+                                @elseif (!empty($groupName))
+                                    <p style="font-weight: bold; font-size: 14px; font-style: italic;">
+                                        From the Group: {{ $groupName }}
+                                    </p>
                                 @endif
                             </td>
                         </tr>
@@ -347,15 +351,19 @@ letter-spacing: 5px;
                                     </div>
                                 @endif
 
-                                {{-- Display assigned user's name --}}
-                                <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
-                                    <u>{{ $reassigningUser->fname ?? '' }} {{ $reassigningUser->lname ?? '' }}</u>
-                                </p>
-
-                                {{-- Display assigned user's department --}}
-                                <p style="margin-top: -20px; font-style: italic; font-family: Verdana, sans-serif;">
-                                    {{ $reassignUserDept ?? '' }}
-                                </p>
+                                {{-- Display assigned user's name OR group name --}}
+                                @if ($reassigningUser)
+                                    <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
+                                        <u>{{ $reassigningUser->fname }} {{ $reassigningUser->lname }}</u>
+                                    </p>
+                                    <p style="margin-top: -20px; font-style: italic; font-family: Verdana, sans-serif;">
+                                        {{ $reassignUserDept }}
+                                    </p>
+                                @elseif (!empty($groupName))
+                                    <p style="font-weight: bold; font-size: 18px; font-family: Verdana, sans-serif;">
+                                        <u>{{ $groupName }}</u>
+                                    </p>
+                                @endif
                             </td>
                         </tr>
 
@@ -371,6 +379,7 @@ letter-spacing: 5px;
                             </td>
                         </tr>
                     @endif
+
                 </tbody>
 
             </table>

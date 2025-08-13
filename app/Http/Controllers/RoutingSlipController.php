@@ -208,8 +208,100 @@ public function slipForm($id)
 //     return $pdf->stream('routing-slip.pdf');
 // }
 
+public function pdfSlip($id)
+{
+    $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
+    $remarks = Remark::all();
+    $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
-// update 08/13/2025
+    // Logs with action 're-assigned' or 'Acknowledged' and new_destination not null
+    $logs = DB::table('logs')
+        ->where('route_id', $id)
+        ->whereIn('action', ['re-assigned', 'Acknowledged'])
+        ->whereNotNull('new_destination')
+        ->get();
+
+    // Get department of user who re-assigned
+    $reassignUserDept = DB::table('logs')
+        ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
+        ->join('users', 'assign_logs.new_user', '=', 'users.id')
+        ->where('logs.route_id', $id)
+        ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
+        ->select('users.department')
+        ->orderByDesc('assign_logs.id')
+        ->value('department');
+
+    // Get user who re-assigned
+    $reassigningUser = DB::table('logs')
+        ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
+        ->join('users', 'assign_logs.new_user', '=', 'users.id')
+        ->where('logs.route_id', $id)
+        ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
+        ->select('users.id', 'users.fname', 'users.lname', 'users.department')
+        ->orderByDesc('assign_logs.id')
+        ->first();
+
+    // If no reassign logs, check logs.assigned_to and match with groups
+    $groupName = null;
+    if ($logs->isEmpty()) {
+        // Get the latest assigned_to from logs
+        $assignedTo = DB::table('logs')
+            ->where('route_id', $id)
+            ->whereNotNull('assigned_to')
+            ->orderByDesc('id')
+            ->value('assigned_to');
+
+        if ($assignedTo) {
+            // Check if assigned_to matches any group_name in groups table
+            $group = \App\Models\Group::where('group_name', $assignedTo)->first();
+
+            if ($group) {
+                $groupName = $group->group_name;
+                // Nullify the user data so blade can detect to show groupName instead
+                $reassigningUser = null;
+                $reassignUserDept = null;
+            }
+        }
+    }
+
+    // Get e-signature of reassigning user if any
+    $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id ?? null)->first();
+
+    // Determine e-signature based on president department (existing)
+    $esigUserId = null;
+    if ($routingSlip->pres_dept === "PRESIDENT'S OFFICE") {
+        $esigUserId = 38;
+    } elseif ($routingSlip->pres_dept === 'VPAF') {
+        $esigUserId = 63;
+    } elseif ($routingSlip->pres_dept === 'VPAA') {
+        $esigUserId = 64;
+    }
+
+    $esig = null;
+    if ($esigUserId) {
+        $esig = Esig::where('user_id', $esigUserId)->first();
+        if ($esig && $esig->esig_file) {
+            $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
+        }
+    }
+
+    // Pass data to view including $groupName
+    $pdf = Pdf::loadView('slip.pdfSlip', compact(
+        'remarks',
+        'routingSlip',
+        'relatedDocuments',
+        'esig',
+        'logs',
+        'reassignUserDept',
+        'reassigningUser',
+        'reassigningUserEsig',
+        'groupName'  // new variable
+    ));
+
+    return $pdf->stream('routing-slip.pdf');
+}
+
+// 08/13/2025
 
 // public function pdfSlip($id)
 // {
@@ -280,91 +372,6 @@ public function slipForm($id)
 //     return $pdf->stream('routing-slip.pdf');
 // }
 
-public function pdfSlip($id)
-{
-    $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
-    $remarks = Remark::all();
-    $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
-
-    // Logs with 're-assigned' or 'Acknowledged' + new_destination not null
-    $logs = DB::table('logs')
-        ->where('route_id', $id)
-        ->whereIn('action', ['re-assigned', 'Acknowledged'])
-        ->whereNotNull('new_destination')
-        ->get();
-
-    // Department of user who re-assigned
-    $reassignUserDept = DB::table('logs')
-        ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
-        ->join('users', 'assign_logs.new_user', '=', 'users.id')
-        ->where('logs.route_id', $id)
-        ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
-        ->select('users.department')
-        ->orderByDesc('assign_logs.id')
-        ->value('department');
-
-    // User who re-assigned
-    $reassigningUser = DB::table('logs')
-        ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
-        ->join('users', 'assign_logs.new_user', '=', 'users.id')
-        ->where('logs.route_id', $id)
-        ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
-        ->select('users.id', 'users.fname', 'users.lname', 'users.department')
-        ->orderByDesc('assign_logs.id')
-        ->first();
-
-    // If no reassigning user found, fallback to assigned_to user from logs
-    if (!$reassigningUser) {
-        $assignedToUserId = DB::table('logs')
-            ->where('route_id', $id)
-            ->whereNotNull('assigned_to')
-            ->orderByDesc('id')
-            ->value('assigned_to');
-
-        if ($assignedToUserId) {
-            $reassigningUser = DB::table('users')
-                ->select('id', 'fname', 'lname', 'department')
-                ->where('id', $assignedToUserId)
-                ->first();
-
-            $reassignUserDept = $reassigningUser->department ?? null;
-        }
-    }
-
-    $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id ?? null)->first();
-
-    // Determine e-signature based on department (existing logic)
-    $esigUserId = null;
-    if ($routingSlip->pres_dept === "PRESIDENT'S OFFICE") {
-        $esigUserId = 38;
-    } elseif ($routingSlip->pres_dept === 'VPAF') {
-        $esigUserId = 63;
-    } elseif ($routingSlip->pres_dept === 'VPAA') {
-        $esigUserId = 64;
-    }
-
-    $esig = null;
-    if ($esigUserId) {
-        $esig = Esig::where('user_id', $esigUserId)->first();
-        if ($esig && $esig->esig_file) {
-            $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
-        }
-    }
-
-    // Pass all data to view
-    $pdf = Pdf::loadView('slip.pdfSlip', compact(
-        'remarks', 
-        'routingSlip', 
-        'relatedDocuments', 
-        'esig', 
-        'logs', 
-        'reassignUserDept',
-        'reassigningUser',
-        'reassigningUserEsig'
-    ));
-
-    return $pdf->stream('routing-slip.pdf');
-}
 
 
 
