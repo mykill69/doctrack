@@ -252,20 +252,33 @@ public function pdfSlip($id)
     $reassigningUserEsig = null;
     $groupName = null;
 
-    // If no logs found at all, check assigned_to and group
-    if ($logs->isEmpty()) {
-        $assignedTo = DB::table('logs')
-            ->where('route_id', $id)
-            ->whereNotNull('assigned_to')
-            ->orderByDesc('id')
-            ->value('assigned_to');
+// If no logs found at all, check assigned_to and match logs.new_user to users.id
+if ($logs->isEmpty()) {
+    $assignedTo = DB::table('logs')
+        ->where('route_id', $id)
+        ->whereNotNull('assigned_to')
+        ->orderByDesc('id')
+        ->value('assigned_to');
 
-        if ($assignedTo) {
-            $group = \App\Models\Group::where('group_name', $assignedTo)->first();
+    if ($assignedTo) {
+        $group = \App\Models\Group::where('group_name', $assignedTo)->first();
 
-            if ($group) {
-                $groupName = $group->group_name;
-                $userForGroup = $group->users()->select('users.id', 'users.fname', 'users.lname', 'users.department')->first();
+        if ($group) {
+            $groupName = $group->group_name;
+
+            // Get latest log with new_user for this group
+            $logWithUser = DB::table('logs')
+                ->where('route_id', $id)
+                ->whereNotNull('new_user')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($logWithUser && $logWithUser->new_user) {
+                // Ensure the user belongs to this group
+                $userForGroup = $group->users()
+                    ->where('users.id', $logWithUser->new_user)
+                    ->select('users.id', 'users.fname', 'users.lname', 'users.department')
+                    ->first();
 
                 if ($userForGroup) {
                     $reassigningUser = $userForGroup;
@@ -275,6 +288,8 @@ public function pdfSlip($id)
             }
         }
     }
+}
+
 
     // Always fetch esig if we have a valid reassigningUser
     if ($reassigningUser && !isset($reassigningUserEsig)) {
