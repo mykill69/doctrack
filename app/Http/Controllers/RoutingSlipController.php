@@ -241,9 +241,10 @@ public function pdfSlip($id)
         ->orderByDesc('assign_logs.id')
         ->first();
 
-    $groupName = null; // default null
+    $reassigningUserEsig = null;
+    $groupName = null;
 
-    // Only if no logs found, try to get groupName by assigned_to
+    // If no logs found, check assigned_to and group
     if ($logs->isEmpty()) {
         $assignedTo = DB::table('logs')
             ->where('route_id', $id)
@@ -257,20 +258,14 @@ public function pdfSlip($id)
             if ($group) {
                 $groupName = $group->group_name;
 
-                // --- NEW: Fetch user info & dept and esig related to this group ---
-
-                // Let's assume your Group model has a user_id or some link to user:
-                // If not, replace this with the appropriate way to get a user for this group.
-                $userForGroup = \App\Models\User::where('department', $groupName)->first();
+                // Use Eloquent relationship to get the first user in the group
+                $userForGroup = $group->users()->select('users.id', 'users.fname', 'users.lname', 'users.department')->first();
 
                 if ($userForGroup) {
                     $reassigningUser = $userForGroup;
                     $reassignUserDept = $userForGroup->department;
-
-                    // Get esignature for that user
                     $reassigningUserEsig = Esig::where('user_id', $userForGroup->id)->first();
                 } else {
-                    // If no user found, nullify to avoid showing stale info
                     $reassigningUser = null;
                     $reassignUserDept = null;
                     $reassigningUserEsig = null;
@@ -278,19 +273,17 @@ public function pdfSlip($id)
             }
         }
     } else {
-        // If logs exist, still get the esig for current $reassigningUser (existing logic)
+        // Logs exist, get esig for the reassigning user
         $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id ?? null)->first();
     }
 
-    // Determine e-signature based on president department (existing)
-    $esigUserId = null;
-    if ($routingSlip->pres_dept === "PRESIDENT'S OFFICE") {
-        $esigUserId = 38;
-    } elseif ($routingSlip->pres_dept === 'VPAF') {
-        $esigUserId = 63;
-    } elseif ($routingSlip->pres_dept === 'VPAA') {
-        $esigUserId = 64;
-    }
+    // Determine e-signature based on president department
+    $esigUserId = match ($routingSlip->pres_dept) {
+        "PRESIDENT'S OFFICE" => 38,
+        'VPAF' => 63,
+        'VPAA' => 64,
+        default => null,
+    };
 
     $esig = null;
     if ($esigUserId) {
@@ -300,7 +293,7 @@ public function pdfSlip($id)
         }
     }
 
-    // Pass data to view including $groupName and user info
+    // Pass data to view
     $pdf = Pdf::loadView('slip.pdfSlip', compact(
         'remarks',
         'routingSlip',
