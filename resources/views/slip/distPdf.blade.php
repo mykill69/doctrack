@@ -90,12 +90,7 @@
     <main>
         <h1>{{ $title }}</h1>
 
-        {{-- @php
-            $logsPerPage = 15;
-            $chunks = $logs->whereNotNull('user_department')->chunk($logsPerPage);
-            $totalPages = ceil(count($logs->whereNotNull('user_department')) / $logsPerPage);
-            $rowCount = 1;
-        @endphp --}}
+
         @php
             $logsPerPage = 15;
             $chunks = $logs->chunk($logsPerPage);
@@ -120,41 +115,38 @@
                 </thead>
                 <tbody>
                     @foreach ($chunk as $log)
-                        @if ($log->new_destination)
-                            <tr>
-                                <td>{{ $rowCount }}</td>
-                                <td><small>{{ $log->user_department ?? ' ' }}</small></td>
+                        <tr>
+                            <td>{{ $rowCount }}</td>
+                            <td><small>{{ $log->new_destination ?? '' }}</small></td>
+                            <td>
+                                {{ $log->created_at ? \Carbon\Carbon::parse($log->created_at)->format('M d, Y') : '' }}
+                            </td>
 
-                                @if (!empty($log->user_department))
-                                    <td>{{ \Carbon\Carbon::parse($log->created_at)->format('M d, Y') }}</td>
-                                    <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('M d, Y') : '---' }}
-                                    </td>
-                                    <td>{{ $log->new_destination }}</td>
-                                @else
-                                    <td>&nbsp;</td>
-                                    <td>&nbsp;</td>
-                                    <td>&nbsp;</td>
+                            <td>
+                                @if ($log->status_update == 3 && $log->updated_at)
+                                    {{ \Carbon\Carbon::parse($log->updated_at)->format('M d, Y') }}
                                 @endif
+                            </td>
 
-                                <td>
-                                    @if ($log->esig_file)
-                                        <img src="{{ public_path('storage/esignature/' . $log->esig_file) }}"
-                                            alt="Signature" style="width: 80px; height: 50px;">
-                                    @endif
-                                </td>
-                            </tr>
-                        @else
-                            <tr>
-                                <td>{{ $rowCount }}</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                            </tr>
-                        @endif
+                            {{-- RECEIVED BY (only if status_update == 3) --}}
+                            <td>
+                                @if ($log->status_update == 3)
+                                    {{ $log->new_destination ?? '' }}
+                                @endif
+                            </td>
+
+                            {{-- SIGNATURE (only if status_update == 3) --}}
+                            <td>
+                                @if ($log->status_update == 3 && $log->esig_file)
+                                    <img src="{{ public_path('storage/esignature/' . $log->esig_file) }}" alt="Signature"
+                                        style="width: 80px; height: 50px;">
+                                @endif
+                            </td>
+                        </tr>
                         @php $rowCount++; @endphp
                     @endforeach
+
+
 
                     {{-- Fill remaining rows to keep total per page at 15 --}}
                     @for ($i = $chunk->count(); $i < $logsPerPage; $i++)

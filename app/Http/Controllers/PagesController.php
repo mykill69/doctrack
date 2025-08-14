@@ -633,20 +633,24 @@ public function distributionList()
         abort(403, 'Unauthorized');
     }
 
-    $logs = RoutingSlip::leftJoin('documents', 'routing_slip.rslip_id', '=', 'documents.route_id')
-        ->select('routing_slip.*', 'documents.id as doc_id', 'documents.file_name')
-        ->orderBy('routing_slip.created_at', 'desc')
-        ->get()
-        ->filter(function ($item) {
-            // Get all logs for this routing slip
-            $destinations = \App\Models\Log::where('route_id', $item->rslip_id)
-                ->pluck('new_destination')
-                ->filter(function ($val) {
-                    return !empty(trim($val));
-                })
-                ->unique();
-            return $destinations->count() >= 4;
-        });
+  $logs = RoutingSlip::leftJoin('documents', 'routing_slip.rslip_id', '=', 'documents.route_id')
+    ->select('routing_slip.*', 'documents.id as doc_id', 'documents.file_name')
+    ->orderBy('routing_slip.created_at', 'desc')
+    ->get()
+    ->filter(function ($item) {
+        $destinations = \App\Models\Log::where('route_id', $item->rslip_id)
+            ->whereNotNull('new_destination')
+            ->whereRaw("TRIM(new_destination) != ''")
+            ->distinct()
+            ->pluck('new_destination');
+
+        // attach destinations for display
+        $item->destinations = $destinations;
+
+        return $destinations->count() >= 4;
+    });
+
+
 
     $offices = Office::all();
 
@@ -681,14 +685,16 @@ public function viewDistributionPdf($id)
 {
     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
 
-    // Fetch logs with user info
     $logs = DB::table('logs')
         ->leftJoin('users', 'logs.new_user', '=', 'users.id')
         ->where('logs.route_id', $id)
         ->select('logs.*', 'users.department as user_department')
-        ->get();
+        ->orderBy('logs.created_at', 'asc')
+        ->get()
+        ->unique('new_destination') // <-- Removes duplicates
+        ->values(); // reindex collection
 
-    // Add e-signature (if any) for each log where status_update == 3
+    // Add e-signature if status_update == 3
     $logs->transform(function ($log) {
         if ($log->status_update == 3) {
             $esig = \App\Models\Esig::where('user_id', $log->new_user)->first();
@@ -704,6 +710,7 @@ public function viewDistributionPdf($id)
     return PDF::loadView('slip.distPdf', compact('routingSlip', 'logs', 'title'))
         ->stream('distribution_list.pdf');
 }
+
 
 public function trackingDistributionList()
 {
@@ -767,30 +774,37 @@ public function viewTrackingDistributionPdf($id)
     $docTitle = Doctrack::where('docslip_id', $id)->value('doc_title');
 
     // Eager-load updatedBy and exclude rows where update_by is NULL
-    $logs = Doctrack::with('updatedBy')
-        ->where('docslip_id', $id)
-        ->whereNotNull('update_by')
-        ->orderBy('created_at', 'desc')
-        ->get()
-        ->map(function ($log) {
-            // department from user referenced by update_by (if exists)
-            $log->user_department = $log->updatedBy->department ?? null;
+$logs = Doctrack::with(['updatedBy', 'receivedBy' => function ($query) {
+        $query->select('id', 'fname', 'lname', 'department');
+    }])
+    ->where('docslip_id', $id)
+    ->whereNotNull('update_by')
+    ->orderBy('created_at', 'desc')
+    ->get()
+    ->map(function ($log) {
+        // department from user referenced by update_by
+        $log->user_department = $log->updatedBy->department ?? null;
 
-            // readable name for update_by
-            $log->update_by_name = $log->updatedBy
-                ? trim($log->updatedBy->fname . ' ' . $log->updatedBy->lname)
-                : null;
+        // full name of the update_by user
+        $log->update_by_name = $log->updatedBy
+            ? trim($log->updatedBy->fname . ' ' . $log->updatedBy->lname)
+            : null;
 
-            // load e-signature when doctrack_stat is 3 or 5
-            if (in_array($log->doctrack_stat, [3, 5])) {
-                $esig = \App\Models\Esig::where('user_id', $log->update_by)->first();
-                $log->esig_file = $esig ? $esig->esig_file : null;
-            } else {
-                $log->esig_file = null;
-            }
+        // full name from new_destination (OFFICE OF CUSTODIAN)
+        $log->received_by_name = $log->receivedBy
+            ? trim($log->receivedBy->fname . ' ' . $log->receivedBy->lname)
+            : null;
 
-            return $log;
-        });
+        // e-signature when doctrack_stat is 3 or 5
+        if (in_array($log->doctrack_stat, [3, 5])) {
+            $esig = \App\Models\Esig::where('user_id', $log->update_by)->first();
+            $log->esig_file = $esig ? $esig->esig_file : null;
+        } else {
+            $log->esig_file = null;
+        }
+
+        return $log;
+    });
 
     return PDF::loadView('slip.distTrackPdf', compact('logs', 'title', 'docTitle'))
         ->stream('distribution_list.pdf');

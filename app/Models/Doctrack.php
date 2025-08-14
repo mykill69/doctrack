@@ -40,6 +40,9 @@ public function routingSlips()
 {
     return $this->hasMany(RoutingSlip::class, 'rslip_id', 'docslip_id');
 }
-
+public function receivedBy()
+{
+    return $this->belongsTo(User::class, 'new_destination');
+}
 
 }

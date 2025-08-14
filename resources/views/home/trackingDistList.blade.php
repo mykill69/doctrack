@@ -19,7 +19,7 @@
                                                 <th>CTRL #</th>
                                                 <th>SOURCE</th>
                                                 <th>SUBJECT MATTER</th>
-                                                <th>FILE NAME</th>
+                                                {{-- <th>FILE NAME</th> --}}
                                                 <th>ACTION UNIT</th>
                                                 <th>DATE RELEASED</th>
                                                 {{-- <th>STATUS</th> --}}
@@ -32,8 +32,18 @@
                                                     <td>{{ $log->docslip_id }}</td>
                                                     <td>{{ $log->doc_type ?? 'N/A' }}</td>
                                                     <td>{{ $log->doc_title ?? 'N/A' }}</td>
-                                                    <td>{{ $log->doctrackFile->file_name ?? 'N/A' }}</td>
-                                                   <td>{{ $log->combined_names ?? 'N/A' }}</td>
+                                                    {{-- <td>{{ $log->doctrackFile->file_name ?? 'N/A' }}</td> --}}
+                                                    <td>
+                                                        @if (!empty($log->combined_names))
+                                                            @foreach (explode(',', $log->combined_names) as $name)
+                                                                <span
+                                                                    class="badge bg-warning text-dark">{{ trim($name) }}</span>
+                                                            @endforeach
+                                                        @else
+                                                            <span class="text-muted">N/A</span>
+                                                        @endif
+                                                    </td>
+
 
                                                     <td>{{ \Carbon\Carbon::parse($log->created_at)->format('M d, Y h:i:s A') }}
                                                     </td>
