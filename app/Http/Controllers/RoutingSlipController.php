@@ -677,10 +677,76 @@ public function storeRouteDoc(Request $request)
     return redirect()->route('dashboard')->with('success', 'Document with CTRL#' . $routingSlip->rslip_id . ' was created successfully.');
 }
 
+// public function updateAssign(Request $request, $routeId)
+// {
+//     $request->validate([
+//         'assigned_to' => 'required|string',
+//     ]);
+
+//     $document = Document::where('route_id', $routeId)->first();
+
+//     if ($document) {
+//         $routingSlip = RoutingSlip::where('rslip_id', $document->route_id)->first();
+
+//         if ($routingSlip) {
+//             $assignedTo = $request->input('assigned_to');
+//             $assignCom = $request->input('assign_com');
+
+//             $routingSlip->route_status = 2;
+//             $routingSlip->assigned_to = $assignedTo;
+//             $routingSlip->assign_com = $assignCom;
+//             $routingSlip->save();
+
+//             // Update logs - include assign_com as comments
+//             Log::where('route_id', $routingSlip->rslip_id)
+//                 ->where('doc_id', $document->id)
+//                 ->update([
+//                     'assigned_to'   => $assignedTo,
+//                     'status_update' => 2,
+//                     'new_user'      => auth()->user()->id,
+//                     'comments'      => $assignCom, // <-- add this line
+//                 ]);
+
+//             // Update document status
+//             Document::where('route_id', $routingSlip->rslip_id)
+//                 ->update(['assn_code' => 1]);
+
+//             // Update or create AssignLogs
+//             AssignLogs::updateOrCreate(
+//                 [
+//                     'doc_id'    => $document->id,
+//                     'route_id'  => $routingSlip->rslip_id,
+//                 ],
+//                 [
+//                     'new_user'     => auth()->user()->id,
+//                     'assn_code'    => 1,
+//                     'assigned_to'  => $assignedTo,
+//                 ]
+//             );
+
+//             // Log history
+//             LogsHistory::create([
+//                 'doc_id'        => $document->id,
+//                 'action'        => 're-assigned',
+//                 'status_update' => 2,
+//             ]);
+
+//             $redirectUrl = $request->input('redirectUrl', route('dashboard'));
+
+//             return redirect($redirectUrl)->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
+//         } else {
+//             return back()->withErrors(['Routing slip not found']);
+//         }
+//     } else {
+//         return back()->withErrors(['Document not found']);
+//     }
+// }
+
 public function updateAssign(Request $request, $routeId)
 {
     $request->validate([
         'assigned_to' => 'required|string',
+        'assign_com'  => 'required|string',
     ]);
 
     $document = Document::where('route_id', $routeId)->first();
@@ -690,37 +756,40 @@ public function updateAssign(Request $request, $routeId)
 
         if ($routingSlip) {
             $assignedTo = $request->input('assigned_to');
-            $assignCom = $request->input('assign_com');
+            $assignCom  = $request->input('assign_com');
+            $fullName   = auth()->user()->fname . ' ' . auth()->user()->lname;
 
+            // Update routing slip
             $routingSlip->route_status = 2;
-            $routingSlip->assigned_to = $assignedTo;
-            $routingSlip->assign_com = $assignCom;
+            $routingSlip->assigned_to  = $assignedTo;
+            $routingSlip->assign_com   = $assignCom;
             $routingSlip->save();
 
-            // Update logs - include assign_com as comments
+            // ✅ Update only the log row for this user
             Log::where('route_id', $routingSlip->rslip_id)
                 ->where('doc_id', $document->id)
+                ->where('new_destination', $fullName)
                 ->update([
                     'assigned_to'   => $assignedTo,
                     'status_update' => 2,
                     'new_user'      => auth()->user()->id,
-                    'comments'      => $assignCom, // <-- add this line
+                    'comments'      => $assignCom, 
                 ]);
 
-            // Update document status
+            // Update document
             Document::where('route_id', $routingSlip->rslip_id)
                 ->update(['assn_code' => 1]);
 
-            // Update or create AssignLogs
+            // Update/Create AssignLogs
             AssignLogs::updateOrCreate(
                 [
-                    'doc_id'    => $document->id,
-                    'route_id'  => $routingSlip->rslip_id,
+                    'doc_id'   => $document->id,
+                    'route_id' => $routingSlip->rslip_id,
                 ],
                 [
-                    'new_user'     => auth()->user()->id,
-                    'assn_code'    => 1,
-                    'assigned_to'  => $assignedTo,
+                    'new_user'    => auth()->user()->id,
+                    'assn_code'   => 1,
+                    'assigned_to' => $assignedTo,
                 ]
             );
 
@@ -733,15 +802,15 @@ public function updateAssign(Request $request, $routeId)
 
             $redirectUrl = $request->input('redirectUrl', route('dashboard'));
 
-            return redirect($redirectUrl)->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
-        } else {
-            return back()->withErrors(['Routing slip not found']);
+            return redirect($redirectUrl)
+                ->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
         }
-    } else {
-        return back()->withErrors(['Document not found']);
-    }
-}
 
+        return back()->withErrors(['Routing slip not found']);
+    }
+
+    return back()->withErrors(['Document not found']);
+}
 
 
 public function editAssign($id)
