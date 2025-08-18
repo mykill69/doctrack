@@ -771,8 +771,9 @@ public function updateAssign(Request $request, $routeId)
                 ->where('new_destination', $fullName)
                 ->update([
                     'assigned_to'   => $assignedTo,
-                    'status_update' => 2,
+                    'status_update' => 3,
                     'new_user'      => auth()->user()->id,
+                    'action'       => 'Acknowledged',
                     'comments'      => $assignCom, 
                 ]);
 
