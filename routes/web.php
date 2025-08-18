@@ -71,8 +71,6 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::post('/groups', [PagesController::class, 'storeGroup'])->name('groups.store');
 
 
-
-
     //tracking page
     Route::post('/tracking', [DocumentController::class, 'tracking'])->name('tracking');
     Route::get('/tracking', [DocumentController::class, 'tracking'])->name('documents.tracking');
