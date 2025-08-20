@@ -133,7 +133,7 @@
                                                         <div class="timeline-item">
                                                             <div class="timeline-header">
                                                                 <div class="row">
-                                                                    <div class="col-md-5">
+                                                                    <div class="col-md-4">
                                                                         <a href="#" class="badge text-black text-lg"
                                                                             style="font-weight: bold;">
                                                                             {{ $log->new_destination }}
@@ -149,7 +149,7 @@
                                                                             (optional)
                                                                             :</span>
                                                                     </div>
-                                                                    <div class="col-md-2 text-right text-muted"
+                                                                    <div class="col-md-3 text-right text-muted"
                                                                         style="font-size:11px;">
                                                                         @if ($previousLogTime)
                                                                             <span><i class="far fa-clock"></i>
@@ -161,13 +161,15 @@
                                                                                 {{ $log->created_at->diffForHumans() }}
                                                                             </span>
                                                                         @endif
+                                                                        <br>
+                                                                            <small>{{ $log->updated_at->format('F j, Y h:i A') }}</small>
                                                                     </div>
                                                                 </div>
                                                             </div>
 
                                                             <div class="timeline-footer mb-2 mt-2">
                                                                 <div class="row align-items-center">
-                                                                    <div class="col-md-5">
+                                                                    <div class="col-md-4">
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-primary swalAcknowledge"
                                                                             data-doc-id="{{ $document->id }}"
@@ -189,7 +191,7 @@
                                                                         <span
                                                                             class="badge badge-success">{{ $log->assigned_to ?? '—' }}</span>
                                                                     </div>
-                                                                    <div class="col-md-4">
+                                                                    <div class="col-md-5">
                                                                         <span class="badge badge-info text-break d-block"
                                                                             style="white-space: pre-line; word-break: break-word; max-width: 100%;">
                                                                             {{ $log->comments ?? 'No comments' }}
