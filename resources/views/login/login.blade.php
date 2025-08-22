@@ -83,13 +83,15 @@
             background-color: white;
             transition: height 0.5s ease, background-color 0.5s ease;
             box-sizing: border-box;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5) !important;
         }
 
         /* Expand on hover and change background to transparent */
         .login-card-body:hover {
             height: 380px;
             background-color: transparent;
-            border: 1px solid white;
+            border: 1px solid white !important;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5) !important;
             color: #fff;
         }
 
@@ -143,17 +145,7 @@
                 <p class="login-box-msg">Sign in to start your session</p>
                 <form action="{{ route('postLogin') }}" method="post">
                     @csrf
-                    @if (session('error'))
-                        <div class="alert alert-danger" style="font-size: 12pt;">
-                            <i class="fas fa-exclamation-triangle "></i> {{ session('error') }}
-                        </div>
-                    @endif
-
-                    @if (session('success'))
-                        <div class="alert alert-success" style="font-size: 10pt;">
-                            <i class="fas fa-check"></i> {{ session('success') }}
-                        </div>
-                    @endif
+                 
 
                     <div class="input-group mb-2">
                         <input type="text" class="form-control" name="email" placeholder="Institutional Email"
@@ -198,7 +190,20 @@
                             </button>
                         </div>
                     </div>
+                    
                 </form>
+                
+                   @if (session('error'))
+                        <div class="alert alert-danger" style="font-size: 12px;">
+                            <i class="fas fa-exclamation-triangle "></i> {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if (session('success'))
+                        <div class="alert alert-success" style="font-size: 12px;">
+                            <i class="fas fa-check"></i> {{ session('success') }}
+                        </div>
+                    @endif
             </div>
         </div>
     </div>
