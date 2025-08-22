@@ -546,9 +546,43 @@ public function routeBackToPresident($id)
 }
 
 
-    public function editDest($id)
+//     public function editDest($id)
+// {
+//     $user = auth()->user(); // Full user object
+//     $userId = $user->id;
+//     $userDepartment = $user->department;
+//     $userRole = $user->role;
+//     $groups = Group::all();
+
+//     $routingSlips = RoutingSlip::findOrFail($id);
+//     $users = User::select('id', 'fname', 'lname')->get();
+//     $logs = Log::where('user_id', $userId)->get();
+
+//     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+//         ? RoutingSlip::where('route_status', 3)->count()
+//         : 0;
+
+//     $superUserCount = ($userRole === 'super_user')
+//         ? RoutingSlip::where('route_status', 1)->count()
+//         : 0;
+
+//     $recordsOfficerCount = ($userRole === 'records_officer')
+//         ? RoutingSlip::where('route_status', 2)->count()
+//         : 0;
+
+//     return view('slip.editDest', compact(
+//     'routingSlips',
+//     'users', // changed from 'offices'
+//     'routingSlipCount',
+//     'superUserCount',
+//     'recordsOfficerCount',
+//     'groups'
+// ));
+// }
+
+public function editDest($id)
 {
-    $user = auth()->user(); // Full user object
+    $user = auth()->user(); 
     $userId = $user->id;
     $userDepartment = $user->department;
     $userRole = $user->role;
@@ -570,16 +604,24 @@ public function routeBackToPresident($id)
         ? RoutingSlip::where('route_status', 2)->count()
         : 0;
 
+    // 🔑 Prepare selected users (only if recall/edit has routed_users)
+    $selectedUsers = $routingSlips->routed_users 
+        ? array_map('trim', explode(',', $routingSlips->routed_users)) 
+        : [];
+
     return view('slip.editDest', compact(
-    'routingSlips',
-    'users', // changed from 'offices'
-    'routingSlipCount',
-    'superUserCount',
-    'recordsOfficerCount',
-    'groups'
-));
+        'routingSlips',
+        'users',
+        'routingSlipCount',
+        'superUserCount',
+        'recordsOfficerCount',
+        'groups',
+        'selectedUsers' // pass to view
+    ));
 }
 
+
+// this was change when I update the recall
 
 public function storeRouteDoc(Request $request)
 {
@@ -676,6 +718,186 @@ public function storeRouteDoc(Request $request)
 
     return redirect()->route('dashboard')->with('success', 'Document with CTRL#' . $routingSlip->rslip_id . ' was created successfully.');
 }
+
+public function updateRouteDocRecall(Request $request, $id)
+{
+    $validatedData = $request->validate([
+        'file_name'       => 'nullable|file|mimes:pdf|max:5120',
+        'routed_users'    => 'nullable|array',
+        'routed_users.*'  => 'required|string',
+    ]);
+
+    // 🔹 Find the document by route_id
+    $document = Document::where('route_id', $id)->first();
+    if (!$document) {
+        return redirect()->back()->with('error', 'Document not found.');
+    }
+
+    $oldFileName = $document->file_name;
+    $newFileName = $oldFileName;
+
+    // 🔹 Check if logs.new_destination exists
+    $hasExistingDestination = Log::where('doc_id', $document->id)
+                                  ->whereNotNull('new_destination')
+                                  ->exists();
+
+    // 🔹 Replace file if uploaded
+    if ($request->hasFile('file_name')) {
+        if ($oldFileName && Storage::exists('documents/' . $oldFileName)) {
+            Storage::delete('documents/' . $oldFileName);
+        }
+
+        $pdfFile = $request->file('file_name');
+        $pdfName = $pdfFile->getClientOriginalName();
+        $pdfFile->storeAs('documents', $pdfName);
+        $newFileName = $pdfName;
+
+        // Update routing_slip document
+        RoutingSlip::where('rslip_id', $id)->update(['document' => $pdfName]);
+
+        // 🔹 Only log if no existing routed user destinations
+        if (!$hasExistingDestination) {
+            $lastDest = Log::where('doc_id', $document->id)->latest('id')->value('new_destination');
+            $log = Log::create([
+                'user_id'         => auth()->id(),
+                'doc_id'          => $document->id,
+                'route_id'        => $document->route_id,
+                'action'          => 'file_updated',
+                'status_update'   => $document->doc_stat,
+                'prev_file'       => $oldFileName,
+                'new_file'        => $newFileName,
+                'new_destination' => $lastDest ?? 'Unchanged',
+                'created_at'      => now(),
+            ]);
+
+            LogsHistory::create([
+                'doc_id'        => $document->id,
+                'action'        => $log->action,
+                'status_update' => $log->status_update,
+            ]);
+        }
+    }
+
+    // 🔹 Update document record (only file name changed here, other fields remain)
+    $document->update(['file_name' => $newFileName]);
+
+    // 🔹 Routing logic for new routed_users
+    if (!empty($validatedData['routed_users'])) {
+        $routingSlip = RoutingSlip::where('rslip_id', $id)->first();
+        $existingDestinations = $routingSlip && !empty($routingSlip->routed_users)
+            ? array_filter(array_map('trim', explode(',', $routingSlip->routed_users)))
+            : [];
+
+        $finalDestinations = [];
+
+        foreach ($validatedData['routed_users'] as $destination) {
+            $users = collect();
+
+            if (Str::startsWith($destination, 'position:')) {
+                $positionId = (int) Str::after($destination, 'position:');
+                $users = User::where('position', $positionId)->get();
+
+            } elseif (Str::startsWith($destination, 'group:')) {
+                $groupName = Str::after($destination, 'group:');
+                $group = Group::where('group_name', $groupName)->first();
+                if ($group) $users = $group->users;
+
+            } else {
+                $user = User::whereRaw("CONCAT(fname, ' ', lname) = ?", [$destination])->first();
+                if ($user) $users = collect([$user]);
+            }
+
+            foreach ($users as $user) {
+                $fullName = $user->fname . ' ' . $user->lname;
+
+                if (!in_array($fullName, $existingDestinations) && !in_array($fullName, $finalDestinations)) {
+                    $finalDestinations[] = $fullName;
+
+                    $log = Log::create([
+                        'user_id'         => auth()->id(),
+                        'doc_id'          => $document->id,
+                        'route_id'        => $document->route_id,
+                        'action'          => 'rerouted',
+                        'status_update'   => $document->doc_stat,
+                        'prev_file'       => $oldFileName,
+                        'new_file'        => $document->file_name,
+                        'new_destination' => $fullName,
+                        'created_at'      => now(),
+                    ]);
+
+                    LogsHistory::create([
+                        'doc_id'        => $document->id,
+                        'action'        => $log->action,
+                        'status_update' => $log->status_update,
+                    ]);
+
+                    // Send email only to newly added users
+                    if ($user->email) {
+                        Mail::to($user->email)->send(
+                            new DocumentRoutedNotification($document, $fullName, $routingSlip?->trans_remarks)
+                        );
+                    }
+                }
+            }
+        }
+
+        // Update routing slip with new combined destinations
+        if ($routingSlip) {
+            $combined = array_values(array_unique(array_merge($existingDestinations, $finalDestinations)));
+            $routingSlip->routed_users = implode(', ', $combined);
+            $routingSlip->route_status = 3;
+            $routingSlip->save();
+        }
+    }
+
+    return redirect()->route('dashboard')
+        ->with('success', 'Document with CTRL#' . $document->route_id . ' was updated successfully.');
+}
+
+
+
+
+
+public function recallSlip($id)
+{
+    $user = auth()->user(); 
+    $userId = $user->id;
+    $userDepartment = $user->department;
+    $userRole = $user->role;
+    $groups = Group::all();
+
+    $routingSlips = RoutingSlip::findOrFail($id);
+    $users = User::select('id', 'fname', 'lname')->get();
+    $logs = Log::where('user_id', $userId)->get();
+
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+        ? RoutingSlip::where('route_status', 3)->count()
+        : 0;
+
+    $superUserCount = ($userRole === 'super_user')
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
+    $recordsOfficerCount = ($userRole === 'records_officer')
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
+
+    // 🔑 Prepare selected users (only if recall/edit has routed_users)
+    $selectedUsers = $routingSlips->routed_users 
+        ? array_map('trim', explode(',', $routingSlips->routed_users)) 
+        : [];
+
+    return view('slip.recallSlip', compact(
+        'routingSlips',
+        'users',
+        'routingSlipCount',
+        'superUserCount',
+        'recordsOfficerCount',
+        'groups',
+        'selectedUsers' // pass to view
+    ));
+}
+
 
 // public function updateAssign(Request $request, $routeId)
 // {

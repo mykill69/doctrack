@@ -107,7 +107,7 @@
                                             multiple required>
                                             @foreach ($users as $user)
                                                 <option value="{{ $user->fname }} {{ $user->lname }}"
-                                                    {{ in_array($user->id, explode(',', $routingSlips->r_destination)) ? 'selected' : '' }}>
+                                                    {{ in_array($user->id, explode(', ', $routingSlips->r_destination)) ? 'selected' : '' }}>
                                                     {{ $user->fname }} {{ $user->lname }}
                                                 </option>
                                             @endforeach

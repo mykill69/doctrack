@@ -326,6 +326,13 @@
                                                                                             <i class="fas fa-trash"></i>
                                                                                         </button>
                                                                                     </form>
+                                                                                    @if ($slip->route_status == 3 && !$allServed)
+                                                                                        <a href="{{ route('recallSlip', $slip->id) }}"
+                                                                                            class="btn btn-warning no-left-radius"
+                                                                                            style="text-decoration: none; color: white;">
+                                                                                            <i class="fas fa-undo"></i>
+                                                                                        </a>
+                                                                                    @endif
                                                                                 </div>
                                                                             </td>
                                                                         </tr>

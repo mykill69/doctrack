@@ -123,6 +123,12 @@ Route::group(['middleware'=>['login_auth']],function(){
     //destination route
     Route::get('/routingSlip/editDest/{id}', [RoutingSlipController::class, 'editDest'])->name('editDest');
     Route::post('/routingSlip/storeRouteDoc', [RoutingSlipController::class, 'storeRouteDoc'])->name('storeRouteDoc');
+    Route::get('/routingSlip/recall/{id}', [RoutingSlipController::class, 'recallSlip'])->name('recallSlip');
+    Route::put('/routingSlip/updateRouteDoc/{id}', [RoutingSlipController::class, 'updateRouteDoc'])->name('updateRouteDoc');
+    Route::put('/routingSlip/updateRouteDocRecall/{id}', [RoutingSlipController::class, 'updateRouteDocRecall'])->name('updateRouteDocRecall');
+
+
+
 
     Route::get('/routingSlip/editAssign/{id}', [RoutingSlipController::class, 'editAssign'])->name('editAssign');
     Route::post('/routingSlip/updateReroute/{rslip_id}', [RoutingSlipController::class, 'updateReroute'])->name('updateReroute');
