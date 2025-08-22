@@ -97,8 +97,14 @@ public function tracking(Request $request)
 
     
     $query = Document::query()
-    ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
-    ->select('documents.*', 'routing_slip.routed_users', 'routing_slip.r_destination'); // <-- added here
+        ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
+        ->select(
+            'documents.*',
+            'routing_slip.routed_users',
+            'routing_slip.r_destination',
+            'routing_slip.trans_remarks',
+            'routing_slip.source'
+        );
 
 
     if ($routeId) {

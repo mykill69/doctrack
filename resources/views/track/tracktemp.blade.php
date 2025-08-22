@@ -162,7 +162,7 @@
                                                                             </span>
                                                                         @endif
                                                                         <br>
-                                                                            <small>{{ $log->updated_at->format('F j, Y h:i A') }}</small>
+                                                                        <small>{{ $log->updated_at->format('F j, Y h:i A') }}</small>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -237,16 +237,20 @@
                                             </p>
                                             <table class="table table-sm table-bordered text-sm">
                                                 <tr>
+                                                    <th>Control No.</th>
+                                                    <td>{{ $document->route_id }}</td>
+                                                </tr>
+                                                <tr>
                                                     <th>Subject</th>
                                                     <td>{{ $document->subject }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th>Doc No.</th>
-                                                    <td>{{ $document->route_id }}</td>
+                                                    <th>Source</th>
+                                                    <td>{{ $document->source }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th>Transaction</th>
-                                                    <td>{{ $document->doc_type }}</td>
+                                                    <th>Action</th>
+                                                    <td>{{ $document->trans_remarks }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Created By</th>

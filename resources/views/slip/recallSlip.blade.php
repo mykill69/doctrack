@@ -112,8 +112,7 @@
                                     CONTROL NUMBER:
                                     <a class="text-md badge badge-primary"
                                         href="{{ route('viewPdfslip', $routingSlips->id) }}" target="_blank">
-                                        {{ $routingSlips->rslip_id }} &emsp; {{ $routingSlips->document }}&nbsp; <i
-                                            class="fas fa-eye"></i>
+                                        {{ $routingSlips->rslip_id }}
                                     </a>
                                 </h3>
                             </div>
@@ -162,81 +161,83 @@
                                     <label for="file_name" class="col-md-3 col-form-label">File Name:</label>
                                     <div class="col-md-9">
                                         <div class="input-group mb-2">
+                                            <input type="file" class="form-control" name="file_name" accept=".pdf">
                                             @if (!empty($routingSlips->document))
                                                 <span class="input-group-text">
                                                     <a href="{{ asset('storage/documents/' . $routingSlips->document) }}"
-                                                        target="_blank">
-                                                        Current: {{ $routingSlips->document }}
+                                                        target="_blank" style="color: #007bff;">
+                                                        {{ $routingSlips->document }}
                                                     </a>
                                                 </span>
                                             @endif
-                                            <input type="file" class="form-control" name="file_name" accept=".pdf">
+
                                         </div>
                                         @if (!empty($routingSlips->document))
-                                            <small class="text-muted">Leave blank if you do not want to change the
+                                            <small class="text-danger">Leave blank if you do not want to change the
                                                 file.</small>
                                         @endif
+                                    </div>
+                                </div>
+                                <div class="form-group row" hidden>
+                                    <label for="subject" class="col-md-3 col-form-label">Purpose:</label>
+                                    <div class="col-md-9">
+                                        <textarea class="form-control" id="purpose" name="purpose" rows="2" placeholder="Type your purpose here..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="subject" class="col-md-3 col-form-label">This Document is
+                                        For/To:</label>
+                                    <div class="col-md-9">
+                                        <input type="text" class="form-control" id="subject" name="for_to"
+                                            value="{{ $routingSlips->r_destination }}" readonly>
+                                    </div>
+
+                                </div>
+                                <div id="user-select-container" class="form-group row align-items-center">
+                                    <label for="routed_to" class="col-md-3 col-form-label">Name of Personnel and Group
+                                        Name:</label>
+                                    <div class="col-md-9">
+                                        <select class="form-control select2" name="routed_users[]" id="routed_users"
+                                            data-placeholder="Select users..." multiple required>
+
+                                            <option disabled>— Select by Group —</option>
+                                            @foreach ($groups as $group)
+                                                <option value="group:{{ $group->group_name }}"
+                                                    {{ in_array('group:' . $group->group_name, $selectedUsers) ? 'selected' : '' }}>
+                                                    {{ $group->group_name }}
+                                                </option>
+                                            @endforeach
+
+                                            <option disabled>──────────</option>
+                                            <option disabled>— Select by Individual User —</option>
+
+                                            @foreach ($users as $user)
+                                                <option value="{{ $user->fname }} {{ $user->lname }}"
+                                                    {{ in_array($user->fname . ' ' . $user->lname, $selectedUsers) ? 'selected' : '' }}>
+                                                    {{ $user->fname }} {{ $user->lname }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+
+
 
                                     </div>
-                                    <div class="form-group row" hidden>
-                                        <label for="subject" class="col-md-3 col-form-label">Purpose:</label>
-                                        <div class="col-md-9">
-                                            <textarea class="form-control" id="purpose" name="purpose" rows="2" placeholder="Type your purpose here..."></textarea>
-                                        </div>
-                                    </div>
-
+                                    <div id="additional-destinations"></div>
                                     <div class="form-group row">
-                                        <label for="subject" class="col-md-3 col-form-label">This Document is
-                                            For/To:</label>
                                         <div class="col-md-9">
-                                            <input type="text" class="form-control" id="subject" name="for_to"
-                                                value="{{ $routingSlips->r_destination }}" readonly>
-                                        </div>
-
-                                    </div>
-                                    <div id="user-select-container" class="form-group row align-items-center">
-                                        <label for="routed_to" class="col-md-3 col-form-label">Name of Personnel and Group
-                                            Name:</label>
-                                        <div class="col-md-9">
-                                            <select class="form-control select2" name="routed_users[]" id="routed_users"
-                                                data-placeholder="Select users..." multiple required>
-
-                                                <option disabled>— Select by Group —</option>
-                                                @foreach ($groups as $group)
-                                                    <option value="group:{{ $group->group_name }}"
-                                                        {{ in_array('group:' . $group->group_name, $selectedUsers) ? 'selected' : '' }}>
-                                                        {{ $group->group_name }}
-                                                    </option>
-                                                @endforeach
-
-                                                <option disabled>──────────</option>
-                                                <option disabled>— Select by Individual User —</option>
-
-                                                @foreach ($users as $user)
-                                                    <option value="{{ $user->fname }} {{ $user->lname }}"
-                                                        {{ in_array($user->fname . ' ' . $user->lname, $selectedUsers) ? 'selected' : '' }}>
-                                                        {{ $user->fname }} {{ $user->lname }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-
-
-
-                                        </div>
-                                        <div id="additional-destinations"></div>
-                                        <div class="form-group row">
-                                            <div class="col-md-9">
-                                                <input type="hidden" class="form-control" name="doc_stat"
-                                                    value="2" readonly>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row">
-                                            <div class="col-md-9">
-                                                <input type="hidden" class="form-control" id="user_id" name="user_id"
-                                                    value="{{ $routingSlips->user_id }}" readonly>
-                                            </div>
+                                            <input type="hidden" class="form-control" name="doc_stat" value="2"
+                                                readonly>
                                         </div>
                                     </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-9">
+                                            <input type="hidden" class="form-control" id="user_id" name="user_id"
+                                                value="{{ $routingSlips->user_id }}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </form>
 
                             {{-- BUTTON GROUP (all inside same row for alignment) --}}

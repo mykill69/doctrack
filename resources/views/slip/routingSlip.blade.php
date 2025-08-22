@@ -327,12 +327,30 @@
                                                                                         </button>
                                                                                     </form>
                                                                                     @if ($slip->route_status == 3 && !$allServed)
-                                                                                        <a href="{{ route('recallSlip', $slip->id) }}"
-                                                                                            class="btn btn-warning no-left-radius"
-                                                                                            style="text-decoration: none; color: white;">
-                                                                                            <i class="fas fa-undo"></i>
-                                                                                        </a>
+                                                                                        @if (auth()->user()->role === 'records_officer' || auth()->user()->role === 'Administrator')
+                                                                                            @php
+                                                                                                $hasStatus2Log = \App\Models\Log::where(
+                                                                                                    'route_id',
+                                                                                                    $slip->rslip_id,
+                                                                                                )
+                                                                                                    ->where(
+                                                                                                        'status_update',
+                                                                                                        2,
+                                                                                                    )
+                                                                                                    ->exists();
+                                                                                            @endphp
+                                                                                            @if ($hasStatus2Log)
+                                                                                                <a href="{{ route('recallSlip', $slip->id) }}"
+                                                                                                    class="btn btn-primary no-left-radius"
+                                                                                                    style="text-decoration: none; color: white;"
+                                                                                                    title="Recall">
+                                                                                                    <i
+                                                                                                        class="fas fa-undo"></i>
+                                                                                                </a>
+                                                                                            @endif
+                                                                                        @endif
                                                                                     @endif
+
                                                                                 </div>
                                                                             </td>
                                                                         </tr>
