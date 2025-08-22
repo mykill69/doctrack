@@ -77,40 +77,20 @@
         /* Inner card body */
         .login-card-body {
             position: relative;
-            height: 280px;
+            height: 240px;
             overflow: hidden;
             border-radius: 10px;
             background-color: white;
-            transition: height 0.5s ease;
-
-            /* Glow animation */
-            border: 1px solid #04401f;
-            animation: borderGlow 3s infinite;
+            transition: height 0.5s ease, background-color 0.5s ease;
             box-sizing: border-box;
         }
 
-
-        /* Expand on hover */
+        /* Expand on hover and change background to transparent */
         .login-card-body:hover {
-            height: 420px;
-        }
-
-        /* Keyframes for glowing border */
-        @keyframes borderGlow {
-            0% {
-                border-color: #04401f;
-                box-shadow: 0 0 10px #04401f80;
-            }
-
-            50% {
-                border-color: #1f5036;
-                box-shadow: 0 0 20px #1f503680;
-            }
-
-            100% {
-                border-color: #04401f;
-                box-shadow: 0 0 10px #04401f80;
-            }
+            height: 380px;
+            background-color: transparent;
+            border: 1px solid white;
+            color: #fff;
         }
 
         /* Form field animation */
@@ -135,15 +115,16 @@
         /* Mobile: always show form fields */
         @media (max-width: 768px) {
             .login-card-body {
-                height: auto !important;
+            height: auto !important;
+            background-color: white !important;
             }
 
             .login-card-body form .input-group,
             .login-card-body form .row.mt-4,
             .login-card-body form span.form-text {
-                opacity: 1 !important;
-                transform: translateY(0) !important;
-                pointer-events: auto !important;
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+            pointer-events: auto !important;
             }
         }
     </style>
