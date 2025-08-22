@@ -250,7 +250,7 @@
                                     </button>
 
                                     {{-- Independent Form: Route Back to President --}}
-                                    <form action="{{ route('routeBackToPresident', $routingSlips->id) }}" method="POST"
+                                    {{-- <form action="{{ route('routeBackToPresident', $routingSlips->id) }}" method="POST"
                                         class="d-inline me-2">
                                         @csrf
                                         @method('PUT')
@@ -258,7 +258,7 @@
                                             onclick="return confirm('Are you sure you want to route this back to the President?')">
                                             <i class="fas fa-undo-alt mr-1"></i> Route back to President
                                         </button>
-                                    </form>
+                                    </form> --}}
 
                                     {{-- Cancel --}}
                                     <a href="{{ route('viewSlip') }}" class="btn btn-danger">
