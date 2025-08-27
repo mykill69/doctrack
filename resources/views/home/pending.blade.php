@@ -118,7 +118,7 @@
 
                                                         @if (!empty($transRemarks))
                                                             <span class="badge badge-success"
-                                                                style="font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                                    style="font-size:10px; display: block;">
                                                                 {!! $wrappedTransRemarks !!}
                                                             </span>
                                                         @endif
