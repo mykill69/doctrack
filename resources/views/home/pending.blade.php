@@ -100,11 +100,37 @@
 
                                                     <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td style="font-size:10px;width:5%;">
-                                                        <span
-                                                            class="badge badge-success">{{ $log->trans_remarks ?? 'N/A' }}</span>
-                                                        <span
-                                                            class="badge badge-warning">{{ $log->assign_com ?? '' }}</span>
+                                                        @php
+                                                            $transRemarks = $log->trans_remarks ?? 'N/A';
+                                                            $wrappedTransRemarks = preg_replace(
+                                                                '/((?:\S+\s+){4})/',
+                                                                '$1<br>',
+                                                                $transRemarks,
+                                                            );
+
+                                                            $assignCom = $log->assign_com ?? '';
+                                                            $wrappedAssignCom = preg_replace(
+                                                                '/((?:\S+\s+){4})/',
+                                                                '$1<br>',
+                                                                $assignCom,
+                                                            );
+                                                        @endphp
+
+                                                        @if (!empty($transRemarks))
+                                                            <span class="badge badge-success"
+                                                                style="font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                                {!! $wrappedTransRemarks !!}
+                                                            </span>
+                                                        @endif
+
+                                                        @if (!empty($assignCom))
+                                                            <span class="badge badge-warning"
+                                                                style="font-size:10px; margin-top:2px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                                {!! $wrappedAssignCom !!}
+                                                            </span>
+                                                        @endif
                                                     </td>
+
                                                     <td>
                                                         <a href="{{ route('documents.viewPdf', $log->doc_id) }}"
                                                             target="_blank" style="color: #007bff;">
