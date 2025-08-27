@@ -99,7 +99,7 @@
                                                     </td>
 
                                                     <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
-                                                    <td style="font-size:10px;">
+                                                    <td style="font-size:10px;width:5%;">
                                                         <span
                                                             class="badge badge-success">{{ $log->trans_remarks ?? 'N/A' }}</span>
                                                         <span
