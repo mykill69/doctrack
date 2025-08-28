@@ -106,7 +106,7 @@ letter-spacing: 5px;
         margin-left: 14%;
         margin-top: -47%;
         padding: 0;
-        line-height: 1;
+        line-height: 1.3;
         /*border: 1px solid black;*/
     }
 
