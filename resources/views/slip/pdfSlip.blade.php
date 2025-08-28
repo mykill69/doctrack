@@ -104,9 +104,9 @@ letter-spacing: 5px;
         font-family: Verdana, sans-serif;
         text-align: justify;
         margin-left: 14%;
-        margin-top: -47%;
+        margin-top: -40%;
         padding: 0;
-        line-height: 1.3;
+        line-height: 1;
         /*border: 1px solid black;*/
     }
 
