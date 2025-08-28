@@ -104,7 +104,7 @@ letter-spacing: 5px;
         font-family: Verdana, sans-serif;
         text-align: justify;
         margin-left: 14%;
-        margin-top: -43%;
+        margin-top: -45%;
         padding: 0;
         line-height: 1;
         /*border: 1px solid black;*/
