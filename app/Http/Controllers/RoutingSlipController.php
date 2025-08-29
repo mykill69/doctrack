@@ -1003,18 +1003,54 @@ public function updateAssign(Request $request, $routeId)
             Document::where('route_id', $routingSlip->rslip_id)
                 ->update(['assn_code' => 1]);
 
-            // Update/Create AssignLogs
-            AssignLogs::updateOrCreate(
-                [
-                    'doc_id'   => $document->id,
-                    'route_id' => $routingSlip->rslip_id,
-                ],
-                [
+            // // Update/Create AssignLogs
+            // AssignLogs::updateOrCreate(
+            //     [
+            //         'doc_id'   => $document->id,
+            //         'route_id' => $routingSlip->rslip_id,
+            //     ],
+            //     [
+            //         'new_user'    => auth()->user()->id,
+            //         'assn_code'   => 1,
+            //         'assigned_to' => $assignedTo,
+            //     ]
+            // );
+            // Find existing log first
+            $assignLog = AssignLogs::where('doc_id', $document->id)
+                ->where('route_id', $routingSlip->rslip_id)
+                ->first();
+
+            if ($assignLog) {
+                // Get current assigned_to
+                $existing = $assignLog->assigned_to ?? '';
+
+                // Convert to array
+                $existingArray = $existing ? array_map('trim', explode(',', $existing)) : [];
+
+                // Add new only if it doesn’t already exist
+                if (!in_array($assignedTo, $existingArray)) {
+                    $existingArray[] = $assignedTo;
+                }
+
+                // Convert back to string
+                $updatedAssignedTo = implode(', ', $existingArray);
+
+                // Update record
+                $assignLog->update([
+                    'new_user'    => auth()->user()->id,
+                    'assn_code'   => 1,
+                    'assigned_to' => $updatedAssignedTo,
+                ]);
+            } else {
+                // Create new record if none exists
+                AssignLogs::create([
+                    'doc_id'      => $document->id,
+                    'route_id'    => $routingSlip->rslip_id,
                     'new_user'    => auth()->user()->id,
                     'assn_code'   => 1,
                     'assigned_to' => $assignedTo,
-                ]
-            );
+                ]);
+            }
 
             // Log history
             LogsHistory::create([
