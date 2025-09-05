@@ -49,10 +49,11 @@
                                             @foreach ($logs as $log)
                                                 <tr>
                                                     <td>
-                                                        <a href="{{ route('slipForm', ['route_id' => $log->route_id]) }}"
+                                                        <a href="{{ route('slipForm', ['id' => $log->route_id]) }}"
                                                             target="_blank" style="color: #007bff;">
                                                             {{ $log->route_id }}
                                                         </a>
+
 
                                                     <td>{{ $log->date_received ? \Carbon\Carbon::parse($log->date_received)->format('F d, Y') : 'N/A' }}
                                                     </td>
