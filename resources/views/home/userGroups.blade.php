@@ -44,7 +44,7 @@
                                         <td>
                                             <div class="btn-group" role="group" aria-label="Group Actions">
                                                 <button type="button" class="btn btn-danger btn-sm" title="Delete"
-                                                    onclick="deleteGroup({{ $group->id }})" disabled>
+                                                    onclick="deleteGroup({{ $group->id }})">
                                                     Delete <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
