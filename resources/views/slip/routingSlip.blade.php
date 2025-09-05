@@ -49,8 +49,8 @@
                                                 $tabs = [
                                                     'routed2' => 'Routed back to Records',
                                                     'routed1' => 'Routed to President',
-                                                    'served' => 'Completed',
                                                     'enroute' => 'Pending',
+                                                    'served' => 'Completed',
                                                 ];
 
                                                 // Reorder for super_user
@@ -58,8 +58,8 @@
                                                     $tabs = [
                                                         'routed1' => 'Routed to President',
                                                         'routed2' => 'Routed back to Records',
-                                                        'served' => 'Completed',
                                                         'enroute' => 'Pending',
+                                                        'served' => 'Completed',
                                                     ];
                                                 }
                                             @endphp
