@@ -48,7 +48,7 @@
                                         <tbody>
                                             @foreach ($logs as $log)
                                                 <tr>
-                                                    <td>
+                                                    <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
                                                         <a href="{{ route('slipForm', ['id' => $log->route_id]) }}"
                                                             target="_blank" style="color: #007bff;">
                                                             {{ $log->route_id }}
@@ -169,6 +169,24 @@
         </div>
         <!-- /.content -->
     </div>
+
+    <script>
+        $(document).ready(function() {
+            var t = $('#example1').DataTable({
+                "pageLength": 10000,
+                "columnDefs": [{
+                    "type": "num",
+                    "targets": 0
+                }]
+            });
+
+            // Force sort after DataTable init
+            t.order([0, "desc"]).draw();
+        });
+    </script>
+
+
+
     @include('modal.docAdd')
     @include('modal.docEdit')
     @include('modal.addTrans')

@@ -88,7 +88,7 @@
                                                     $document = $log->document;
                                                 @endphp
                                                 <tr>
-                                                    {{-- <td>
+                                                    <td>
                                                         @if ($log->route_id == 0)
                                                             N/A
                                                         @else
@@ -96,8 +96,8 @@
                                                                 target="_blank"
                                                                 style="color: #007bff;">{{ $log->route_id }}</a>
                                                         @endif
-                                                    </td> --}}
-                                                    <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
+                                                    </td>
+                                                    {{-- <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
                                                         @if ($log->route_id == 0)
                                                             N/A
                                                         @else
@@ -106,7 +106,7 @@
                                                                 {{ $log->route_id }}
                                                             </a>
                                                         @endif
-                                                    </td>
+                                                    </td> --}}
                                                     <td>
                                                         {{ optional($document->routingSlip)->date_received
                                                             ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('F d, Y')
@@ -317,20 +317,7 @@
             });
         </script>
     @endif
-    <script>
-        $(document).ready(function() {
-            var t = $('#example1').DataTable({
-                "pageLength": 10000,
-                "columnDefs": [{
-                    "type": "num",
-                    "targets": 0
-                }]
-            });
 
-            // Force sort after DataTable init
-            t.order([0, "desc"]).draw();
-        });
-    </script>
 
 
 
