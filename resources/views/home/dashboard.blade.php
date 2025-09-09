@@ -312,25 +312,26 @@
         $(document).ready(function() {
             $('#example1').DataTable({
                 "order": [
-                    [10, "desc"]
-                ], // Sort by DATE UPDATED (11th column)
+                    [0, "desc"]
+                ], // Sort by CTRL # (first column) in descending order
                 "pageLength": 50,
                 "columnDefs": [{
                     "searchable": false,
                     "orderable": false,
-                    "targets": 0 // CTRL # (first column) won't be sorted
+                    "targets": [] // No need to disable sorting on column 0 anymore
                 }],
                 "fnDrawCallback": function() {
                     var api = this.api();
                     api.column(0, {
                         page: 'current'
                     }).nodes().each(function(cell, i) {
-                        cell.innerHTML = i + 1;
+                        cell.innerHTML = cell.innerHTML; // keep original CTRL #
                     });
                 }
             });
         });
     </script>
+
 
 
 
