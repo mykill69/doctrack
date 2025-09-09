@@ -88,7 +88,7 @@
                                                     $document = $log->document;
                                                 @endphp
                                                 <tr>
-                                                    <td>
+                                                    {{-- <td>
                                                         @if ($log->route_id == 0)
                                                             N/A
                                                         @else
@@ -96,8 +96,8 @@
                                                                 target="_blank"
                                                                 style="color: #007bff;">{{ $log->route_id }}</a>
                                                         @endif
-                                                    </td>
-                                                    {{-- <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
+                                                    </td> --}}
+                                                    <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
                                                         @if ($log->route_id == 0)
                                                             N/A
                                                         @else
@@ -106,7 +106,7 @@
                                                                 {{ $log->route_id }}
                                                             </a>
                                                         @endif
-                                                    </td> --}}
+                                                    </td>
                                                     <td>
                                                         {{ optional($document->routingSlip)->date_received
                                                             ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('F d, Y')
@@ -301,9 +301,9 @@
         </div>
     </div>
 
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
-      
+
     @if (!$dpa)
         <script>
             document.addEventListener("DOMContentLoaded", function() {
@@ -324,12 +324,12 @@
 
 
 
-<script>
+    <script>
         $(document).ready(function() {
             var t = $('#dashboardTable').DataTable({
                 "order": [
                     [0, "desc"]
-                ], // CTRL # descending
+                ], // sort CTRL # descending
                 "pageLength": 20,
                 "columnDefs": [{
                     "targets": 0,
@@ -338,9 +338,11 @@
                 }]
             });
 
+            // Re-apply sort in case AdminLTE interferes
             t.order([0, "desc"]).draw();
         });
     </script>
+
 
 
 
