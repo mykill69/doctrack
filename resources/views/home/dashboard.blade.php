@@ -320,27 +320,19 @@
     <script>
         $(document).ready(function() {
             var t = $('#example1').DataTable({
-                "order": [
-                    [0, "desc"] // Sort by CTRL # descending
-                ],
                 "pageLength": 10000,
                 "columnDefs": [{
                     "type": "num",
-                    "targets": 0 // Treat CTRL # as numeric
-                }],
-                "fnDrawCallback": function() {
-                    var api = this.api();
-
-                    // If you want to re-index column 0 (replace CTRL # with row numbers), uncomment this:
-                    /*
-                    api.column(0, { page: 'current' }).nodes().each(function(cell, i) {
-                        cell.innerHTML = i + 1;
-                    });
-                    */
-                }
+                    "targets": 0
+                }]
             });
+
+            // Force sort after DataTable init
+            t.order([0, "desc"]).draw();
         });
     </script>
+
+
 
 
 
