@@ -26,7 +26,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table table-bordered table-hover"
+                                    <table id="dashboardTable" class="table table-bordered table-hover"
                                         style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
@@ -320,7 +320,23 @@
 
 
 
+<script>
+        $(document).ready(function() {
+            var t = $('#dashboardTable').DataTable({
+                "order": [
+                    [0, "desc"]
+                ], // CTRL # descending
+                "pageLength": 20,
+                "columnDefs": [{
+                    "targets": 0,
+                    "type": "num",
+                    "orderable": true
+                }]
+            });
 
+            t.order([0, "desc"]).draw();
+        });
+    </script>
 
 
 
