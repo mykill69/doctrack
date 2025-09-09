@@ -29,7 +29,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="logsTable" class="table table-bordered table-hover" style="font-size:11px;">
+                                    <table id="logsTable" class="table dataTable no-footer" style="font-size:11px;">
                                         <thead>
                                             <tr>
                                                 <th>Logs</th>
