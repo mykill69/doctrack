@@ -313,11 +313,17 @@
             $('#example1').DataTable({
                 "order": [
                     [0, "desc"]
-                ], // sort by CTRL # (first column) descending
-                "pageLength": 50
+                ], // Sort by CTRL #
+                "pageLength": 50,
+                "columnDefs": [{
+                        "type": "num",
+                        "targets": 0
+                    } // force numeric sorting on column 0
+                ]
             });
         });
     </script>
+
 
 
 
