@@ -27,7 +27,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="userTable" class="table table-bordered table-hover"
+                                    <table id="pendingTable" class="table table-bordered table-hover"
                                         style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
@@ -173,23 +173,22 @@
 
     <script>
         $(document).ready(function() {
-            var t = $('#userTable').DataTable({
+            var t = $('#pendingTable').DataTable({
                 "order": [
                     [0, "desc"]
-                ], // sort CTRL # descending by default
+                ], // CTRL # descending
                 "pageLength": 50,
                 "columnDefs": [{
-                        "targets": 0,
-                        "type": "num",
-                        "orderable": true
-                    } // force numeric sorting on CTRL #
-                ]
+                    "targets": 0,
+                    "type": "num",
+                    "orderable": true
+                }]
             });
 
-            // re-apply sort (sometimes AdminLTE overrides on init)
             t.order([0, "desc"]).draw();
         });
     </script>
+
 
 
 
