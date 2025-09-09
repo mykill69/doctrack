@@ -88,7 +88,7 @@
                                                     $document = $log->document;
                                                 @endphp
                                                 <tr>
-                                                    <td>
+                                                    {{-- <td>
                                                         @if ($log->route_id == 0)
                                                             N/A
                                                         @else
@@ -96,8 +96,17 @@
                                                                 target="_blank"
                                                                 style="color: #007bff;">{{ $log->route_id }}</a>
                                                         @endif
+                                                    </td> --}}
+                                                    <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
+                                                        @if ($log->route_id == 0)
+                                                            N/A
+                                                        @else
+                                                            <a href="{{ route('slipForm', ['id' => $log->route_id]) }}"
+                                                                target="_blank" style="color: #007bff;">
+                                                                {{ $log->route_id }}
+                                                            </a>
+                                                        @endif
                                                     </td>
-
                                                     <td>
                                                         {{ optional($document->routingSlip)->date_received
                                                             ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('F d, Y')
@@ -308,32 +317,30 @@
             });
         </script>
     @endif
-  <script>
-$(document).ready(function() {
-    var t = $('#example1').DataTable({
-        "order": [
-            [0, "desc"] // Sort by CTRL # descending
-        ],
-        "pageLength": 50,
-        "columnDefs": [
-            {
-                "type": "num",
-                "targets": 0 // Treat CTRL # as numeric
-            }
-        ],
-        "fnDrawCallback": function() {
-            var api = this.api();
+    <script>
+        $(document).ready(function() {
+            var t = $('#example1').DataTable({
+                "order": [
+                    [0, "desc"] // Sort by CTRL # descending
+                ],
+                "pageLength": 50,
+                "columnDefs": [{
+                    "type": "num",
+                    "targets": 0 // Treat CTRL # as numeric
+                }],
+                "fnDrawCallback": function() {
+                    var api = this.api();
 
-            // If you want to re-index column 0 (replace CTRL # with row numbers), uncomment this:
-            /*
-            api.column(0, { page: 'current' }).nodes().each(function(cell, i) {
-                cell.innerHTML = i + 1;
+                    // If you want to re-index column 0 (replace CTRL # with row numbers), uncomment this:
+                    /*
+                    api.column(0, { page: 'current' }).nodes().each(function(cell, i) {
+                        cell.innerHTML = i + 1;
+                    });
+                    */
+                }
             });
-            */
-        }
-    });
-});
-</script>
+        });
+    </script>
 
 
 
