@@ -48,11 +48,12 @@
                                         <tbody>
                                             @foreach ($logs as $log)
                                                 <tr>
-                                                    <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
+                                                    <td data-order="{{ $log->route_id ?? 0 }}">
                                                         <a href="{{ route('slipForm', ['id' => $log->route_id]) }}"
                                                             target="_blank" style="color: #007bff;">
                                                             {{ $log->route_id }}
                                                         </a>
+                                                    </td>
 
 
                                                     <td>{{ $log->date_received ? \Carbon\Carbon::parse($log->date_received)->format('F d, Y') : 'N/A' }}
@@ -175,28 +176,21 @@
             var t = $('#example1').DataTable({
                 "order": [
                     [0, "desc"]
-                ], // Default sort: CTRL # descending
-                "pageLength": 100000,
+                ], // sort CTRL # descending by default
+                "pageLength": 50,
                 "columnDefs": [{
+                        "targets": 0,
                         "type": "num",
-                        "targets": 0
-                    } // Treat CTRL # as numeric
-                ],
-                "fnDrawCallback": function() {
-                    var api = this.api();
-                    api.column(0, {
-                        page: 'current'
-                    }).nodes().each(function(cell, i) {
-                        // Keep the CTRL # value, don't replace with row index
-                        // (nothing to change here since we’re not auto-numbering like in userTable)
-                    });
-                }
+                        "orderable": true
+                    } // force numeric sorting on CTRL #
+                ]
             });
 
-            // Force sort in case AdminLTE overrides
+            // re-apply sort (sometimes AdminLTE overrides on init)
             t.order([0, "desc"]).draw();
         });
     </script>
+
 
 
 
