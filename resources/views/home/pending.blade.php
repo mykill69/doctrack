@@ -175,17 +175,26 @@
             var t = $('#example1').DataTable({
                 "order": [
                     [0, "desc"]
-                ],
-                "orderFixed": [
-                    [0, "desc"]
-                ], // force CTRL # descending
-                "pageLength": 10000,
+                ], // Default sort: CTRL # descending
+                "pageLength": 100000,
                 "columnDefs": [{
                         "type": "num",
                         "targets": 0
-                    } // numeric sort
-                ]
+                    } // Treat CTRL # as numeric
+                ],
+                "fnDrawCallback": function() {
+                    var api = this.api();
+                    api.column(0, {
+                        page: 'current'
+                    }).nodes().each(function(cell, i) {
+                        // Keep the CTRL # value, don't replace with row index
+                        // (nothing to change here since we’re not auto-numbering like in userTable)
+                    });
+                }
             });
+
+            // Force sort in case AdminLTE overrides
+            t.order([0, "desc"]).draw();
         });
     </script>
 
