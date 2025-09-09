@@ -321,9 +321,9 @@
         $(document).ready(function() {
             var t = $('#example1').DataTable({
                 "order": [
-                    [0, "asc"] // Sort by CTRL # descending
+                    [0, "desc"] // Sort by CTRL # descending
                 ],
-                "pageLength": 50,
+                "pageLength": 10000,
                 "columnDefs": [{
                     "type": "num",
                     "targets": 0 // Treat CTRL # as numeric
