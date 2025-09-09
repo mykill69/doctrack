@@ -313,21 +313,8 @@
             $('#example1').DataTable({
                 "order": [
                     [0, "desc"]
-                ], // Sort by CTRL # (first column) in descending order
-                "pageLength": 50,
-                "columnDefs": [{
-                    "searchable": false,
-                    "orderable": false,
-                    "targets": [] // No need to disable sorting on column 0 anymore
-                }],
-                "fnDrawCallback": function() {
-                    var api = this.api();
-                    api.column(0, {
-                        page: 'current'
-                    }).nodes().each(function(cell, i) {
-                        cell.innerHTML = cell.innerHTML; // keep original CTRL #
-                    });
-                }
+                ], // sort by CTRL # (first column) descending
+                "pageLength": 50
             });
         });
     </script>
