@@ -53,7 +53,7 @@
                                             @endphp
                                             @foreach ($logs as $log)
                                                 @php
-                                                    $document = $log->document; // Added the missing semicolon here
+                                                    $document = $log->document; 
                                                     $uniqueIdentifier =
                                                         $log->route_id .
                                                         '-' .
