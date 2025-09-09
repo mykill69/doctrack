@@ -29,18 +29,17 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table dataTable no-footer" style="font-size:11px;">
+                                    <table id="logsTable" class="table table-bordered table-hover" style="font-size:11px;">
                                         <thead>
                                             <tr>
                                                 <th>Logs</th>
                                                 <th>Date</th>
                                             </tr>
                                         </thead>
-
                                         <tbody>
                                             @foreach ($logsAll as $log)
                                                 @php
-                                                    $isAssignLog = $log->status_update == 2 && $log->assign_to; // Reassigned via assign_logs
+                                                    $isAssignLog = $log->status_update == 2 && $log->assign_to;
 
                                                     $displayName = $isAssignLog
                                                         ? trim($log->assign_fname . ' ' . $log->assign_lname)
@@ -67,12 +66,7 @@
 
                                                 <tr>
                                                     <td>
-                                                        {{-- <span style="font-weight:bold;">
-                                                           CTRL#: {{ $log->rslip_id ?? ' ' }} -
-                                                        </span> --}}
-                                                        <span style="font-weight:bold;">
-                                                            {{ $displayName ?: ' ' }}
-                                                        </span>
+                                                        <span style="font-weight:bold;">{{ $displayName ?: ' ' }}</span>
 
                                                         @if ($isAssignLog)
                                                             <span class="badge bg-info text-dark">re-assigned</span>
@@ -89,11 +83,12 @@
                                                         </span>
 
                                                         @if ($routedTo)
-                                                            and routed it to
-                                                            <span style="font-weight:bold;">{{ $routedTo }}</span>
+                                                            and routed it to <span
+                                                                style="font-weight:bold;">{{ $routedTo }}</span>
                                                         @endif
                                                     </td>
-                                                    <td>
+                                                    <td
+                                                        data-order="{{ \Carbon\Carbon::parse($log->created_at)->timestamp }}">
                                                         <span style="font-weight:bold;">
                                                             {{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i:s A') }}
                                                         </span>
@@ -101,8 +96,8 @@
                                                 </tr>
                                             @endforeach
                                         </tbody>
-
                                     </table>
+
 
 
                                 </div>
@@ -113,4 +108,26 @@
             </div>
         </div>
     </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var t = $('#logsTable').DataTable({
+                "order": [
+                    [1, "desc"]
+                ], // sort by Date (latest first)
+                "pageLength": 50,
+                "columnDefs": [{
+                        "targets": 1,
+                        "type": "num"
+                    } // ensure numeric timestamp sorting
+                ]
+            });
+
+            // Re-apply sort if AdminLTE interferes
+            t.order([1, "desc"]).draw();
+        });
+    </script>
 @endsection
