@@ -173,17 +173,22 @@
     <script>
         $(document).ready(function() {
             var t = $('#example1').DataTable({
+                "order": [
+                    [0, "desc"]
+                ],
+                "orderFixed": [
+                    [0, "desc"]
+                ], // force CTRL # descending
                 "pageLength": 10000,
                 "columnDefs": [{
-                    "type": "num",
-                    "targets": 0
-                }]
+                        "type": "num",
+                        "targets": 0
+                    } // numeric sort
+                ]
             });
-
-            // Force sort after DataTable init
-            t.order([0, "desc"]).draw();
         });
     </script>
+
 
 
 
