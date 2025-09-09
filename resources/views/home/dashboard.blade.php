@@ -308,21 +308,33 @@
             });
         </script>
     @endif
-    <script>
-        $(document).ready(function() {
-            $('#example1').DataTable({
-                "order": [
-                    [0, "desc"]
-                ], // Sort by CTRL #
-                "pageLength": 50,
-                "columnDefs": [{
-                        "type": "num",
-                        "targets": 0
-                    } // force numeric sorting on column 0
-                ]
+  <script>
+$(document).ready(function() {
+    var t = $('#example1').DataTable({
+        "order": [
+            [0, "desc"] // Sort by CTRL # descending
+        ],
+        "pageLength": 50,
+        "columnDefs": [
+            {
+                "type": "num",
+                "targets": 0 // Treat CTRL # as numeric
+            }
+        ],
+        "fnDrawCallback": function() {
+            var api = this.api();
+
+            // If you want to re-index column 0 (replace CTRL # with row numbers), uncomment this:
+            /*
+            api.column(0, { page: 'current' }).nodes().each(function(cell, i) {
+                cell.innerHTML = i + 1;
             });
-        });
-    </script>
+            */
+        }
+    });
+});
+</script>
+
 
 
 
