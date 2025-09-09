@@ -27,7 +27,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table table-bordered table-hover"
+                                    <table id="pending1" class="table table-bordered table-hover"
                                         style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
@@ -173,7 +173,7 @@
 
     <script>
         $(document).ready(function() {
-            var t = $('#example1').DataTable({
+            var t = $('#pending1').DataTable({
                 "order": [
                     [0, "desc"]
                 ], // sort CTRL # descending by default
