@@ -595,18 +595,10 @@
     <label>Select Personnels</label>
     <select name="update_by[]" class="form-control select2" data-placeholder="Select users..."  multiple="multiple"  required>
 
-        {{-- Static predefined positions --}}
-        <option disabled>— Select by Position —</option>
-        <option value="position:1">President</option>
-        <option value="position:2">VPAA</option>
-        <option value="position:3">VPAF</option>
-        <option value="position:4">Office Heads</option>
-        <option value="position:5">Deans</option>
-        <option value="position:6">Campus Administrators</option>
-        <option value="position:7">Directors</option>
+
 
         {{-- Group list --}}
-        <option disabled>──────────</option>
+
         <option disabled>— Select by Group —</option>
         @foreach ($groups as $group)
             <option value="group:{{ $group->group_name }}">{{ $group->group_name }}</option>

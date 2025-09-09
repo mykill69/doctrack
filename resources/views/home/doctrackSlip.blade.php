@@ -36,16 +36,19 @@
                                         style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
-
+                                                @if (auth()->user()->id == 1235)
+                                                    <th>CTRL #</th>
+                                                @endif
                                                 <th>TRACKING CODE</th>
-                                                <th>DOCUMENT TYPE</th>
-                                                <th>DOCUMENT TITLE</th>
-                                                {{-- <th>FILE NAME</th> --}}
-                                                <th>STATUS</th>
-                                                <th>CREATED BY</th>
-                                                <th>COMMENTS</th>
-                                                <th>DATE CREATED</th>
+                                                <th>DATE RECEIVED</th>
+                                                <th>SOURCE</th>
+                                                <th>SUBJECT MATTER</th>
+                                                <th>ACTION UNIT</th>
+                                                <th>RECEIVED BY/DATE</th>
+                                                <th>ACTION TAKEN</th>
                                                 <th>DATE RELEASED</th>
+                                                <th>REMARKS</th>
+                                                <th>STATUS</th>
                                                 <th>TOTAL DURATION</th>
                                                 <th>ACTION</th>
                                             </tr>
@@ -53,52 +56,86 @@
                                         <tbody>
                                             @foreach ($documentTrack as $record)
                                                 <tr>
+                                                    {{-- @if (auth()->user()->id == 1235)
+                                                        <td style="width: 80px;">
+                                                            <input type="text" class="form-control" value="">
+                                                        </td>
+                                                    @endif --}}
 
-                                                    <td>
+                                                    @if (auth()->user()->id == 1235)
+                                                        <td style="width: 80px;">
+                                                            <input type="text"
+                                                                class="form-control bordered doctrack-input"
+                                                                data-id="{{ $record->id }}" {{-- primary key of doctrack_slip --}}
+                                                                data-field="ctrl_no" value="{{ $record->ctrl_no }}">
+                                                        </td>
+                                                    @endif
+
+                                                    <td style="width: 80px;">
                                                         <a href="{{ route('slipMonitoring', ['docslip_id' => $record->docslip_id]) }}"
                                                             target="_blank" style="color: #007bff;">
                                                             {{ $record->docslip_id }}
                                                         </a>
                                                         <br>
                                                         @php $displayed = false; @endphp
-
                                                         @foreach ($record->views as $view)
                                                             @if (!is_null($record->update_by))
-                                                                {{-- Updater row: show datetime only --}}
                                                                 <small class="text-muted">
                                                                     Viewed on
                                                                     {{ \Carbon\Carbon::parse($view->viewed_at)->format('M j, Y h:i A') }}
                                                                 </small><br>
                                                                 @php $displayed = true; @endphp
                                                             @else
-                                                                {{-- Owner row: leave blank --}}
                                                                 @php $displayed = true; @endphp
                                                             @endif
                                                         @endforeach
-
-                                                        {{-- Only show "Not yet viewed" for updater rows --}}
                                                         @if (!$displayed && !is_null($record->update_by))
                                                             <small class="text-muted">Not yet viewed</small>
                                                         @endif
-
                                                     </td>
 
-
-
-                                                    <td>{{ $record->doc_type }}</td>
-                                                    <td>{{ $record->doc_title }}</td>
-                                                    {{-- <td>
-                                                        @if ($record->doctrackFile)
-                                                            <a href="{{ asset('storage/doc_track/' . $record->doctrackFile->file) }}"
-                                                                target="_blank">
-                                                                <i class="fas fa-file-pdf text-danger"></i>
-                                                                <span>{{ $record->doctrackFile->file }}</span>
-                                                            </a>
+                                                    <td data-order="{{ $record->created_at->timestamp }}">
+                                                        {{ $record->created_at->format('M j, Y') }}
+                                                    </td>
+                                                    <td>{{ $record->user_name }}</td>
+                                                    <td>{{ $record->doc_title }} -<br> {{ $record->doc_type }}</td>
+                                                    <td class="text-center">--</td>
+                                                    <td class="text-center">--</td>
+                                                    <td>
+                                                        @php
+                                                            $user = $record->update_by
+                                                                ? \App\Models\User::find($record->update_by)
+                                                                : \App\Models\User::find($record->user_id);
+                                                        @endphp
+                                                        @if ($user)
+                                                            <p class="text-red text-bold">
+                                                                {{ ucwords(strtolower($user->fname)) }}
+                                                                {{ ucwords(strtolower($user->lname)) }}
+                                                            </p>
                                                         @else
-                                                            <span class="text-muted">No file attached</span>
+                                                            <p class="text-muted"><i>User not found</i></p>
                                                         @endif
-
-                                                    </td> --}}
+                                                    </td>
+                                                    <td>{{ $record->updated_at->format('M d, Y') }}</td>
+                                                    <td>
+                                                        @php $commentsDisplayed = false; @endphp
+                                                        @foreach ($record->all_comments as $comment)
+                                                            @if (!is_null($record->update_by))
+                                                                <span
+                                                                    class="badge badge-warning m-1">{{ $comment->comments }}</span><br>
+                                                                <small class="text-muted">
+                                                                    {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
+                                                                </small>
+                                                                <br>
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @else
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @endif
+                                                        @endforeach
+                                                        @if (!$commentsDisplayed && !is_null($record->update_by))
+                                                            <span class="text-muted">No comments</span>
+                                                        @endif
+                                                    </td>
                                                     <td>
                                                         @switch($record->doctrack_stat)
                                                             @case(1)
@@ -121,48 +158,6 @@
                                                                 <span class="badge badge-danger">Returned with comments</span>
                                                         @endswitch
                                                     </td>
-                                                    <td>
-                                                        @php
-                                                            $user = $record->update_by
-                                                                ? \App\Models\User::find($record->update_by)
-                                                                : \App\Models\User::find($record->user_id);
-                                                        @endphp
-                                                        @if ($user)
-                                                            <p class="text-red text-bold">
-                                                                {{ ucwords(strtolower($user->fname)) }}
-                                                                {{ ucwords(strtolower($user->lname)) }}
-                                                            </p>
-                                                        @else
-                                                            <p class="text-muted"><i>User not found</i></p>
-                                                        @endif
-                                                    </td>
-
-                                                    <td>
-                                                        @php $commentsDisplayed = false; @endphp
-
-                                                        @foreach ($record->all_comments as $comment)
-                                                            @if (!is_null($record->update_by))
-                                                                <span
-                                                                    class="badge badge-warning m-1">{{ $comment->comments }}</span>
-                                                                <small class="text-muted"><br>
-                                                                     {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
-                                                                </small>
-                                                                <br>
-                                                                @php $commentsDisplayed = true; @endphp
-                                                            @else
-                                                                @php $commentsDisplayed = true; @endphp
-                                                            @endif
-                                                        @endforeach
-
-                                                        @if (!$commentsDisplayed && !is_null($record->update_by))
-                                                            <span class="text-muted">No comments</span>
-                                                        @endif
-                                                    </td>
-
-                                                    <td data-order="{{ $record->created_at->timestamp }}">
-                                                        {{ $record->created_at->format('M j, Y h:i A') }}
-                                                    </td>
-                                                    <td>{{ $record->updated_at }}</td>
                                                     <td>
                                                         @php
                                                             $diff = $record->time_diff ?? [
@@ -189,7 +184,6 @@
                                                             @endif
                                                         @endif
                                                     </td>
-
                                                     <td>
                                                         <div class="btn-group">
                                                             <button type="button" class="btn btn-primary dropdown-toggle"
@@ -198,9 +192,7 @@
                                                                 Click here
                                                             </button>
                                                             <div class="dropdown-menu">
-
                                                                 @if ($record->doctrack_stat == 1)
-                                                                    <!-- Delete Slip Form -->
                                                                     <form
                                                                         action="{{ route('deleteSlip', ['docslip_id' => $record->docslip_id]) }}"
                                                                         method="POST"
@@ -212,28 +204,18 @@
                                                                         </button>
                                                                     </form>
                                                                 @endif
-
-                                                                <!-- View Details -->
                                                                 <a class="dropdown-item"
                                                                     href="{{ route('slipMonitoring', ['docslip_id' => $record->docslip_id]) }}"
                                                                     target="_blank">
                                                                     <i class="fas fa-eye"></i> View Details
                                                                 </a>
-
                                                             </div>
                                                         </div>
                                                     </td>
-
-
                                                 </tr>
                                             @endforeach
                                         </tbody>
-
-
                                     </table>
-
-
-
                                 </div>
                             </div>
                         </div>
@@ -257,6 +239,8 @@
     <!-- SweetAlert2 -->
     <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
     <script>
         $('#example1').DataTable({
             "responsive": true,
@@ -268,6 +252,46 @@
                 "type": "num",
                 "targets": 0
             }]
+        });
+    </script>
+
+    <script>
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        // Store original value when focusing
+        $(document).on('focus', '.doctrack-input', function() {
+            $(this).data('original-value', $(this).val());
+        });
+
+        // Update on blur if value changed
+        $(document).on('blur', '.doctrack-input', function() {
+            let doctrackId = $(this).data('id');
+            let field = $(this).data('field');
+            let value = $(this).val();
+            let originalValue = $(this).data('original-value');
+
+            if (value === originalValue) return; // skip if nothing changed
+
+            $.ajax({
+                url: "{{ url('doctrack-slip') }}/" + doctrackId,
+                type: 'POST',
+                data: {
+                    _method: 'PUT',
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    [field]: value
+                },
+                success: function(response) {
+                    console.log('CTRL # updated successfully:', response);
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    alert('Error updating CTRL #');
+                }
+            });
         });
     </script>
 

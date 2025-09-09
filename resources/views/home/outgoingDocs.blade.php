@@ -60,24 +60,8 @@
                                                     <td data-order="{{ $record->created_at->timestamp }}">
                                                         {{ $record->created_at->format('M j, Y') }}
                                                     </td>
-
-
-
                                                     <td></td>
                                                     <td>{{ $record->doc_title }}</td>
-                                                    {{-- <td>
-                                                        @if ($record->doctrackFile)
-                                                            <a href="{{ asset('storage/doc_track/' . $record->doctrackFile->file) }}"
-                                                                target="_blank">
-                                                                <i class="fas fa-file-pdf text-danger"></i>
-                                                                <span>{{ $record->doctrackFile->file }}</span>
-                                                            </a>
-                                                        @else
-                                                            <span class="text-muted">No file attached</span>
-                                                        @endif
-
-                                                    </td> --}}
-
                                                     <td class="text-center">--</td>
                                                     <td class="text-center">--</td>
                                                     <td> @php
@@ -230,17 +214,10 @@
                                                             </div>
                                                         </div>
                                                     </td>
-
-
                                                 </tr>
                                             @endforeach
                                         </tbody>
-
-
                                     </table>
-
-
-
                                 </div>
                             </div>
                         </div>

@@ -13,6 +13,7 @@ class Doctrack extends Model
     // Define which fields are mass assignable
     protected $fillable = [
         'docslip_id',
+        'ctrl_no',
         'user_id',
         'update_by',
         'doc_type',

@@ -399,6 +399,16 @@ public function storeDoctrackUpdate(Request $request)
         ->with('success', 'New entry with tracking # ' . $documentTrack->docslip_id . ' was added successfully!');
 }
 
+public function update(Request $request, Doctrack $doctrack)
+{
+    $request->validate([
+        'ctrl_no' => 'nullable|string|max:255',
+    ]);
+
+    $doctrack->update($request->only(['ctrl_no']));
+
+    return response()->json(['success' => true, 'message' => 'CTRL # updated successfully.']);
+}
 
 // public function storeDoctrackUpdate(Request $request)
 // {

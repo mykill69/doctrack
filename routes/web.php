@@ -49,6 +49,10 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/viewPdfRoute', [PagesController::class, 'viewPdfRoute'])->name('viewPdfRoute');
     Route::get('/doctrackslip-list', [PagesController::class, 'doctrackSlip'])->name('doctrackSlip');
 
+    // update ctrl no in doctrack slip
+    Route::put('/doctrack-slip/{doctrack}', [DoctrackController::class, 'update'])->name('doctrack.update');
+
+
     // Routed Distribution list
     Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
     Route::get('/distribution-List/view/{id}', [PagesController::class, 'viewDistribution'])->name('viewDistribution');
