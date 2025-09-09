@@ -237,53 +237,6 @@ public function storeDoc(Request $request)
 }
 
 
-// public function update(Request $request, $id)
-// {
-//     $request->validate([
-//         'comments' => 'nullable|string',
-//         'user_id' => 'required|integer',
-//         'new_user' => 'required|integer',
-//     ]);
-
-//     $document = Document::find($id);
-//     if (!$document) {
-//         return redirect()->back()->with('error', 'Document not found.');
-//     }
-
-//     $routeId = $document->route_id;
-
-//     // Match by route_id and optionally user if needed
-//     $logToUpdate = Log::where('route_id', $routeId)
-//                       ->first();
-
-//     if ($logToUpdate) {
-//         $logToUpdate->user_id = $request->input('user_id');
-//         $logToUpdate->new_user = $request->input('new_user');
-//         $logToUpdate->action = 'Acknowledged';
-//         $logToUpdate->status_update = $request->input('status_update');
-//         $logToUpdate->prev_file = $logToUpdate->new_file;
-//         $logToUpdate->comments = $request->input('comments', null);
-//         $logToUpdate->updated_at = now();
-//         $logToUpdate->save();
-
-//         if ($logToUpdate->status_update == 3) {
-//             LogsHistory::create([
-//                 'doc_id' => $logToUpdate->doc_id,
-//                 'action' => $logToUpdate->action,
-//                 'status_update' => $logToUpdate->status_update,
-//                 'created_at' => now(),
-//                 'updated_at' => now(),
-//             ]);
-//         }
-
-//        return redirect($request->input('redirectUrl'))->with('success', 'The document was acknowledged successfully.');
-
-//     } else {
-//         return redirect()->back()->with('error', 'Log entry not found for the specified route_id.');
-//     }
-// }
-
-
 public function update(Request $request, $id)
 {
     $request->validate([

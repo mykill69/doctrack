@@ -53,7 +53,7 @@
                                             @endphp
                                             @foreach ($logs as $log)
                                                 @php
-                                                    $document = $log->document; 
+                                                    $document = $log->document;
                                                     $uniqueIdentifier =
                                                         $log->route_id .
                                                         '-' .
@@ -308,6 +308,29 @@
             });
         </script>
     @endif
+    <script>
+        $(document).ready(function() {
+            $('#example1').DataTable({
+                "order": [
+                    [10, "desc"]
+                ], // Sort by DATE UPDATED (11th column)
+                "pageLength": 50,
+                "columnDefs": [{
+                    "searchable": false,
+                    "orderable": false,
+                    "targets": 0 // CTRL # (first column) won't be sorted
+                }],
+                "fnDrawCallback": function() {
+                    var api = this.api();
+                    api.column(0, {
+                        page: 'current'
+                    }).nodes().each(function(cell, i) {
+                        cell.innerHTML = i + 1;
+                    });
+                }
+            });
+        });
+    </script>
 
 
 
