@@ -155,7 +155,7 @@
                                                             @break
 
                                                             @case(6)
-                                                                <span class="badge badge-secondary">Acknowledge</span>
+                                                                <span class="badge badge-success">Acknowledged</span>
                                                             @break
 
                                                             @default

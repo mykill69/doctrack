@@ -111,7 +111,7 @@
                                             break;
                                         case 6:
                                             $statusText = 'ACKNOWLEDGE';
-                                            $bgColor = 'secondary'; // you can use 'dark' or another bootstrap color if you prefer
+                                            $bgColor = 'success'; // you can use 'dark' or another bootstrap color if you prefer
                                             $icon = 'fas fa-handshake';
                                             break;
                                         default:
