@@ -152,12 +152,12 @@
                                                         <span
                                                             class="badge {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>
 
-                                                        @if ($log->logs_status != 6)
+                                                        @if ($log->logs_status != 7)
                                                             file: <span
                                                                 class="text-primary font-weight-bold">{{ $fileName }}</span>
                                                         @endif
 
-                                                        @if ($target && !in_array($log->logs_status, [3, 4, 5, 6]))
+                                                        @if ($target && !in_array($log->logs_status, [3, 4, 5, 6, 7]))
                                                             → Routed to <strong>{{ $target->fname }}
                                                                 {{ $target->lname }}</strong> and status is
 
