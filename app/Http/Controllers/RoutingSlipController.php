@@ -504,7 +504,7 @@ public function editSlip($id)
     $routingSlip->subject        = $request->input('subject');
     $routingSlip->trans_remarks  = $request->input('trans_remarks');
     $routingSlip->other_remarks  = $request->input('other_remarks');
-    $routingSlip->r_destination = implode(',', $request->input('r_destination', []));
+    $routingSlip->r_destination = implode(', ', $request->input('r_destination', []));
     $routingSlip->route_status   = $request->input('route_status');
 
     // Merge received names
