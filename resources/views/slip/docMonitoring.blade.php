@@ -225,8 +225,13 @@
                                                                 onclick="submitStatus({{ $loopIndex }}, 5)">
                                                                 <i class="fas fa-user-check mr-1"></i> Checked
                                                             </a>
+                                                            <a class="dropdown-item" href="#"
+                                                                onclick="submitStatus({{ $loopIndex }}, 6)">
+                                                                <i class="fas fa-handshake mr-1"></i> Acknowledge
+                                                            </a>
                                                         </div>
                                                     @endif
+
 
                                                 </div>
                                             </form>
