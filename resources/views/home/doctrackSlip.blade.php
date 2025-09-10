@@ -154,6 +154,10 @@
                                                                 <span class="badge badge-info">Checked</span>
                                                             @break
 
+                                                            @case(6)
+                                                                <span class="badge badge-secondary">Acknowledge</span>
+                                                            @break
+
                                                             @default
                                                                 <span class="badge badge-danger">Returned with comments</span>
                                                         @endswitch

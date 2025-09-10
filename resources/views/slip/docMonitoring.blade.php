@@ -107,7 +107,12 @@
                                         case 5:
                                             $statusText = 'CHECKED';
                                             $bgColor = 'info';
-                                            $icon = 'fas fa-user-check'; // or any appropriate icon
+                                            $icon = 'fas fa-user-check';
+                                            break;
+                                        case 6:
+                                            $statusText = 'ACKNOWLEDGE';
+                                            $bgColor = 'secondary'; // you can use 'dark' or another bootstrap color if you prefer
+                                            $icon = 'fas fa-handshake';
                                             break;
                                         default:
                                             $statusText = 'UNKNOWN';
