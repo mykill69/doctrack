@@ -112,7 +112,7 @@
                                                 @php
                                                     // Determine actor and target
                                                     $actor = match ($log->logs_status) {
-                                                        3 => $log->updatedBy, // Acknowledged by recipient
+                                                        7 => $log->updatedBy, // Acknowledged by recipient
                                                         default => $log->createdBy,
                                                     };
 
