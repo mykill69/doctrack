@@ -112,8 +112,11 @@
                                                 @php
                                                     // Determine actor and target
                                                     $actor = match ($log->logs_status) {
-                                                        7 => $log->updatedBy, // Acknowledged by recipient
-                                                        default => $log->createdBy,
+                                                        3,
+                                                        5,
+                                                        6
+                                                            => $log->updatedBy, // Signed, Checked, Acknowledged → updatedBy
+                                                        default => $log->createdBy, // Otherwise → createdBy
                                                     };
 
                                                     $target = match ($log->logs_status) {
@@ -127,7 +130,7 @@
                                                     $statusBadge = match ($log->logs_status) {
                                                         1 => ['label' => 'Created', 'class' => 'badge-primary'],
                                                         2 => ['label' => 'Forwarded', 'class' => 'badge-warning'],
-                                                        3 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
+                                                        3 => ['label' => 'Signed', 'class' => 'badge-success'],
                                                         4 => ['label' => 'Returned', 'class' => 'badge-danger'],
                                                         5 => ['label' => 'Checked', 'class' => 'badge-info'],
                                                         6 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
@@ -140,7 +143,6 @@
                                                             'class' => 'badge-secondary',
                                                         ],
                                                     };
-
                                                 @endphp
 
                                                 <tr>
