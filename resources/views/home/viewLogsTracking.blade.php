@@ -130,7 +130,8 @@
                                                         3 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
                                                         4 => ['label' => 'Returned', 'class' => 'badge-danger'],
                                                         5 => ['label' => 'Checked', 'class' => 'badge-info'],
-                                                        6 => [
+                                                        6 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
+                                                        7 => [
                                                             'label' => 'Deleted',
                                                             'class' => 'badge-dark',
                                                         ], // ✅ Added for deleted status

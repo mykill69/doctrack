@@ -830,7 +830,7 @@ public function deleteSlip($docslip_id)
         'update_by'  => $update_by,
         'doc_title'  => $doc_title,
         'file_logs'  => null,
-        'logs_status'=> 6, // You can define 0 as "Deleted" in your UI logic
+        'logs_status'=> 7, // You can define 0 as "Deleted" in your UI logic
         'comments'   => 'Document deleted.',
     ]);
 
