@@ -582,6 +582,8 @@
                         <label>Document Type</label>
                         <select name="doc_type" class="form-control" required>
                             <option value="">Select</option>
+                            <option value="Issuance">Issuance</option>
+                            <option value="Correspondence">Correspondence</option>
                             <option value="DPCR/IPCR">DPCR/IPCR</option>
                             <option value="PAPS-PRE">PAPS-PRE</option>
                             <option value="PPMP">PPMP</option>
