@@ -72,28 +72,7 @@
                                                         </td>
                                                     @endif
 
-                                                    <td style="width: 80px;">
-                                                        <a href="{{ route('slipMonitoring', ['docslip_id' => $record->docslip_id]) }}"
-                                                            target="_blank" style="color: #007bff;">
-                                                            {{ $record->docslip_id }}
-                                                        </a>
-                                                        <br>
-                                                        @php $displayed = false; @endphp
-                                                        @foreach ($record->views as $view)
-                                                            @if (!is_null($record->update_by))
-                                                                <small class="text-muted">
-                                                                    Viewed on
-                                                                    {{ \Carbon\Carbon::parse($view->viewed_at)->format('M j, Y h:i A') }}
-                                                                </small><br>
-                                                                @php $displayed = true; @endphp
-                                                            @else
-                                                                @php $displayed = true; @endphp
-                                                            @endif
-                                                        @endforeach
-                                                        @if (!$displayed && !is_null($record->update_by))
-                                                            <small class="text-muted">Not yet viewed</small>
-                                                        @endif
-                                                    </td>
+                                                    
 
                                                     <td data-order="{{ $record->created_at->timestamp }}">
                                                         {{ $record->created_at->format('M j, Y') }}
@@ -162,6 +141,28 @@
                                                             @default
                                                                 <span class="badge badge-danger">Returned with comments</span>
                                                         @endswitch
+                                                    </td>
+                                                    <td style="width: 80px;">
+                                                        <a href="{{ route('slipMonitoring', ['docslip_id' => $record->docslip_id]) }}"
+                                                            target="_blank" style="color: #007bff;">
+                                                            {{ $record->docslip_id }}
+                                                        </a>
+                                                        <br>
+                                                        @php $displayed = false; @endphp
+                                                        @foreach ($record->views as $view)
+                                                            @if (!is_null($record->update_by))
+                                                                <small class="text-muted">
+                                                                    Viewed on
+                                                                    {{ \Carbon\Carbon::parse($view->viewed_at)->format('M j, Y h:i A') }}
+                                                                </small><br>
+                                                                @php $displayed = true; @endphp
+                                                            @else
+                                                                @php $displayed = true; @endphp
+                                                            @endif
+                                                        @endforeach
+                                                        @if (!$displayed && !is_null($record->update_by))
+                                                            <small class="text-muted">Not yet viewed</small>
+                                                        @endif
                                                     </td>
                                                     <td>
                                                         @php
