@@ -316,9 +316,13 @@
                             alt="User Image">
                     </div>
                     <div class="info">
-                        <a href="#" class="d-block"
-                            style="font-size:12px;color:#000000;">{{ auth()->user()->fname }}
-                            {{ auth()->user()->lname }}</a>
+                        <a href="#" class="d-block" style="font-size:12px;color:#000000;">
+                            @if (auth()->user()->role === 'records_officer')
+                                {{ auth()->user()->fname }} {{ auth()->user()->mname }} {{ auth()->user()->lname }}
+                            @else
+                                {{ auth()->user()->fname }} {{ auth()->user()->lname }}
+                            @endif
+                        </a>
                     </div>
                 </div>
                 <div class="form-inline">
