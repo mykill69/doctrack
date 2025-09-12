@@ -16,6 +16,7 @@
 
         <li class="nav-item">
             @if (auth()->check() &&
+                    auth()->user()->id != 1235 &&
                     (auth()->user()->hasRole('Administrator') ||
                         auth()->user()->hasRole('super_user') ||
                         auth()->user()->hasRole('records_officer')))
@@ -200,7 +201,7 @@
             </li>
         @endif
 
-        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+        @if (($user_role == 'Administrator' || $user_role == 'records_officer') && auth()->user()->id != 1235)
             <li class="nav-item">
                 <a href="{{ route('userView') }}"
                     class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">
@@ -225,7 +226,8 @@
         {{-- <a href="{{ route('archived') }}" class="nav-link {{ request()->routeIs('archived') ? 'active' : '' }}"> --}}
 
 
-        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+        {{-- Office List --}}
+        @if (($user_role == 'Administrator' || $user_role == 'records_officer') && auth()->user()->id != 1235)
             <li class="nav-item">
                 <a href="{{ route('offices') }}" class="nav-link {{ request()->routeIs('offices') ? 'active' : '' }}">
                     <i class="fas fa-building nav-icon"></i>
@@ -234,9 +236,11 @@
             </li>
         @endif
 
-        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+        {{-- Group List --}}
+        @if (($user_role == 'Administrator' || $user_role == 'records_officer') && auth()->user()->id != 1235)
             <li class="nav-item">
-                <a href="{{ route('userGroups') }}" class="nav-link {{ request()->routeIs('userGroups') ? 'active' : '' }}">
+                <a href="{{ route('userGroups') }}"
+                    class="nav-link {{ request()->routeIs('userGroups') ? 'active' : '' }}">
                     <i class="fas fa-users nav-icon"></i>
                     <p>Group List</p>
                 </a>

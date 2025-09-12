@@ -207,8 +207,14 @@
                     @if (request()->routeIs('dashboard'))
                         <div class="input-group">
 
-                            {{-- Transaction Button --}}
-                            @if (in_array($user_role, ['Administrator', 'records_officer']))
+                            @if (auth()->user()->id == 1235)
+                                {{-- Only for user ID 1235 --}}
+                                <button type="button" class="btn btn-warning" onclick="openDoctrackForm()">
+                                    <i class="fa fa-plus"></i>
+                                    <span class="d-none d-sm-inline text-bold"> Document Tracking Slip</span>
+                                </button>
+                            @elseif (in_array($user_role, ['Administrator', 'records_officer']))
+                                {{-- Transaction Button --}}
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-warning dropdown-toggle"
                                         data-toggle="dropdown" aria-expanded="false">
@@ -232,22 +238,21 @@
                                 </button>
                             @endif
 
-                            {{-- QR Scanner Button (mobile only) --}}
-                            {{-- <input type="file" id="qrInput" accept="image/*" capture="environment"
+                        </div>
+                    @endif
+
+                </li>
+
+            </ul>
+
+            {{-- QR Scanner Button (mobile only) --}}
+            {{-- <input type="file" id="qrInput" accept="image/*" capture="environment"
                                 style="display: none;" onchange="scanQRCode(this)">
 
                             <button type="button" class="btn btn-default ml-1"
                                 onclick="document.getElementById('qrInput').click();">
                                 <i class="fa fa-qrcode"></i>
                             </button> --}}
-
-                        </div>
-                    @endif
-                </li>
-
-            </ul>
-
-
 
             <ul class="navbar-nav ml-auto">
                 {{-- <li class="nav-item dropdown" style="background-color: #FFFFFF; border-radius: 5px;">

@@ -39,7 +39,7 @@
                                                 @if (auth()->user()->id == 1235)
                                                     <th>CTRL #</th>
                                                 @endif
-                                                <th>TRACKING CODE</th>
+                                                
                                                 <th>DATE RECEIVED</th>
                                                 <th>SOURCE</th>
                                                 <th>SUBJECT MATTER</th>
@@ -49,6 +49,7 @@
                                                 <th>DATE RELEASED</th>
                                                 <th>REMARKS</th>
                                                 <th>STATUS</th>
+                                                <th>TRACKING CODE</th>
                                                 <th>TOTAL DURATION</th>
                                                 <th>ACTION</th>
                                             </tr>
