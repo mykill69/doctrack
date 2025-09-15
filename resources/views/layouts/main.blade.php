@@ -223,10 +223,10 @@
                                     </button>
                                     <ul class="dropdown-menu">
                                         <li class="dropdown-item" data-toggle="modal" data-target="#routslip">
-                                            <a href="#">Create Routing Slip</a>
+                                            <a href="#">for PRESIDENT'S Action</a>
                                         </li>
                                         <li class="dropdown-item">
-                                            <a href="#" onclick="openDoctrackForm()">Document Tracking Slip</a>
+                                            <a href="#" onclick="openDoctrackForm()">for PERSONNEL Action</a>
                                         </li>
                                     </ul>
                                 </div>
@@ -234,7 +234,7 @@
                                 {{-- Simple Button for Document Tracking Slip --}}
                                 <button type="button" class="btn btn-warning" onclick="openDoctrackForm()">
                                     <i class="fa fa-plus"></i>
-                                    <span class="d-none d-sm-inline text-bold"> Document Tracking Slip</span>
+                                    <span class="d-none d-sm-inline text-bold">for PERSONNEL Action</span>
                                 </button>
                             @endif
 
