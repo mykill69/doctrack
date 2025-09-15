@@ -73,7 +73,7 @@
                                         <input type="text" class="form-control" name="source"
                                             value="{{ $routingSlips->source }}" readonly>
                                     </div>
-                                    <input type="hidden" name="pres_dept" value="{{ $userDepartment }}">
+                                    <input type="hidden" name="pres_dept" value="Dr. Aladino C. Moraca">
                                 </div>
 
                                 {{-- Subject Matter --}}

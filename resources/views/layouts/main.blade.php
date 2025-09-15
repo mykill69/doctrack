@@ -211,7 +211,7 @@
                                 {{-- Only for user ID 1235 --}}
                                 <button type="button" class="btn btn-warning" onclick="openDoctrackForm()">
                                     <i class="fa fa-plus"></i>
-                                    <span class="d-none d-sm-inline text-bold"> Document Tracking Slip</span>
+                                    <span class="d-none d-sm-inline text-bold"> Document Transmittal</span>
                                 </button>
                             @elseif (in_array($user_role, ['Administrator', 'records_officer']))
                                 {{-- Transaction Button --}}
@@ -576,7 +576,7 @@
     <script>
         function openDoctrackForm() {
             Swal.fire({
-                title: 'Document Tracking Slip',
+                title: 'Document Transmittal',
                 html: `
                 <form id="docForm" enctype="multipart/form-data">
                     <input type="hidden" name="_token" value="{{ csrf_token() }}">
