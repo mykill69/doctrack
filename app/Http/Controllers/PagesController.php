@@ -567,6 +567,63 @@ public function userPassword($id)
         'userEsig' // pass it to the view
     ));
 }
+// public function passChange(Request $request, $id)
+// {
+//     $validator = Validator::make($request->all(), [
+//         'email' => 'nullable|string|max:255|unique:users,email,' . $id,
+//         'password' => 'nullable|string|min:8|confirmed',
+//         'department' => 'nullable|string|max:255',
+//         'esig_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf',
+//     ]);
+
+//     if ($validator->fails()) {
+//         return redirect()->back()->withErrors($validator)->withInput();
+//     }
+
+//     $user = User::find($id);
+//     if (!$user) {
+//         return redirect()->back()->with('error', 'User not found');
+//     }
+
+//     // ✅ Handle E-signature upload to storage/app/esignature
+//     if ($request->hasFile('esig_file')) {
+//         $file = $request->file('esig_file');
+//         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+//         $extension = $file->getClientOriginalExtension();
+//         $filename = $user->fname . '_' . $originalName . '.' . $extension;
+
+//         $i = 1;
+//         $storagePath = storage_path('app/esignature');
+
+//         // Ensure filename is unique in esignature folder
+//         while (file_exists($storagePath . '/' . $filename)) {
+//             $filename = $user->fname . '_' . $originalName . ' Copy ' . $i . '.' . $extension;
+//             $i++;
+//         }
+
+//         // Delete old file if exists
+//         $existingEsig = Esig::where('user_id', $user->id)->first();
+//         if ($existingEsig && $existingEsig->esig_file) {
+//             $oldPath = $storagePath . '/' . $existingEsig->esig_file;
+//             if (file_exists($oldPath)) {
+//                 unlink($oldPath);
+//             }
+//         }
+
+//         // Save new file
+//         $file->storeAs('esignature', $filename); // this stores to storage/app/esignature
+
+//         // Save or update Esig record
+//         Esig::updateOrCreate(
+//             ['user_id' => $user->id],
+//             ['esig_file' => $filename]
+//         );
+//     }
+
+//     return redirect()->route('userPassword', ['id' => $id])
+//         ->with('success', 'User updated successfully.');
+// }
+
 public function passChange(Request $request, $id)
 {
     $validator = Validator::make($request->all(), [
@@ -585,7 +642,17 @@ public function passChange(Request $request, $id)
         return redirect()->back()->with('error', 'User not found');
     }
 
-    // ✅ Handle E-signature upload to storage/app/esignature
+    // ✅ Update password if provided
+    if ($request->filled('password')) {
+        $user->password = Hash::make($request->password);
+    }
+
+    // ✅ Update department if provided
+    if ($request->filled('department')) {
+        $user->department = $request->department;
+    }
+
+    // ✅ Handle E-signature upload
     if ($request->hasFile('esig_file')) {
         $file = $request->file('esig_file');
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -595,7 +662,6 @@ public function passChange(Request $request, $id)
         $i = 1;
         $storagePath = storage_path('app/esignature');
 
-        // Ensure filename is unique in esignature folder
         while (file_exists($storagePath . '/' . $filename)) {
             $filename = $user->fname . '_' . $originalName . ' Copy ' . $i . '.' . $extension;
             $i++;
@@ -611,18 +677,21 @@ public function passChange(Request $request, $id)
         }
 
         // Save new file
-        $file->storeAs('esignature', $filename); // this stores to storage/app/esignature
+        $file->storeAs('esignature', $filename);
 
-        // Save or update Esig record
         Esig::updateOrCreate(
             ['user_id' => $user->id],
             ['esig_file' => $filename]
         );
     }
 
+    // ✅ Save changes to user
+    $user->save();
+
     return redirect()->route('userPassword', ['id' => $id])
         ->with('success', 'User updated successfully.');
 }
+
 
 public function distributionList()
 {
