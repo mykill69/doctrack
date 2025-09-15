@@ -298,7 +298,8 @@ if ($logs->isEmpty()) {
 
     // Determine e-signature based on president department
     $esigUserId = match ($routingSlip->pres_dept) {
-        "PRESIDENT'S OFFICE" => 38,
+        // "PRESIDENT'S OFFICE" => 38,
+        "Dr. Aladino C. Moraca" => 38,
         'VPAF' => 63,
         'VPAA' => 64,
         default => null,
