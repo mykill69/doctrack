@@ -10,14 +10,16 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\RoutingSlip;
 use App\Models\Group;
+use App\Models\Doctrack; 
 
 class UserController extends Controller
 {
     // Method to view all users
 public function userView()
 {
-    // Get logged-in user info
     $user = auth()->user();
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userId = $user->id;
     $userRole = $user->role ?? null;
 
     // Fetch all users and offices
@@ -29,13 +31,40 @@ public function userView()
     $superUserCount = ($userRole === 'super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
     $recordsOfficerCount = ($userRole === 'records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
 
+  // Get all Doctrack records (no grouping)
+    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+        ->where(function ($query) use ($userId, $userFullName) {
+            $query->where('user_id', $userId)
+                  ->orWhere('update_by', $userId)
+                  ->orWhere('user_name', $userFullName);
+        })
+        ->orderByDesc('created_at')
+        ->get();
+
+    // Calculate time_diff for each record here
+    $documentTrack->transform(function ($item) {
+        $start = \Carbon\Carbon::parse($item->created_at);
+        $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+        $diffInMinutes = $end->diffInMinutes($start);
+
+        $item->time_diff = [
+            'days' => floor($diffInMinutes / 1440),
+            'hours' => floor(($diffInMinutes % 1440) / 60),
+            'minutes' => $diffInMinutes % 60,
+        ];
+
+        return $item;
+    });
+
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
     // Return the view with all necessary data
     return view('users.user', compact(
         'users',
         'offices',
         'routingSlipCount',
         'superUserCount',
-        'recordsOfficerCount'
+        'recordsOfficerCount','doctrackCount'
     ));
 }
 

@@ -93,7 +93,8 @@ public function dashboard()
         return $item;
     });
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
 
     return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount' , 'groups'));
@@ -154,6 +155,8 @@ public function tracking(Request $request)
         : 0;
 
     $offices = Office::all();
+
+    
 
     return view('track.tracktemp', [
         'documents' => $filteredDocuments,

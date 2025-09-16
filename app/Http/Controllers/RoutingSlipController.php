@@ -114,7 +114,8 @@ public function viewSlip()
                   ->orWhere('user_name', $userFullName);
         })->get();
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     return view('slip.routingSlip', compact(
         'routingSlips',

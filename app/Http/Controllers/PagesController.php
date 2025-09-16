@@ -144,7 +144,8 @@ $documentTrack->transform(function ($item) {
 
 
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     return view('home.outgoingDocs', compact(
         'documentTrack', 'offices',
@@ -257,7 +258,7 @@ $documentTrack->transform(function ($item) {
 
 
 
-    $doctrackCount = $documentTrack->count();
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     return view('home.doctrackSlip', compact(
         'documentTrack', 'offices',
@@ -324,7 +325,8 @@ public function pending()
         return $item;
     });
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount', 'doctrackCount'));
 }
@@ -378,7 +380,8 @@ $users = User::all();
         return $item;
     });
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     $offices = Office::all();
 
@@ -472,7 +475,8 @@ public function viewLogs()
         return $item;
     });
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     return view('home.viewLogs', compact(
         'logsAll', 'userId', 'userFullName',
@@ -524,7 +528,9 @@ public function viewLogsTracking()
         return $item;
     });
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+
     // Count logic
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
@@ -732,7 +738,8 @@ public function distributionList()
                   ->orWhere('user_name', $userFullName);
         })->get();
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     return view('home.distList', compact('logs', 'offices', 'doctrackCount'));
 }
@@ -830,7 +837,8 @@ public function trackingDistributionList()
               ->orWhere('user_name', $userFullName);
     })->get();
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     return view('home.trackingDistList', compact('logs', 'offices', 'doctrackCount'));
 }
@@ -940,7 +948,8 @@ public function offices()
               ->orWhere('user_name', $userFullName);
     })->get();
 
-    $doctrackCount = $documentTrack->count();
+   // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     $recordsOfficerCount = $userRole === 'records_officer'
         ? RoutingSlip::where('route_status', 2)->count()
@@ -1008,7 +1017,8 @@ public function userGroups()
               ->orWhere('user_name', $userFullName);
     })->get();
 
-    $doctrackCount = $documentTrack->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     $recordsOfficerCount = $userRole === 'records_officer'
         ? RoutingSlip::where('route_status', 2)->count()
