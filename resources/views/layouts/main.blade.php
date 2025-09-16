@@ -318,7 +318,7 @@
                     <div class="info">
                         <a href="#" class="d-block" style="font-size:12px;color:#000000;">
                             @if (auth()->user()->role === 'records_officer')
-                                {{ auth()->user()->fname }} {{ auth()->user()->mname }} {{ auth()->user()->lname }}
+                                {{ auth()->user()->fname }} {{ auth()->user()->lname }} - {{ auth()->user()->mname }}
                             @else
                                 {{ auth()->user()->fname }} {{ auth()->user()->lname }}
                             @endif
