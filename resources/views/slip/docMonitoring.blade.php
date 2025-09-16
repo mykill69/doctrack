@@ -110,7 +110,7 @@
                                             $icon = 'fas fa-user-check';
                                             break;
                                         case 6:
-                                            $statusText = 'ACKNOWLEDGE';
+                                            $statusText = 'ACKNOWLEDGED';
                                             $bgColor = 'success'; // you can use 'dark' or another bootstrap color if you prefer
                                             $icon = 'fas fa-handshake';
                                             break;
@@ -227,7 +227,7 @@
                                                             </a>
                                                             <a class="dropdown-item" href="#"
                                                                 onclick="submitStatus({{ $loopIndex }}, 6)">
-                                                                <i class="fas fa-handshake mr-1"></i> Acknowledge
+                                                                <i class="fas fa-handshake mr-1"></i> Acknowledged
                                                             </a>
                                                         </div>
                                                     @endif
