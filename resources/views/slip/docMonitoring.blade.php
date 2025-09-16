@@ -77,11 +77,16 @@
                                         $currentUserId == $documentTrack->update_by;
                                     $canComment = $documentTrack->update_by === $currentUserId;
 
-                                    $person = $isFirst
-                                        ? $documentTrack->createdBy->fname . ' ' . $documentTrack->createdBy->lname
-                                        : ($documentTrack->updatedBy->fname ?? 'N/A') .
+                                    // ✅ Fix: Show the correct person (creator only for the very first CREATED entry)
+                                    if ($documentTrack->doctrack_stat == 1) {
+                                        $person =
+                                            $documentTrack->createdBy->fname . ' ' . $documentTrack->createdBy->lname;
+                                    } else {
+                                        $person =
+                                            ($documentTrack->updatedBy->fname ?? 'N/A') .
                                             ' ' .
                                             ($documentTrack->updatedBy->lname ?? '');
+                                    }
 
                                     switch ($documentTrack->doctrack_stat) {
                                         case 1:
@@ -111,7 +116,7 @@
                                             break;
                                         case 6:
                                             $statusText = 'ACKNOWLEDGED';
-                                            $bgColor = 'success'; // you can use 'dark' or another bootstrap color if you prefer
+                                            $bgColor = 'success';
                                             $icon = 'fas fa-handshake';
                                             break;
                                         default:
