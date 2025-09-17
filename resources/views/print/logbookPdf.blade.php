@@ -1,207 +1,208 @@
- <style>
-     body {
-         font-family: Arial, Helvetica, sans-serif;
-     }
+<style>
+    @page {
+        margin: 120px 40px 80px 40px;
+        /* top, right, bottom, left */
+    }
 
-     table.dashboardTable {
-         font-family: Arial, Helvetica, sans-serif;
-         font-size: 0.8rem;
-         width: 100%;
-         border: 1px solid black;
-         border-collapse: collapse;
-         /* ✅ merge borders */
-     }
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
 
-     table.dashboardTable th,
-     table.dashboardTable td {
-         border: 1px solid black;
-         /* ✅ border for each cell */
-         padding: 2px;
-         text-align: left;
-     }
+    /* Header */
+    header {
+        position: fixed;
+        top: -100px;
+        left: 0;
+        right: 0;
+        height: 100px;
+        text-align: center;
+    }
 
-     table.dashboardTable td,
-     table.dashboardTable th {
-         padding: 8px;
-     }
+    header img {
+        width: 55%;
+        height: auto;
+    }
 
-     .center-content {
-         text-align: center;
-     }
+    /* Footer */
+    footer {
+        position: fixed;
+        bottom: -60px;
+        left: 0;
+        right: 0;
+        height: 50px;
+        text-align: center;
+    }
 
-     .header-img {
-         width: 60%;
-         height: auto;
-         display: inline-block;
-         margin-top: -2%;
-     }
- </style>
+    footer img {
+        width: 45%;
+        height: 30px;
+        margin: 0 auto;
+        display: block;
+    }
 
+    /* Table */
+    table.dashboardTable {
+        width: 100%;
+        border: 1px solid black;
+        border-collapse: collapse;
+        font-size: 9px;
+        page-break-inside: auto;
+    }
 
- <div class="content-wrapper">
-     <div class="card-body">
-         <div class="table-container">
-             <table>
-                 <thead>
-                     <tr>
-                         <th colspan="4" style="border-style: none;">
-                             <div class="center-content">
-                                 <img src="{{ public_path('template/img/header_new.png') }}" class="header-img"
-                                     alt="Header Image">
-                             </div>
-                         </th>
-                     </tr>
-                     <tr>
-                         <th colspan="4" style="border-style: none;">DOCUMENT LOGBOOK</th>
-                     </tr>
-                 </thead>
+    table.dashboardTable td,
+    table.dashboardTable th {
+        border: 1px solid black;
+        padding: 3px;
+        text-align: left;
+        height: 27px;
+        /* consistent row height */
+        vertical-align: middle;
+    }
 
-             </table>
+    thead {
+        display: table-header-group;
+        /* repeat on each page */
+    }
 
-             <table id="dashboardTable" class="dashboardTable" style="font-size: 0.8rem; padding-top: 1%;">
-                 <thead>
-                     <tr>
-                         <th style="width: 5%;">CTRL #</th>
-                         <th>DATE RECEIVED</th>
-                         <th style="width: 15%;">SOURCE</th>
-                         <th style="width: 20%;">SUBJECT MATTER</th>
-                         <th>ACTION UNIT</th>
-                         <th>RECEIVED BY/DATE</th>
-                         <th>ACTION TAKEN</th>
-                         <th>DATE RELEASED</th>
-                         <th>REMARKS</th>
-                         <th>STORAGE</th>
-                     </tr>
-                 </thead>
-                 <tbody>
-                     @php
-                         $processedLogs = [];
-                         $logsToShow = [];
-                         $currentUserDepartment = auth()->user()->department;
-                         $currentUserId = auth()->user()->id;
-                     @endphp
+    tr {
+        page-break-inside: avoid;
+    }
 
-                     {{-- Collect logs --}}
-                     @foreach ($logs as $log)
-                         @php
-                             $document = $log->document;
-                             $uniqueIdentifier = $log->route_id . '-' . $log->doc_id . '-' . $log->new_destination;
+    th {
+        text-align: center;
+    }
 
-                             if (
-                                 isset($processedLogs[$uniqueIdentifier]) &&
-                                 $processedLogs[$uniqueIdentifier]['hasNewUser']
-                             ) {
-                                 continue;
-                             }
+    .page-break {
+        page-break-after: always;
+    }
+</style>
 
-                             if (!is_null($log->new_user)) {
-                                 $processedLogs[$uniqueIdentifier] = ['hasNewUser' => true];
-                                 $logsToShow[$uniqueIdentifier] = $log;
-                             } else {
-                                 if (!isset($processedLogs[$uniqueIdentifier])) {
-                                     $processedLogs[$uniqueIdentifier] = ['hasNewUser' => false];
-                                     $logsToShow[$uniqueIdentifier] = $log;
-                                 }
-                             }
+<body>
+    <!-- Header -->
+    <header>
+        <img src="{{ public_path('template/img/header_new.png') }}" alt="Header Image">
+        <h3 style="margin-top: -5px;">DOCUMENT LOGBOOK</h3>
+    </header>
 
-                             if ($currentUserDepartment === $log->new_destination) {
-                                 $logsToShow[$uniqueIdentifier] = $log;
-                             }
-                         @endphp
-                     @endforeach
+    <!-- Footer -->
+    <footer>
+        <img src="{{ public_path('template/img/footer-logbook.png') }}" alt="Footer Image">
+    </footer>
 
-                     {{-- Show actual logs --}}
-                     @php $rowCount = 0; @endphp
-                     @foreach ($logsToShow as $log)
-                         @php
-                             $document = $log->document;
-                             $rowCount++;
-                         @endphp
-                         <tr>
-                             <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
-                                 {{ $log->route_id == 0 ? 'N/A' : $log->route_id }}
-                             </td>
+    @php
+        $logsPerPage = 15;
 
-                             <td>
-                                 {{ optional($document->routingSlip)->date_received
-                                     ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('F d, Y')
-                                     : ($document->created_at
-                                         ? \Carbon\Carbon::parse($document->created_at)->format('F d, Y')
-                                         : 'N/A') }}
-                             </td>
+        // Keep it as a collection
+        $chunks = $logs->values()->chunk($logsPerPage);
 
-                             <td>{{ optional($document->routingSlip)->source ?? ($document->department ?? 'N/A') }}</td>
-                             <td>{{ optional($document->routingSlip)->subject ?? ($document->subject ?? 'N/A') }}</td>
-                             <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
-                             <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}
-                             </td>
+        $totalPages = $chunks->count();
+    @endphp
 
-                             <td>
-                                 @if ($log->routingSlip)
-                                     <strong class="text-danger">
-                                         {{ ucwords(strtolower($log->routingSlip->r_destination)) }}
-                                     </strong>
-                                 @endif
-                                 @if ($log->assigned_to != null)
-                                     , was re-assigned to
-                                     <strong class="text-danger">
-                                         {{ ucwords(strtolower($log->assigned_to)) }}
-                                     </strong>
-                                 @endif
-                             </td>
+    @foreach ($chunks as $pageIndex => $chunk)
+        <div class="content">
+            <table class="dashboardTable">
+                <thead>
+                    <tr>
+                        <th style="width: 2%;">CTRL #</th>
+                        <th style="width: 6%;">DATE RECEIVED</th>
+                        <th style="width: 14%;">SOURCE</th>
+                        <th style="width: 25%;">SUBJECT MATTER</th>
+                        <th style="width: 10%;">ACTION UNIT</th>
+                        <th style="width: 7%;">RECEIVED BY/DATE</th>
+                        <th style="width: 11%;">ACTION TAKEN</th>
+                        <th style="width: 8%;">DATE RELEASED</th>
+                        <th style="width: 7%;">REMARKS</th>
+                        <th style="width: 5%;">STORAGE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($chunk as $log)
+                        @php $document = $log->document; @endphp
+                        <tr>
+                            <td>{{ $log->route_id == 0 ? 'N/A' : $log->route_id }}</td>
+                            <td>
+                                {{ optional($document->routingSlip)->date_received
+                                    ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('M d, Y')
+                                    : ($document->created_at
+                                        ? \Carbon\Carbon::parse($document->created_at)->format('M d, Y')
+                                        : 'N/A') }}
+                            </td>
+                            <td>{{ optional($document->routingSlip)->source ?? ($document->department ?? 'N/A') }}</td>
+                            @php
+                                $subject = optional($document->routingSlip)->subject ?? ($document->subject ?? 'N/A');
 
-                             <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
+                                // Limit to 50 words
+                                $words = explode(' ', $subject);
+                                if (count($words) > 80) {
+                                    $subject = implode(' ', array_slice($words, 0, 80)) . '...';
+                                }
+                            @endphp
 
-                             <td style="font-size:10px;">
-                                 @if (!empty($document->routingSlip->trans_remarks))
-                                     <span class="badge badge-success" style="font-size:10px; display: block;">
-                                         {{ $document->routingSlip->trans_remarks }}
-                                     </span>
-                                 @endif
+                            <td style="max-width: 300px;font-size:6; overflow: hidden; text-overflow: ellipsis;"
+                                title="{{ $subject }}">
+                                {{ $subject }}
+                            </td>
+                            <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
+                            <td>
+                                {{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('M d, Y') : 'N/A' }}
+                            </td>
+                            <td>
+                                @if ($log->routingSlip)
+                                    <strong
+                                        class="text-danger">{{ ucwords(strtolower($log->routingSlip->r_destination)) }}</strong>
+                                @endif
+                                @if ($log->assigned_to)
+                                    , re-assigned to
+                                    <strong class="text-danger">{{ ucwords(strtolower($log->assigned_to)) }}</strong>
+                                @endif
+                            </td>
+                            <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
+                            <td style="font-size:10px;">
+                                @if (!empty($document->routingSlip->trans_remarks))
+                                    <span>{{ $document->routingSlip->trans_remarks }}</span>
+                                @endif
+                                @if (!empty($document->routingSlip->other_remarks))
+                                    <span>{{ $document->routingSlip->other_remarks }}</span>
+                                @endif
+                                @php
+                                    $comment = $log->comments ?? '';
+                                    $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $comment);
+                                @endphp
+                                @if ($comment)
+                                    <span
+                                        style="margin-top:2px; max-width:150px; word-wrap:break-word; white-space:normal;">
+                                        {!! $wrappedComment !!}
+                                    </span>
+                                @endif
+                            </td>
+                            <td></td>
+                        </tr>
+                    @endforeach
 
-                                 @if (!empty($document->routingSlip->other_remarks))
-                                     <span class="badge badge-danger" style="font-size:10px; display: block;">
-                                         {{ $document->routingSlip->other_remarks }}
-                                     </span>
-                                 @endif
+                    {{-- Fill remaining rows to keep 15 rows per page --}}
+                    @for ($i = count($chunk); $i < $logsPerPage; $i++)
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                    @endfor
+                </tbody>
+            </table>
+        </div>
 
-                                 @php
-                                     $comment = $log->comments ?? '';
-                                     $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $comment);
-                                 @endphp
-                                 @if (!empty($comment))
-                                     <span class="badge badge-warning"
-                                         style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
-                                         {!! $wrappedComment !!}
-                                     </span>
-                                 @endif
-                             </td>
-
-                             <td></td>
-                         </tr>
-                     @endforeach
-
-                     {{-- Add empty rows if less than 15 --}}
-                     @for ($i = $rowCount; $i < 15; $i++)
-                         <tr>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                             <td>&nbsp;</td>
-                         </tr>
-                     @endfor
-                 </tbody>
-
-             </table>
-
-
-
-         </div>
-     </div>
- </div>
+        {{-- Page break except for last page --}}
+        @if ($pageIndex + 1 < $totalPages)
+            <div class="page-break"></div>
+        @endif
+    @endforeach
+</body>
