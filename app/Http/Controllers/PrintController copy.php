@@ -13,7 +13,6 @@ use App\Models\RoutingSlip;
 use App\Models\RouteDocument;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 
 class PrintController extends Controller
@@ -118,7 +117,7 @@ class PrintController extends Controller
 //     return view('print.printLogbook', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount' , 'groups'));
 // }
 
-public function logbookPdf(Request $request)
+    public function logbookPdf(Request $request)
 {
     $user = auth()->user();
     $userId = $user->id;
@@ -126,89 +125,30 @@ public function logbookPdf(Request $request)
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
-    $date_from = $request->input('date_from');
-    $date_to   = $request->input('date_to');
-    $status    = $request->input('status');
+    // ✅ Same query as dashboard
+    $logs = Log::with(['routingSlip', 'document'])
+        ->where(function ($query) use ($userId, $userDepartment) {
+            $query->where('new_user', $userId)
+                  ->orWhere('user_id', $userId)
+                  ->orWhere('new_destination', $userDepartment);
+        })
+        ->orWhereHas('routingSlip', function ($q) use ($userDepartment) {
+            $q->where('pres_dept', $userDepartment);
+        });
 
-    $latestLogs = Log::query()
-    ->select('route_id', DB::raw('MAX(created_at) as latest_created_at'))
-    ->groupBy('route_id');
+    // ✅ Apply filters only if user selected
+    if ($request->filled('date_from') && $request->filled('date_to')) {
+        $logs->whereBetween('created_at', [
+            $request->date_from,
+            \Carbon\Carbon::parse($request->date_to)->endOfDay()
+        ]);
+    }
 
-if ($date_from && $date_to) {
-    $latestLogs->whereBetween('created_at', [
-        $date_from,
-        \Carbon\Carbon::parse($date_to)->endOfDay()
-    ]);
-}
+    if ($request->filled('status')) {
+        $logs->where('status_update', $request->status);
+    }
 
-$logs = Log::query()
-    ->joinSub($latestLogs, 'latest_logs', function ($join) {
-        $join->on('logs.route_id', '=', 'latest_logs.route_id')
-             ->on('logs.created_at', '=', 'latest_logs.latest_created_at');
-    })
-    ->leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
-    ->leftJoin('routing_slip', 'logs.doc_id', '=', 'routing_slip.rslip_id')
-    ->select(
-        'logs.id',
-        'logs.route_id',
-        'logs.doc_id',
-        'logs.new_destination',
-        'logs.new_user',
-        'logs.user_id',
-        'logs.assigned_to',
-        'logs.comments',
-        'logs.status_update',
-        'logs.created_at',
-        'documents.created_at as document_created_at',
-        'documents.department as document_department',
-        'documents.subject as document_subject',
-        'documents.route_id as document_route_id',
-        'routing_slip.date_received',
-        'routing_slip.source',
-        'routing_slip.subject as rs_subject',
-        'routing_slip.pres_dept',
-        'routing_slip.r_destination',
-        'routing_slip.updated_at as rs_updated_at',
-        DB::raw("GROUP_CONCAT(DISTINCT routing_slip.trans_remarks SEPARATOR ', ') as merged_remarks"),
-        'routing_slip.other_remarks'
-    )
-    ->where(function ($query) use ($userId, $userDepartment) {
-        $query->where('logs.new_user', $userId)
-              ->orWhere('logs.user_id', $userId)
-              ->orWhere('logs.new_destination', $userDepartment);
-    })
-    ->orWhere('routing_slip.pres_dept', $userDepartment)
-    ->groupBy(
-        'logs.id',
-        'logs.route_id',
-        'logs.doc_id',
-        'logs.new_destination',
-        'logs.new_user',
-        'logs.user_id',
-        'logs.assigned_to',
-        'logs.comments',
-        'logs.status_update',
-        'logs.created_at',
-        'documents.created_at',
-        'documents.department',
-        'documents.subject',
-        'documents.route_id',
-        'routing_slip.date_received',
-        'routing_slip.source',
-        'routing_slip.subject',
-        'routing_slip.pres_dept',
-        'routing_slip.r_destination',
-        'routing_slip.updated_at',
-        'routing_slip.other_remarks'
-    );
-
-if ($status) {
-    $logs->where('logs.status_update', $status);
-}
-
-$logs = $logs->get();
-
-
+    $logs = $logs->get();
 
     // ✅ Build counts (same as dashboard)
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))

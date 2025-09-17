@@ -155,4 +155,5 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/print-logbook/pdf', [PrintController::class, 'logbookPdf'])->name('logbookPdf');
 
 
+
 });

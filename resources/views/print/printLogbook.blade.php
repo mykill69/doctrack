@@ -18,18 +18,22 @@
                                     <div class="row">
                                         <div class="col-md-3">
                                             <label for="date_from">From:</label>
-                                            <input type="date" class="form-control" name="date_from" required>
+                                            <input type="date" class="form-control" name="date_from"
+                                                value="{{ request('date_from') }}" required>
                                         </div>
                                         <div class="col-md-3">
                                             <label for="date_to">To:</label>
-                                            <input type="date" class="form-control" name="date_to" required>
+                                            <input type="date" class="form-control" name="date_to"
+                                                value="{{ request('date_to') }}" required>
                                         </div>
                                         <div class="col-md-3">
                                             <label for="status">Status:</label>
                                             <select class="form-control" name="status">
                                                 <option value="">-- Select Status --</option>
-                                                <option value="2">Pending</option>
-                                                <option value="3">Completed</option>
+                                                <option value="2" {{ request('status') == 2 ? 'selected' : '' }}>
+                                                    Pending</option>
+                                                <option value="3" {{ request('status') == 3 ? 'selected' : '' }}>
+                                                    Completed</option>
                                             </select>
                                         </div>
                                         <div class="col-md-3 d-flex align-items-end">
@@ -37,6 +41,7 @@
                                         </div>
                                     </div>
                                 </form>
+
                             </div>
 
                             <!-- PDF preview -->
