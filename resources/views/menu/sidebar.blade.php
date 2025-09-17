@@ -201,6 +201,16 @@
             </li>
         @endif
 
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+            <li class="nav-item">
+                <a href="{{ route('printLogbook') }}"
+                    class="nav-link {{ request()->routeIs('printLogbook') ? 'active' : '' }}">
+                    <i class="fas fa-print nav-icon"></i>
+                    <p>Print Logbook</p>
+                </a>
+            </li>
+        @endif
+
         @if (($user_role == 'Administrator' || $user_role == 'records_officer') && auth()->user()->id != 1235)
             <li class="nav-item">
                 <a href="{{ route('userView') }}"

@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoutingSlipController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\DoctrackController;
+use App\Http\Controllers\PrintController;
 use Dompdf\FrameDecorator\Page;
 
 /*
@@ -148,6 +149,10 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::put('/update-slip-status/{id}', [DoctrackController::class, 'updateSlipStatus'])->name('updateSlipStatus');
 
     Route::post('/upload-doc-file', [DoctrackController::class, 'uploadFile'])->name('uploadDoctrackFile');
+
+
+    Route::get('/print-logbook', [PrintController::class, 'printLogbook'])->name('printLogbook');
+    Route::get('/print-logbook/pdf', [PrintController::class, 'logbookPdf'])->name('logbookPdf');
 
 
 });
