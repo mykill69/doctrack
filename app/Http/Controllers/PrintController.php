@@ -141,6 +141,17 @@ if ($date_from && $date_to) {
     ]);
 }
 
+$latestLogs = Log::query()
+    ->select('route_id', DB::raw('MAX(created_at) as latest_created_at'))
+    ->groupBy('route_id');
+
+if ($date_from && $date_to) {
+    $latestLogs->whereBetween('created_at', [
+        $date_from,
+        \Carbon\Carbon::parse($date_to)->endOfDay()
+    ]);
+}
+
 $logs = Log::query()
     ->joinSub($latestLogs, 'latest_logs', function ($join) {
         $join->on('logs.route_id', '=', 'latest_logs.route_id')
@@ -202,11 +213,12 @@ $logs = Log::query()
         'routing_slip.other_remarks'
     );
 
-if ($status) {
-    $logs->where('logs.status_update', $status);
-}
+    if ($status) {
+        $logs->where('logs.status_update', $status);
+    }
 
-$logs = $logs->get();
+    // ✅ Always order by route_id ascending
+    $logs = $logs->orderBy('logs.route_id', 'asc')->get();
 
 
 
