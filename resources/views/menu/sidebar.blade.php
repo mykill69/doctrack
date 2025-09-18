@@ -88,7 +88,7 @@
 
         @endphp --}}
 
-        @php
+        {{-- @php
             $user = auth()->user();
             $userId = $user->id;
             $userFullName = $user->fname . ' ' . $user->lname;
@@ -124,7 +124,46 @@
                     </span>
                 </p>
             </a>
+        </li> --}}
+
+        @php
+            $user = auth()->user();
+            $userId = $user->id;
+            $userFullName = $user->fname . ' ' . $user->lname;
+            $userRole = $user->role;
+
+            $query = Log::leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
+                ->where('logs.status_update', 2)
+                ->where(function ($q) {
+                    $q->whereNull('logs.new_user')->orWhereNull('logs.assigned_to');
+                });
+
+            if ($userRole === 'records_officer') {
+                // ✅ Only records_officer who created the routing slip can see their count
+                $query->where('routing_slip.user_id', $userId);
+            } else {
+                // ✅ Non-records_officer: filter only by fullname or user_id
+                $query->where(function ($q) use ($userId, $userFullName) {
+                    $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
+                });
+            }
+
+            // ✅ Count only distinct route_id
+            $statusUpdateCount1 = $query->distinct('logs.route_id')->count('logs.route_id');
+        @endphp
+
+        <li class="nav-item">
+            <a href="{{ route('pending') }}" class="nav-link {{ request()->routeIs('pending') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-hourglass"></i>
+                <p>
+                    Pending
+                    <span class="badge badge-warning ml-2">
+                        {{ $statusUpdateCount1 }}
+                    </span>
+                </p>
+            </a>
         </li>
+
 
 
         <li class="nav-item">
