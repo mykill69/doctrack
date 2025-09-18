@@ -39,7 +39,7 @@
             @endif
         </li>
 
-        @php
+        {{-- @php
 
             $user = auth()->user();
             $userId = $user->id;
@@ -86,7 +86,34 @@
             // Now count all matching logs (including duplicates if needed)
             $statusUpdateCount1 = $query->count();
 
+        @endphp --}}
+
+        @php
+            $user = auth()->user();
+            $userId = $user->id;
+            $userFullName = $user->fname . ' ' . $user->lname;
+            $userRole = $user->role;
+
+            $query = Log::leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
+                ->where('logs.status_update', 2)
+                ->where(function ($q) {
+                    // This ensures: only exclude if BOTH new_user AND assigned_to are NOT NULL
+                    $q->whereNull('logs.new_user')->orWhereNull('logs.assigned_to');
+                });
+
+            if ($userRole === 'records_officer') {
+                // ✅ Only records_officer who created the routing slip can see their count
+                $query->where('routing_slip.user_id', $userId);
+            } else {
+                // ✅ Non-records_officer: filter only by fullname or user_id
+                $query->where(function ($q) use ($userId, $userFullName) {
+                    $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
+                });
+            }
+
+            $statusUpdateCount1 = $query->count();
         @endphp
+
         <li class="nav-item">
             <a href="{{ route('pending') }}" class="nav-link {{ request()->routeIs('pending') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-hourglass"></i>
@@ -105,7 +132,7 @@
                 <i class="nav-icon fas fa-check"></i>
                 <p>Completed
 
-                    @php
+                    {{-- @php
 
                         $user = auth()->user();
                         $userDepartment = $user->department;
@@ -136,7 +163,34 @@
                             );
 
                         $statusUpdateCount = $servedQuery->distinct('route_id')->count();
+                    @endphp --}}
+
+
+                    @php
+                        $user = auth()->user();
+                        $userId = $user->id;
+                        $userFullName = $user->fname . ' ' . $user->lname;
+                        $userRole = $user->role;
+
+                        $servedQuery = Log::leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
+                            ->where('logs.status_update', 3)
+                            ->whereNotNull('logs.new_user');
+
+                        if ($userRole === 'records_officer') {
+                            // ✅ Records officer only sees served docs they created
+                            $servedQuery->where('routing_slip.user_id', $userId);
+                        } else {
+                            // ✅ Others: only filter by fullname or user_id (no department)
+                            $servedQuery->where(function ($q) use ($userId, $userFullName) {
+                                $q->where('logs.new_user', $userId)
+                                    ->orWhere('logs.user_id', $userId)
+                                    ->orWhere('logs.new_destination', $userFullName);
+                            });
+                        }
+
+                        $statusUpdateCount = $servedQuery->distinct('logs.route_id')->count();
                     @endphp
+
 
                     <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
                 </p>
@@ -211,7 +265,7 @@
             </li>
         @endif
 
-        @if (($user_role == 'Administrator' || $user_role == 'records_officer') )
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
                 <a href="{{ route('userView') }}"
                     class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">

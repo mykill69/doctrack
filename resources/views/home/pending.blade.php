@@ -1,11 +1,5 @@
 @extends('layouts.main')
-@php
-    use App\Models\Log;
-    $user = auth()->user();
-    $userFullName = $user->fname . ' ' . $user->lname;
-    $userDepartment = $user->department;
-    $isRecordsOfficer = $user->role === 'records_officer';
-@endphp
+
 <style>
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
         background-color: #007bff !important;
@@ -55,23 +49,11 @@
                                                         </a>
                                                     </td>
 
-
                                                     <td>{{ $log->date_received ? \Carbon\Carbon::parse($log->date_received)->format('F d, Y') : 'N/A' }}
                                                     </td>
                                                     <td>{{ $log->source ?? 'N/A' }}</td>
                                                     <td>{{ $log->subject ?? 'N/A' }}</td>
-                                                    {{-- <td>
-                                                        <a href="{{ route('documents.viewPdf', $log->doc_id) }}"
-                                                            target="_blank" style="color: #007bff;">
-                                                            <i class="fas fa-file-pdf text-danger"></i>
-                                                            {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
-                                                        </a>
-                                                        <p><small class="text-muted">Viewed <br>
-                                                                Date & Time</small> </p>
-                                                    </td> --}}
-
-
-
+   
                                                     <td>{{ $log->pres_dept ?? 'N/A' }}</td>
                                                     <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
                                                     </td>
