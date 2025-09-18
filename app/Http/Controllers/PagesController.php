@@ -298,14 +298,26 @@ public function doctrackSlip()
     // ------------------------------
     // 🔹 Batch load Doctrack records
     // ------------------------------
+    // $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+    //     ->where(function ($query) use ($userId, $userFullName) {
+    //         $query->where('user_id', $userId)
+    //               ->orWhere('update_by', $userId)
+    //               ->orWhere('user_name', $userFullName);
+    //     })
+    //     ->orderByDesc('created_at')
+    //     ->paginate(50); // <-- only load 50 per page
+
     $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
-        ->where(function ($query) use ($userId, $userFullName) {
-            $query->where('user_id', $userId)
-                  ->orWhere('update_by', $userId)
-                  ->orWhere('user_name', $userFullName);
-        })
-        ->orderByDesc('created_at')
-        ->paginate(50); // <-- only load 50 per page
+    ->where(function ($query) use ($userId, $userFullName) {
+        $query->where('user_id', $userId)
+              ->orWhere('update_by', $userId)
+              ->orWhere(function ($q) use ($userFullName, $userId) {
+                  $q->where('user_name', $userFullName)
+                    ->where('user_id', $userId); // ✅ restrict by logged-in user_id
+              });
+    })
+    ->orderByDesc('created_at')
+    ->paginate(50);
 
     // ------------------------------
     // 🔹 Transform each record ONCE
@@ -345,13 +357,23 @@ public function doctrackSlip()
     // ------------------------------
     // 🔹 Count only doctrack_stat = 2
     // ------------------------------
+    // $doctrackCount = Doctrack::where('doctrack_stat', 2)
+    //     ->where(function ($query) use ($userId, $userFullName) {
+    //         $query->where('user_id', $userId)
+    //               ->orWhere('update_by', $userId)
+    //               ->orWhere('user_name', $userFullName);
+    //     })
+    //     ->count();
     $doctrackCount = Doctrack::where('doctrack_stat', 2)
-        ->where(function ($query) use ($userId, $userFullName) {
-            $query->where('user_id', $userId)
-                  ->orWhere('update_by', $userId)
-                  ->orWhere('user_name', $userFullName);
-        })
-        ->count();
+    ->where(function ($query) use ($userId, $userFullName) {
+        $query->where('user_id', $userId)
+              ->orWhere('update_by', $userId)
+              ->orWhere(function ($q) use ($userFullName, $userId) {
+                  $q->where('user_name', $userFullName)
+                    ->where('user_id', $userId); // ✅ restrict by logged-in user_id
+              });
+    })
+    ->count();
 
     return view('home.doctrackSlip', compact(
         'documentTrack', 'offices',

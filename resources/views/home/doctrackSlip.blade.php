@@ -39,7 +39,7 @@
                                                 @if (auth()->user()->id == 1235)
                                                     <th>CTRL #</th>
                                                 @endif
-                                                
+
                                                 <th>DATE RECEIVED</th>
                                                 <th>SOURCE</th>
                                                 <th>SUBJECT MATTER</th>
@@ -47,7 +47,7 @@
                                                 <th>RECEIVED BY/DATE</th>
                                                 <th>ACTION TAKEN</th>
                                                 <th>DATE RELEASED</th>
-                                                <th>REMARKS</th>
+                                                <th style="width: 15%;">REMARKS</th>
                                                 <th>STATUS</th>
                                                 <th>TRACKING CODE</th>
                                                 <th>TOTAL DURATION</th>
@@ -72,7 +72,7 @@
                                                         </td>
                                                     @endif
 
-                                                    
+
 
                                                     <td data-order="{{ $record->created_at->timestamp }}">
                                                         {{ $record->created_at->format('M j, Y') }}
@@ -97,7 +97,7 @@
                                                         @endif
                                                     </td>
                                                     <td>{{ $record->updated_at->format('M d, Y') }}</td>
-                                                    <td>
+                                                    {{-- <td>
                                                         @php $commentsDisplayed = false; @endphp
                                                         @foreach ($record->all_comments as $comment)
                                                             @if (!is_null($record->update_by))
@@ -115,7 +115,32 @@
                                                         @if (!$commentsDisplayed && !is_null($record->update_by))
                                                             <span class="text-muted">No comments</span>
                                                         @endif
+                                                    </td> --}}
+                                                    <td
+                                                        style="white-space: normal; word-wrap: break-word; max-width: 150px;">
+                                                        @php $commentsDisplayed = false; @endphp
+                                                        @foreach ($record->all_comments as $comment)
+                                                            @if (!is_null($record->update_by))
+                                                                <div style="word-break: break-word; white-space: normal;">
+                                                                    <span class="badge badge-warning m-1 d-block text-left"
+                                                                        style="white-space: normal; word-break: break-word;">
+                                                                        {{ $comment->comments }}
+                                                                    </span>
+                                                                    <small class="text-muted d-block">
+                                                                        {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
+                                                                    </small>
+                                                                </div>
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @else
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @endif
+                                                        @endforeach
+                                                        @if (!$commentsDisplayed && !is_null($record->update_by))
+                                                            <span class="text-muted">No comments</span>
+                                                        @endif
                                                     </td>
+
+
                                                     <td>
                                                         @switch($record->doctrack_stat)
                                                             @case(1)

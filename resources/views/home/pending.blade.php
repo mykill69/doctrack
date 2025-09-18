@@ -135,7 +135,7 @@
                                                     {{-- <td>{{ $log->new_destination }}</td> --}}
                                                     <td>
                                                         <a href="{{ route('tracking', ['route_id' => $log->route_id]) }}"
-                                                            class="btn btn-primary">
+                                                            class="btn btn-primary" target="_blank">
                                                             <i class="fas fa-pen"></i>
                                                         </a>
                                                     </td>
