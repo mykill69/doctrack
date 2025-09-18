@@ -211,7 +211,7 @@
             </li>
         @endif
 
-        @if (($user_role == 'Administrator' || $user_role == 'records_officer') && auth()->user()->id != 1235)
+        @if (($user_role == 'Administrator' || $user_role == 'records_officer') )
             <li class="nav-item">
                 <a href="{{ route('userView') }}"
                     class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">
