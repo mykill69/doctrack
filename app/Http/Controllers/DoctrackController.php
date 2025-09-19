@@ -683,9 +683,11 @@ public function pdfDocSlip($id)
 // }
 public function slipMonitoring($docslip_id)
 {
-   $user = User::orderBy('fname')
-             ->orderBy('lname')
-             ->get();
+      $users = User::orderBy('fname', 'asc')   // ✅ sort ascending
+                 ->orderBy('lname', 'asc')
+                 ->get();
+
+    $user = auth()->user(); // ✅ get logged-in user
 
     // Get creator id of the slip
     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
@@ -735,7 +737,8 @@ public function slipMonitoring($docslip_id)
         'recordsOfficerCount',
         'docslip_id',
         'creatorId',
-        'lastViewed'
+        'lastViewed',
+        'users'
     ));
 }
 
