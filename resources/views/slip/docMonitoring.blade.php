@@ -40,6 +40,32 @@
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
     }
+
+    /* Match Bootstrap form-control size/spacing */
+    .select2-container--bootstrap4 .select2-selection {
+        height: calc(2.25rem + 2px) !important;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+    }
+
+    /* Keep icons aligned */
+    .select2-container--bootstrap4 .select2-selection__rendered {
+        line-height: 1.5 !important;
+        padding-left: 0 !important;
+    }
+
+    /* Ensure full width inside input-group */
+    .select2-container {
+        width: 90% !important;
+    }
+
+    /* Fix dropdown z-index inside modal */
+    .select2-container--bootstrap4 .select2-dropdown {
+        z-index: 9999 !important;
+    }
 </style>
 
 
@@ -347,12 +373,6 @@
 
 @include('modal.addLog')
 
-<script>
-    function submitStatus(index, status) {
-        document.getElementById(`doctrackStatInput${index}`).value = status;
-        document.getElementById(`statusForm${index}`).submit();
-    }
-</script>
 
 
 
@@ -466,4 +486,18 @@
             }
         });
     }
+</script>
+<script>
+    function submitStatus(index, status) {
+        document.getElementById(`doctrackStatInput${index}`).value = status;
+        document.getElementById(`statusForm${index}`).submit();
+    }
+</script>
+<script>
+    $(document).ready(function() {
+        $('#update_by').select2({
+            theme: 'bootstrap4',
+            dropdownParent: $('#addLogModal') // ensures dropdown stays inside modal
+        });
+    });
 </script>

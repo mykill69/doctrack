@@ -38,13 +38,8 @@
                                 <i class="fa fa-user"></i>
                             </span>
                         </div>
-                        {{-- <select name="update_by" id="update_by" class="form-control" required>
-                            <option value="" selected disabled hidden>— Select an Individual User —</option>
-                            @foreach ($users as $user)
-                                <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
-                            @endforeach
-                        </select> --}}
-                        <select name="update_by" id="update_by" class="form-control" required>
+
+                        <select name="update_by" id="update_by" class="form-control select2bs4" required>
                             <option value="" selected disabled hidden>— Select an Individual User —</option>
                             @foreach ($users as $user)
                                 <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
@@ -52,8 +47,12 @@
                         </select>
                     </div>
 
-
-
+                    {{-- <select name="update_by" id="update_by" class="form-control" required>
+                            <option value="" selected disabled hidden>— Select an Individual User —</option>
+                            @foreach ($users as $user)
+                                <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
+                            @endforeach
+                        </select> --}}
                     {{-- <div class="input-group mb-2">
                         <div class="input-group-prepend">
                             <span class="input-group-text">
