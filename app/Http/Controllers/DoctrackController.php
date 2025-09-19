@@ -683,7 +683,9 @@ public function pdfDocSlip($id)
 // }
 public function slipMonitoring($docslip_id)
 {
-    $user = auth()->user();
+   $user = User::orderBy('fname')
+             ->orderBy('lname')
+             ->get();
 
     // Get creator id of the slip
     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
