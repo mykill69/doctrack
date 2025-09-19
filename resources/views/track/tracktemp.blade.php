@@ -133,11 +133,12 @@
                                                         <div class="timeline-item">
                                                             <div class="timeline-header">
                                                                 <div class="row">
-                                                                    <div class="col-md-4">
-                                                                        <a href="#" class="badge text-black text-lg"
-                                                                            style="font-weight: bold;">
+                                                                    <div class="col-md-4 col-12">
+                                                                        <span
+                                                                            class="badge text-black text-lg d-block text-wrap text-left"
+                                                                            style="font-weight: bold; white-space: normal; word-break: break-word;">
                                                                             {{ $log->new_destination }}
-                                                                        </a>
+                                                                        </span>
                                                                     </div>
                                                                     <div class="col-md-2 text-center">
                                                                         <span class="text-sm"

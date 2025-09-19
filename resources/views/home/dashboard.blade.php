@@ -40,7 +40,7 @@
                                                 <th>DATE RELEASED</th>
                                                 <th>REMARKS</th>
                                                 <th>FILE NAME</th>
-                                                <th>DATE UPDATED</th>
+                                                <th>UPDATED DATE/BY</th>
                                                 <th>TOTAL DURATION</th>
                                             </tr>
                                         </thead>
@@ -222,7 +222,8 @@
                                                             </small>
                                                         </p>
                                                     </td>
-                                                    <td>{{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
+                                                    <td><span class="badge badge-secondary">{{$log->new_destination}}</span> <br> 
+                                                        {{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td>
                                                         @php
                                                             $documentCreatedAt = \Carbon\Carbon::parse(
