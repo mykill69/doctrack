@@ -240,22 +240,22 @@
 
                                                     @if ($isEnabled)
                                                         <div class="dropdown-menu">
-                                                            <a class="dropdown-item" href="#"
+                                                            {{-- <a class="dropdown-item" href="#"
                                                                 onclick="submitStatus({{ $loopIndex }}, 2)">
                                                                 <i class="fas fa-hourglass-half mr-1"></i> Pending
                                                             </a>
                                                             <a class="dropdown-item" href="#"
                                                                 onclick="submitStatus({{ $loopIndex }}, 3)">
                                                                 <i class="fas fa-check-circle mr-1"></i> Signed
-                                                            </a>
+                                                            </a> --}}
                                                             <a class="dropdown-item" href="#"
                                                                 onclick="submitStatus({{ $loopIndex }}, 4)">
                                                                 <i class="fas fa-undo mr-1"></i> Return with Comment
                                                             </a>
-                                                            <a class="dropdown-item" href="#"
+                                                            {{-- <a class="dropdown-item" href="#"
                                                                 onclick="submitStatus({{ $loopIndex }}, 5)">
                                                                 <i class="fas fa-user-check mr-1"></i> Checked
-                                                            </a>
+                                                            </a> --}}
                                                             <a class="dropdown-item" href="#"
                                                                 onclick="submitStatus({{ $loopIndex }}, 6)">
                                                                 <i class="fas fa-handshake mr-1"></i> Acknowledged
