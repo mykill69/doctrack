@@ -104,11 +104,9 @@ public function tracking(Request $request)
 {
     $user = auth()->user();
     $userId = $user->id;
-    // $fullName = $user->fname . ' ' . $user->lname;
     $fullName = strtolower(trim($user->fname . ' ' . $user->lname)); // Convert to lowercase
     $routeId = $request->input('route_id');
 
-    
     $query = Document::query()
         ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
         ->select(
@@ -119,7 +117,6 @@ public function tracking(Request $request)
             'routing_slip.source'
         );
 
-
     if ($routeId) {
         $query->where('documents.route_id', $routeId);
     }
@@ -127,12 +124,11 @@ public function tracking(Request $request)
     $documents = $query->get();
 
     $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
-        // Check routed_users
-        // $routedUsers = explode(', ', $document->routed_users ?? '');
+        // Convert routed_users to lowercase
         $routedUsers = array_map('strtolower', explode(', ', $document->routed_users ?? ''));
         $matchesRoutedUsers = in_array($fullName, $routedUsers);
 
-        // Check new_destination in logs
+        // Check logs (case-insensitive)
         $matchesLogs = \App\Models\Log::where('doc_id', $document->id)
             ->whereRaw('LOWER(new_destination) = ?', [$fullName])
             ->exists();
@@ -157,8 +153,6 @@ public function tracking(Request $request)
         : 0;
 
     $offices = Office::all();
-
-    
 
     return view('track.tracktemp', [
         'documents' => $filteredDocuments,
