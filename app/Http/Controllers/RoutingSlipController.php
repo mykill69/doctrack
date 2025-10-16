@@ -314,6 +314,7 @@ if ($logs->isEmpty()) {
         }
     }
 
+
     // Pass data to view
     $pdf = Pdf::loadView('slip.pdfSlip', compact(
         'remarks',
@@ -327,7 +328,17 @@ if ($logs->isEmpty()) {
         'groupName'
     ));
 
-    return $pdf->stream('routing-slip.pdf');
+$pdf->setPaper('letter', 'portrait');           // full Letter canvas
+$pdf->setOption('isRemoteEnabled', true);
+$pdf->setOption('isHtml5ParserEnabled', true);
+
+// Remove DomPDF default margins so absolute positioning is exact
+$pdf->setOption('margin-top', 0);
+$pdf->setOption('margin-right', 0);
+$pdf->setOption('margin-bottom', 0);
+$pdf->setOption('margin-left', 0);
+
+return $pdf->stream('routing-slip.pdf');
 }
 
 
