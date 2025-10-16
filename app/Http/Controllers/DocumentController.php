@@ -104,7 +104,8 @@ public function tracking(Request $request)
 {
     $user = auth()->user();
     $userId = $user->id;
-    $fullName = $user->fname . ' ' . $user->lname;
+    // $fullName = $user->fname . ' ' . $user->lname;
+    $fullName = strtolower(trim($user->fname . ' ' . $user->lname)); // Convert to lowercase
     $routeId = $request->input('route_id');
 
     
@@ -127,12 +128,13 @@ public function tracking(Request $request)
 
     $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
         // Check routed_users
-        $routedUsers = explode(', ', $document->routed_users ?? '');
+        // $routedUsers = explode(', ', $document->routed_users ?? '');
+        $routedUsers = array_map('strtolower', explode(', ', $document->routed_users ?? ''));
         $matchesRoutedUsers = in_array($fullName, $routedUsers);
 
         // Check new_destination in logs
         $matchesLogs = \App\Models\Log::where('doc_id', $document->id)
-            ->where('new_destination', $fullName)
+            ->whereRaw('LOWER(new_destination) = ?', [$fullName])
             ->exists();
 
         // Owner or matched
