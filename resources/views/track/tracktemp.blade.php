@@ -80,7 +80,7 @@
     @endphp
     <div class="content-wrapper">
         @php
-            $userFullName = strtolower(trim(auth()->user()->fname . ' ' . auth()->user()->lname));
+            $userFullName = auth()->user()->fname . ' ' . auth()->user()->lname;
         @endphp
 
         @if ($documents->isNotEmpty())
