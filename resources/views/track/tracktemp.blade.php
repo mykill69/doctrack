@@ -80,7 +80,8 @@
     @endphp
     <div class="content-wrapper">
         @php
-            $userFullName = auth()->user()->fname . ' ' . auth()->user()->lname;
+            // $userFullName = auth()->user()->fname . ' ' . auth()->user()->lname;
+            $userFullName = strtolower(trim(auth()->user()->fname . ' ' . auth()->user()->lname));
         @endphp
 
         @if ($documents->isNotEmpty())
@@ -118,7 +119,9 @@
 
                                                 @foreach ($logs as $log)
                                                     @php
-                                                        $isUserMatched = $log->new_destination === $userFullName;
+                                                        // $isUserMatched = $log->new_destination === $userFullName;
+                                                        $isUserMatched = strtolower(trim($log->new_destination)) === $userFullName;
+
                                                         $hasComment = !is_null($log->comments);
                                                         $isDisabled =
                                                             $log->status_update == 3 || !$isUserMatched || $hasComment;
