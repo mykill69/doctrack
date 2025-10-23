@@ -19,56 +19,119 @@ class DocumentController extends Controller
 {
 
     
+// public function dashboard()
+// {
+//    $user = auth()->user();
+//     $userId = $user->id;
+//     $userDepartment = $user->department;
+//     $userFullName = $user->fname . ' ' . $user->lname;
+//     $userRole = $user->role;
+
+//     $logs = Log::with('routingSlip')
+//     ->where(function ($query) use ($userId, $userDepartment) {
+//         $query->where('new_user', $userId)
+//               ->orWhere('user_id', $userId)
+//               ->orWhere('new_destination', $userDepartment);
+//     })
+//     ->orWhereHas('routingSlip', function ($q) use ($userDepartment) {
+//         $q->where('pres_dept', $userDepartment);
+//     })
+//     ->get();
+
+//     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+//         ? RoutingSlip::where('route_status', 3)->count()
+//         : 0;
+
+//     $superUserCount = auth()->user()->role === 'super_user'
+//         ? RoutingSlip::where('route_status', 1)->count()
+//         : 0;
+
+//     $recordsOfficerCount = auth()->user()->role === 'records_officer'
+//         ? RoutingSlip::where('route_status', 2)->count()
+//         : 0;
+
+//  $groups = User::select('id', 'fname', 'lname', 'department')
+//         ->orderBy('department')
+//         ->orderBy('lname')
+//         ->get()
+//         ->groupBy('department');
+        
+
+//     $offices = Office::all();
+//     $dpa = auth()->user()->dpa;
+//     $users = User::all();
+
+//   // Get all Doctrack records (no grouping)
+//     $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->orderByDesc('created_at')
+//         ->get();
+
+//     // Calculate time_diff for each record here
+//     $documentTrack->transform(function ($item) {
+//         $start = \Carbon\Carbon::parse($item->created_at);
+//         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+//         $diffInMinutes = $end->diffInMinutes($start);
+
+//         $item->time_diff = [
+//             'days' => floor($diffInMinutes / 1440),
+//             'hours' => floor(($diffInMinutes % 1440) / 60),
+//             'minutes' => $diffInMinutes % 60,
+//         ];
+
+//         return $item;
+//     });
+
+//     // Count only records with doctrack_stat == 2
+//     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+
+
+//     return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount' , 'groups'));
+// }
+
 public function dashboard()
 {
-   $user = auth()->user();
+    $user = auth()->user();
     $userId = $user->id;
-    $userDepartment = $user->department;
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
-    // $logs = Log::with('routingSlip') // <- add this
-    // ->where(function ($query) use ($userId, $userDepartment) {
-    //     $query->where('new_user', $userId)
-    //           ->orWhere('user_id', $userId)
-    //           ->orWhere('new_destination', $userDepartment);
-    // })->get();
-
     $logs = Log::with('routingSlip')
-    ->where(function ($query) use ($userId, $userDepartment) {
-        $query->where('new_user', $userId)
-              ->orWhere('user_id', $userId)
-              ->orWhere('new_destination', $userDepartment);
-    })
-    ->orWhereHas('routingSlip', function ($q) use ($userDepartment) {
-        $q->where('pres_dept', $userDepartment);
-    })
-    ->get();
+        ->where(function ($query) use ($userId) {
+            $query->where('new_user', $userId)
+                  ->orWhere('user_id', $userId);
+        })
+        ->orWhereHas('routingSlip', function ($q) use ($userFullName) {
+            $q->where('pres_dept', $userFullName);
+        })
+        ->get();
 
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
         ? RoutingSlip::where('route_status', 3)->count()
         : 0;
 
-    $superUserCount = auth()->user()->role === 'super_user'
+    $superUserCount = $userRole === 'super_user'
         ? RoutingSlip::where('route_status', 1)->count()
         : 0;
 
-    $recordsOfficerCount = auth()->user()->role === 'records_officer'
+    $recordsOfficerCount = $userRole === 'records_officer'
         ? RoutingSlip::where('route_status', 2)->count()
         : 0;
 
- $groups = User::select('id', 'fname', 'lname', 'department')
+    $groups = User::select('id', 'fname', 'lname', 'department')
         ->orderBy('department')
         ->orderBy('lname')
         ->get()
         ->groupBy('department');
-        
 
     $offices = Office::all();
-    $dpa = auth()->user()->dpa;
+    $dpa = $user->dpa;
     $users = User::all();
 
-  // Get all Doctrack records (no grouping)
     $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
         ->where(function ($query) use ($userId, $userFullName) {
             $query->where('user_id', $userId)
@@ -78,7 +141,6 @@ public function dashboard()
         ->orderByDesc('created_at')
         ->get();
 
-    // Calculate time_diff for each record here
     $documentTrack->transform(function ($item) {
         $start = \Carbon\Carbon::parse($item->created_at);
         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
@@ -93,12 +155,21 @@ public function dashboard()
         return $item;
     });
 
-    // Count only records with doctrack_stat == 2
     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
-
-    return view('home.dashboard', compact('offices', 'logs', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'dpa','users','doctrackCount' , 'groups'));
+    return view('home.dashboard', compact(
+        'offices',
+        'logs',
+        'routingSlipCount',
+        'superUserCount',
+        'recordsOfficerCount',
+        'dpa',
+        'users',
+        'doctrackCount',
+        'groups'
+    ));
 }
+
 
 
 public function tracking(Request $request)
