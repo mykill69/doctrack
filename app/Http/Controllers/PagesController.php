@@ -410,11 +410,10 @@ public function doctrackSlip()
     $offices = Office::all();
 
     // ------------------------------
-    // Batch load Doctrack records
+    // Load Doctrack records in batches of 50
     // ------------------------------
     $documentTrack = collect();
-
-    Doctrack::with(['createdBy', 'doctrackFile'])
+    Doctrack::with(['createdBy', 'doctrackFile', 'logsTracking'])
         ->where(function ($query) use ($userId, $userFullName) {
             $query->where('user_id', $userId)
                   ->orWhere('update_by', $userId)
@@ -429,7 +428,7 @@ public function doctrackSlip()
         });
 
     // ------------------------------
-    // Preload all views and comments in bulk
+    // Preload views and comments
     // ------------------------------
     $docslipIds = $documentTrack->pluck('docslip_id')->toArray();
 
@@ -444,7 +443,6 @@ public function doctrackSlip()
         ->get()
         ->groupBy('docslip_id');
 
-    // Attach views and comments, calculate duration
     $documentTrack->transform(function ($item) use ($views, $comments) {
         $item->views = $views[$item->docslip_id] ?? collect();
         $item->all_comments = $comments[$item->docslip_id] ?? collect();
@@ -477,8 +475,8 @@ public function doctrackSlip()
         ->count();
 
     return view('home.doctrackSlip', compact(
-        'documentTrack', 'offices',
-        'logs', 'routingSlipCount', 'superUserCount', 
+        'documentTrack', 'offices', 'logs',
+        'routingSlipCount', 'superUserCount', 
         'recordsOfficerCount', 'doctrackCount'
     ));
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
 class Doctrack extends Model
@@ -10,7 +11,6 @@ class Doctrack extends Model
     use HasFactory;
     protected $table = 'doctrack_slip';
 
-    // Define which fields are mass assignable
     protected $fillable = [
         'docslip_id',
         'ctrl_no',
@@ -22,28 +22,35 @@ class Doctrack extends Model
         'doctrack_stat',
         'comments',
     ];
+
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'update_by');
     }
 
-    // For the original user related to the document
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
     public function doctrackFile()
-{
-    return $this->hasOne(DoctrackFile::class, 'docslip_id', 'docslip_id'); // Adjust foreign key if different
-}
+    {
+        return $this->hasOne(DoctrackFile::class, 'docslip_id', 'docslip_id');
+    }
 
-public function routingSlips()
-{
-    return $this->hasMany(RoutingSlip::class, 'rslip_id', 'docslip_id');
-}
-public function receivedBy()
-{
-    return $this->belongsTo(User::class, 'new_destination');
-}
+    public function routingSlips()
+    {
+        return $this->hasMany(RoutingSlip::class, 'rslip_id', 'docslip_id');
+    }
 
+    public function receivedBy()
+    {
+        return $this->belongsTo(User::class, 'new_destination');
+    }
+
+    // Add this relationship for logs
+    public function logsTracking(): HasMany
+    {
+        return $this->hasMany(LogsTracking::class, 'docslip_id', 'docslip_id');
+    }
 }
