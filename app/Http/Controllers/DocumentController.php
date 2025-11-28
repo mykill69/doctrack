@@ -155,7 +155,19 @@ public function dashboard()
         return $item;
     });
 
-    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+    // ------------------------------
+    // 🔹 Count only doctrack_stat = 2
+    // ------------------------------
+    $doctrackCount = Doctrack::where('doctrack_stat', 2)
+        ->where(function ($query) use ($userId, $userFullName) {
+            $query->where('user_id', $userId)
+                  ->orWhere('update_by', $userId)
+                  ->orWhere(function ($q) use ($userFullName, $userId) {
+                      $q->where('user_name', $userFullName)
+                        ->where('user_id', $userId);
+                  });
+        })
+        ->count();
 
     return view('home.dashboard', compact(
         'offices',
