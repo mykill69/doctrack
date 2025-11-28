@@ -268,7 +268,7 @@ $documentTrack->transform(function ($item) {
 // }
 
 
-// 11-28-2025 adding batch loading to doctrack slip
+// 11-28-2025 adding batch loading
 // public function doctrackSlip()
 // {
 //     $user = auth()->user();
@@ -381,9 +381,10 @@ public function doctrackSlip()
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
+    // ------------------------------
     // Logs for routing slip counts
-    $logs = collect(); // container for batched results
-
+    // ------------------------------
+    $logs = collect();
     Log::where(function ($query) use ($userId) {
             $query->where('new_user', $userId)
                   ->orWhere('user_id', $userId);
@@ -409,7 +410,7 @@ public function doctrackSlip()
     $offices = Office::all();
 
     // ------------------------------
-    // 🔹 Batch load Doctrack records
+    // Batch load Doctrack records
     // ------------------------------
     $documentTrack = collect();
 
@@ -424,45 +425,45 @@ public function doctrackSlip()
         })
         ->orderByDesc('created_at')
         ->chunk(50, function ($batch) use (&$documentTrack) {
-
-            $batch->transform(function ($item) {
-
-                // Views
-                $query = LogsTracking::where('docslip_id', $item->docslip_id)
-                    ->whereNotNull('viewed_status')
-                    ->whereNotNull('viewed_at');
-
-                $item->views = !is_null($item->update_by)
-                    ? $query->where('update_by', $item->update_by)->orderBy('viewed_at')->limit(1)->get()
-                    : $query->where('user_id', $item->user_id)->orderBy('viewed_at')->limit(1)->get();
-
-                // Comments
-                $queryComments = LogsTracking::where('docslip_id', $item->docslip_id)
-                    ->whereNotNull('comments');
-
-                $item->all_comments = !is_null($item->update_by)
-                    ? $queryComments->where('update_by', $item->update_by)->get(['comments', 'created_at'])
-                    : $queryComments->where('user_id', $item->user_id)->get(['comments', 'created_at']);
-
-                // Duration calculation
-                $start = \Carbon\Carbon::parse($item->created_at);
-                $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
-                $diffInMinutes = $end->diffInMinutes($start);
-
-                $item->time_diff = [
-                    'days' => floor($diffInMinutes / 1440),
-                    'hours' => floor(($diffInMinutes % 1440) / 60),
-                    'minutes' => $diffInMinutes % 60,
-                ];
-
-                return $item;
-            });
-
             $documentTrack = $documentTrack->merge($batch);
         });
 
     // ------------------------------
-    // 🔹 Count only doctrack_stat = 2
+    // Preload all views and comments in bulk
+    // ------------------------------
+    $docslipIds = $documentTrack->pluck('docslip_id')->toArray();
+
+    $views = LogsTracking::whereIn('docslip_id', $docslipIds)
+        ->whereNotNull('viewed_status')
+        ->whereNotNull('viewed_at')
+        ->get()
+        ->groupBy('docslip_id');
+
+    $comments = LogsTracking::whereIn('docslip_id', $docslipIds)
+        ->whereNotNull('comments')
+        ->get()
+        ->groupBy('docslip_id');
+
+    // Attach views and comments, calculate duration
+    $documentTrack->transform(function ($item) use ($views, $comments) {
+        $item->views = $views[$item->docslip_id] ?? collect();
+        $item->all_comments = $comments[$item->docslip_id] ?? collect();
+
+        $start = \Carbon\Carbon::parse($item->created_at);
+        $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+        $diffInMinutes = $end->diffInMinutes($start);
+
+        $item->time_diff = [
+            'days' => floor($diffInMinutes / 1440),
+            'hours' => floor(($diffInMinutes % 1440) / 60),
+            'minutes' => $diffInMinutes % 60,
+        ];
+
+        return $item;
+    });
+
+    // ------------------------------
+    // Count only doctrack_stat = 2
     // ------------------------------
     $doctrackCount = Doctrack::where('doctrack_stat', 2)
         ->where(function ($query) use ($userId, $userFullName) {
