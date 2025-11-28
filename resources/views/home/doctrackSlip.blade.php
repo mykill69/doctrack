@@ -12,6 +12,45 @@
         padding: 0 10px;
         margin-top: 0.31rem;
     }
+
+    /* Center pagination below the table */
+    .pagination {
+        justify-content: center;
+        /* center alignment */
+        margin-top: 10px;
+        margin-bottom: 0;
+    }
+
+    /* Adjust size of arrows and numbers */
+     .pagination {
+    justify-content: center;
+    margin-top: 1px;
+    padding-bottom: 5%;
+}
+
+.pagination li a,
+.pagination li span {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    min-width: 32px;
+    text-align: center;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+}
+
+.pagination .page-link {
+    color: #007bff;
+}
+
+.pagination .page-link:hover {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
 </style>
 
 
@@ -32,14 +71,12 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table table-bordered table-hover"
-                                        style="font-size: 0.8rem;">
+                                    <table class="table table-bordered table-hover" style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
                                                 @if (auth()->user()->id == 1235)
                                                     <th>CTRL #</th>
                                                 @endif
-
                                                 <th>DATE RECEIVED</th>
                                                 <th>SOURCE</th>
                                                 <th>SUBJECT MATTER</th>
@@ -57,28 +94,17 @@
                                         <tbody>
                                             @foreach ($documentTrack as $record)
                                                 <tr>
-                                                    {{-- @if (auth()->user()->id == 1235)
-                                                        <td style="width: 80px;">
-                                                            <input type="text" class="form-control" value="">
-                                                        </td>
-                                                    @endif --}}
-
                                                     @if (auth()->user()->id == 1235)
-                                                        <td style="width: 80px;">
-                                                            <input type="text"
-                                                                class="form-control bordered doctrack-input"
-                                                                data-id="{{ $record->id }}" {{-- primary key of doctrack_slip --}}
-                                                                data-field="ctrl_no" value="{{ $record->ctrl_no }}">
+                                                        <td>
+                                                            <input type="text" class="form-control doctrack-input"
+                                                                data-id="{{ $record->id }}" data-field="ctrl_no"
+                                                                value="{{ $record->ctrl_no }}">
                                                         </td>
                                                     @endif
 
-
-
-                                                    <td data-order="{{ $record->created_at->timestamp }}">
-                                                        {{ $record->created_at->format('M j, Y') }}
-                                                    </td>
+                                                    <td>{{ $record->created_at->format('M j, Y') }}</td>
                                                     <td>{{ $record->user_name }}</td>
-                                                    <td>{{ $record->doc_title }} -<br> {{ $record->doc_type }}</td>
+                                                    <td>{{ $record->doc_title }} - {{ $record->doc_type }}</td>
                                                     <td class="text-center">--</td>
                                                     <td class="text-center">--</td>
                                                     <td>
@@ -97,33 +123,12 @@
                                                         @endif
                                                     </td>
                                                     <td>{{ $record->updated_at->format('M d, Y') }}</td>
-                                                    {{-- <td>
+                                                    <td>
                                                         @php $commentsDisplayed = false; @endphp
                                                         @foreach ($record->all_comments as $comment)
                                                             @if (!is_null($record->update_by))
-                                                                <span
-                                                                    class="badge badge-warning m-1">{{ $comment->comments }}</span><br>
-                                                                <small class="text-muted">
-                                                                    {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
-                                                                </small>
-                                                                <br>
-                                                                @php $commentsDisplayed = true; @endphp
-                                                            @else
-                                                                @php $commentsDisplayed = true; @endphp
-                                                            @endif
-                                                        @endforeach
-                                                        @if (!$commentsDisplayed && !is_null($record->update_by))
-                                                            <span class="text-muted">No comments</span>
-                                                        @endif
-                                                    </td> --}}
-                                                    <td
-                                                        style="white-space: normal; word-wrap: break-word; max-width: 150px;">
-                                                        @php $commentsDisplayed = false; @endphp
-                                                        @foreach ($record->all_comments as $comment)
-                                                            @if (!is_null($record->update_by))
-                                                                <div style="word-break: break-word; white-space: normal;">
-                                                                    <span class="badge badge-warning m-1 d-block text-left"
-                                                                        style="white-space: normal; word-break: break-word;">
+                                                                <div style="word-break: break-word;">
+                                                                    <span class="badge badge-warning m-1 d-block text-left">
                                                                         {{ $comment->comments }}
                                                                     </span>
                                                                     <small class="text-muted d-block">
@@ -139,8 +144,6 @@
                                                             <span class="text-muted">No comments</span>
                                                         @endif
                                                     </td>
-
-
                                                     <td>
                                                         @switch($record->doctrack_stat)
                                                             @case(1)
@@ -167,27 +170,11 @@
                                                                 <span class="badge badge-danger">Returned with comments</span>
                                                         @endswitch
                                                     </td>
-                                                    <td style="width: 80px;">
+                                                    <td>
                                                         <a href="{{ route('slipMonitoring', ['docslip_id' => $record->docslip_id]) }}"
                                                             target="_blank" style="color: #007bff;">
                                                             {{ $record->docslip_id }}
                                                         </a>
-                                                        <br>
-                                                        @php $displayed = false; @endphp
-                                                        @foreach ($record->views as $view)
-                                                            @if (!is_null($record->update_by))
-                                                                <small class="text-muted">
-                                                                    Viewed on
-                                                                    {{ \Carbon\Carbon::parse($view->viewed_at)->format('M j, Y h:i A') }}
-                                                                </small><br>
-                                                                @php $displayed = true; @endphp
-                                                            @else
-                                                                @php $displayed = true; @endphp
-                                                            @endif
-                                                        @endforeach
-                                                        @if (!$displayed && !is_null($record->update_by))
-                                                            <small class="text-muted">Not yet viewed</small>
-                                                        @endif
                                                     </td>
                                                     <td>
                                                         @php
@@ -206,11 +193,11 @@
                                                                 {{ Str::plural('day', $diff['days']) }}
                                                             @endif
                                                             @if ($diff['hours'] > 0)
-                                                                {{ $diff['days'] > 0 ? ', ' : '' }}{{ $diff['hours'] }}
+                                                                {{ $diff['hours'] }}
                                                                 {{ Str::plural('hr', $diff['hours']) }}
                                                             @endif
                                                             @if ($diff['minutes'] > 0)
-                                                                {{ $diff['days'] > 0 || $diff['hours'] > 0 ? ' and ' : '' }}{{ $diff['minutes'] }}
+                                                                {{ $diff['minutes'] }}
                                                                 {{ Str::plural('minute', $diff['minutes']) }}
                                                             @endif
                                                         @endif
@@ -218,10 +205,7 @@
                                                     <td>
                                                         <div class="btn-group">
                                                             <button type="button" class="btn btn-primary dropdown-toggle"
-                                                                data-toggle="dropdown" aria-haspopup="true"
-                                                                aria-expanded="false">
-                                                                Click here
-                                                            </button>
+                                                                data-toggle="dropdown">Click here</button>
                                                             <div class="dropdown-menu">
                                                                 @if ($record->doctrack_stat == 1)
                                                                     <form
@@ -247,7 +231,13 @@
                                             @endforeach
                                         </tbody>
                                     </table>
+
+                                    
+
                                 </div>
+                                <div class="d-flex justify-content-center mt-3">
+                                        {{ $documentTrack->links('pagination::bootstrap-4') }}
+                                    </div>
                             </div>
                         </div>
                     </div>
@@ -271,20 +261,6 @@
     <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-
-    <script>
-        $('#example1').DataTable({
-            "responsive": true,
-            "autoWidth": false,
-            "order": [
-                [0, "desc"]
-            ],
-            "columnDefs": [{
-                "type": "num",
-                "targets": 0
-            }]
-        });
-    </script>
 
     <script>
         $.ajaxSetup({

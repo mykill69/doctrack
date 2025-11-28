@@ -394,7 +394,6 @@ public function doctrackSlip()
             $logs = $logs->merge($batch);
         });
 
-    // Routing slip counts
     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3)) 
         ? RoutingSlip::where('route_status', 3)->count() 
         : 0;
@@ -412,20 +411,17 @@ public function doctrackSlip()
     // ------------------------------
     // Load Doctrack records in batches of 50
     // ------------------------------
-    $documentTrack = collect();
-    Doctrack::with(['createdBy', 'doctrackFile', 'logsTracking'])
-        ->where(function ($query) use ($userId, $userFullName) {
-            $query->where('user_id', $userId)
-                  ->orWhere('update_by', $userId)
-                  ->orWhere(function ($q) use ($userFullName, $userId) {
-                      $q->where('user_name', $userFullName)
-                        ->where('user_id', $userId);
-                  });
-        })
-        ->orderByDesc('created_at')
-        ->chunk(50, function ($batch) use (&$documentTrack) {
-            $documentTrack = $documentTrack->merge($batch);
-        });
+    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+    ->where(function ($query) use ($userId, $userFullName) {
+        $query->where('user_id', $userId)
+              ->orWhere('update_by', $userId)
+              ->orWhere(function ($q) use ($userFullName, $userId) {
+                  $q->where('user_name', $userFullName)
+                    ->where('user_id', $userId);
+              });
+    })
+    ->orderByDesc('created_at')
+    ->paginate(1000); // <-- THIS makes it a paginator
 
     // ------------------------------
     // Preload views and comments
