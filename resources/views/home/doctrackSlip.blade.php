@@ -22,35 +22,35 @@
     }
 
     /* Adjust size of arrows and numbers */
-     .pagination {
-    justify-content: center;
-    margin-top: 1px;
-    padding-bottom: 5%;
-}
+    .pagination {
+        justify-content: center;
+        margin-top: 1px;
+        padding-bottom: 5%;
+    }
 
-.pagination li a,
-.pagination li span {
-    font-size: 0.85rem;
-    padding: 0.25rem 0.5rem;
-    min-width: 32px;
-    text-align: center;
-}
+    .pagination li a,
+    .pagination li span {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        min-width: 32px;
+        text-align: center;
+    }
 
-.pagination .page-item.active .page-link {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: #fff;
-}
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: #fff;
+    }
 
-.pagination .page-link {
-    color: #007bff;
-}
+    .pagination .page-link {
+        color: #007bff;
+    }
 
-.pagination .page-link:hover {
-    background-color: #007bff;
-    color: #fff;
-    border-color: #007bff;
-}
+    .pagination .page-link:hover {
+        background-color: #007bff;
+        color: #fff;
+        border-color: #007bff;
+    }
 </style>
 
 
@@ -123,7 +123,7 @@
                                                         @endif
                                                     </td>
                                                     <td>{{ $record->updated_at->format('M d, Y') }}</td>
-                                                    <td>
+                                                    {{-- <td>
                                                         @php $commentsDisplayed = false; @endphp
                                                         @foreach ($record->all_comments as $comment)
                                                             @if (!is_null($record->update_by))
@@ -132,6 +132,33 @@
                                                                         {{ $comment->comments }}
                                                                     </span>
                                                                     <small class="text-muted d-block">
+                                                                        {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
+                                                                    </small>
+                                                                </div>
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @else
+                                                                @php $commentsDisplayed = true; @endphp
+                                                            @endif
+                                                        @endforeach
+                                                        @if (!$commentsDisplayed && !is_null($record->update_by))
+                                                            <span class="text-muted">No comments</span>
+                                                        @endif
+                                                    </td> --}}
+                                                    <td>
+                                                        @php $commentsDisplayed = false; @endphp
+                                                        @foreach ($record->all_comments as $comment)
+                                                            @if (!is_null($record->update_by))
+                                                                @php
+                                                                    // Wrap comment text for safe display
+                                                                    $wrappedComment = nl2br(e($comment->comments));
+                                                                @endphp
+                                                                <div style="margin-bottom: 3px;">
+                                                                    <span class="badge badge-warning"
+                                                                        style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
+                                                                        {!! $wrappedComment !!}
+                                                                    </span>
+                                                                    <br>
+                                                                    <small class="text-muted">
                                                                         {{ \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') }}
                                                                     </small>
                                                                 </div>
@@ -232,12 +259,12 @@
                                         </tbody>
                                     </table>
 
-                                    
+
 
                                 </div>
                                 <div class="d-flex justify-content-center mt-3">
-                                        {{ $documentTrack->links('pagination::bootstrap-4') }}
-                                    </div>
+                                    {{ $documentTrack->links('pagination::bootstrap-4') }}
+                                </div>
                             </div>
                         </div>
                     </div>
