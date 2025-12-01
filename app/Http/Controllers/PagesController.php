@@ -677,7 +677,6 @@ public function pending()
 
 //     return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount', 'users'));
 //     }
-
 public function served()
 {
     $user = auth()->user();
@@ -690,7 +689,7 @@ public function served()
     $offices = Office::all();
 
     // -----------------------------
-    // Load logs in chunks like doctrackSlip
+    // Load logs in chunks
     // -----------------------------
     $logs = collect();
     Log::with(['user:id,fname,lname','newUser:id,fname,lname','document','routingSlip'])
@@ -708,8 +707,11 @@ public function served()
             $logs = $logs->merge($batch);
         });
 
+    // Keep only the first log for each unique route_id (CTRL #)
+    $logs = $logs->unique('route_id')->values();
+
     // -----------------------------
-    // Doctrack records like doctrackSlip
+    // Doctrack records
     // -----------------------------
     $documentTrack = Doctrack::with(['createdBy:id,fname,lname','doctrackFile'])
         ->where(function ($query) use ($userId, $userFullName) {
@@ -775,7 +777,6 @@ public function served()
         'doctrackCount','users','documentTrack'
     ));
 }
-
 public function viewLogs() 
 {
     $user = auth()->user();
