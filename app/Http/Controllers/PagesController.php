@@ -411,7 +411,7 @@ public function doctrackSlip()
     // ------------------------------
     // Load Doctrack records in batches of 50
     // ------------------------------
-    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+$documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
     ->where(function ($query) use ($userId, $userFullName) {
         $query->where('user_id', $userId)
               ->orWhere('update_by', $userId)
@@ -421,7 +421,7 @@ public function doctrackSlip()
               });
     })
     ->orderByDesc('created_at')
-    ->paginate(1000); // <-- THIS makes it a paginator
+    ->get();  // <-- get ALL data
 
     // ------------------------------
     // Preload views and comments
@@ -612,31 +612,106 @@ public function pending()
     ));
 }
 
-   public function served()
+// 12 - 1 - 2025 optimized into chunks of 50
+
+//    public function served()
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userDepartment = $user->department;
+//     $userFullName = $user->fname . ' ' . $user->lname;
+//     $userRole = $user->role;
+// $users = User::all();
+
+//     $logs = Log::with('document', 'document.routingSlip')
+//         ->whereNotNull('new_user')
+//         ->when($userRole === 'records_officer', function ($query) {
+//             return $query; // records_officer sees all served logs
+//         }, function ($query) use ($userId, $userDepartment, $userFullName) {
+//             return $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+//                 $q->where('new_user', $userId)
+//                   ->orWhere('user_id', $userId)
+//                   ->orWhere('new_destination', $userDepartment)
+//                   ->orWhere('new_destination', $userFullName);
+//             });
+//         })
+//         ->get();
+
+//          // Get all Doctrack records (no grouping)
+//     $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->orderByDesc('created_at')
+//         ->get();
+
+//     // Calculate time_diff for each record here
+//     $documentTrack->transform(function ($item) {
+//         $start = \Carbon\Carbon::parse($item->created_at);
+//         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+//         $diffInMinutes = $end->diffInMinutes($start);
+
+//         $item->time_diff = [
+//             'days' => floor($diffInMinutes / 1440),
+//             'hours' => floor(($diffInMinutes % 1440) / 60),
+//             'minutes' => $diffInMinutes % 60,
+//         ];
+
+//         return $item;
+//     });
+
+//     // Count only records with doctrack_stat == 2
+//     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+
+//     $offices = Office::all();
+
+//     $recordsOfficerCount = $userRole === 'records_officer'
+//         ? RoutingSlip::where('route_status', 2)->count()
+//         : 0;
+
+//     $superUserCount = $userRole === 'super_user'
+//         ? RoutingSlip::where('route_status', 1)->count()
+//         : 0;
+
+//     return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount', 'users'));
+//     }
+
+public function served()
 {
     $user = auth()->user();
     $userId = $user->id;
-    $userDepartment = $user->department;
-    $userFullName = $user->fname . ' ' . $user->lname;
+    $userDepartment = trim($user->department);
+    $userFullName = trim($user->fname . ' ' . $user->lname);
     $userRole = $user->role;
-$users = User::all();
 
-    $logs = Log::with('document', 'document.routingSlip')
+    $users = User::select('id','fname','lname')->get();
+    $offices = Office::all();
+
+    // -----------------------------
+    // Load logs in chunks like doctrackSlip
+    // -----------------------------
+    $logs = collect();
+    Log::with(['user:id,fname,lname','newUser:id,fname,lname','document','routingSlip'])
         ->whereNotNull('new_user')
-        ->when($userRole === 'records_officer', function ($query) {
-            return $query; // records_officer sees all served logs
-        }, function ($query) use ($userId, $userDepartment, $userFullName) {
-            return $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+        ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
+            $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
                 $q->where('new_user', $userId)
                   ->orWhere('user_id', $userId)
                   ->orWhere('new_destination', $userDepartment)
                   ->orWhere('new_destination', $userFullName);
             });
         })
-        ->get();
+        ->orderByDesc('created_at')
+        ->chunk(100, function ($batch) use (&$logs) {
+            $logs = $logs->merge($batch);
+        });
 
-         // Get all Doctrack records (no grouping)
-    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+    // -----------------------------
+    // Doctrack records like doctrackSlip
+    // -----------------------------
+    $documentTrack = Doctrack::with(['createdBy:id,fname,lname','doctrackFile'])
         ->where(function ($query) use ($userId, $userFullName) {
             $query->where('user_id', $userId)
                   ->orWhere('update_by', $userId)
@@ -645,8 +720,24 @@ $users = User::all();
         ->orderByDesc('created_at')
         ->get();
 
-    // Calculate time_diff for each record here
-    $documentTrack->transform(function ($item) {
+    // Preload views and comments
+    $docslipIds = $documentTrack->pluck('docslip_id')->toArray();
+
+    $views = LogsTracking::whereIn('docslip_id', $docslipIds)
+        ->whereNotNull('viewed_status')
+        ->whereNotNull('viewed_at')
+        ->get()
+        ->groupBy('docslip_id');
+
+    $comments = LogsTracking::whereIn('docslip_id', $docslipIds)
+        ->whereNotNull('comments')
+        ->get()
+        ->groupBy('docslip_id');
+
+    $documentTrack->transform(function ($item) use ($views, $comments) {
+        $item->views = $views[$item->docslip_id] ?? collect();
+        $item->all_comments = $comments[$item->docslip_id] ?? collect();
+
         $start = \Carbon\Carbon::parse($item->created_at);
         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
         $diffInMinutes = $end->diffInMinutes($start);
@@ -660,10 +751,16 @@ $users = User::all();
         return $item;
     });
 
-    // Count only records with doctrack_stat == 2
-    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
-
-    $offices = Office::all();
+    // -----------------------------
+    // Counts
+    // -----------------------------
+    $doctrackCount = Doctrack::where('doctrack_stat', 2)
+        ->where(function ($query) use ($userId, $userFullName) {
+            $query->where('user_id', $userId)
+                  ->orWhere('update_by', $userId)
+                  ->orWhere('user_name', $userFullName);
+        })
+        ->count();
 
     $recordsOfficerCount = $userRole === 'records_officer'
         ? RoutingSlip::where('route_status', 2)->count()
@@ -673,8 +770,11 @@ $users = User::all();
         ? RoutingSlip::where('route_status', 1)->count()
         : 0;
 
-    return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount', 'users'));
-    }
+    return view('home.served', compact(
+        'logs','offices','recordsOfficerCount','superUserCount',
+        'doctrackCount','users','documentTrack'
+    ));
+}
 
 public function viewLogs() 
 {

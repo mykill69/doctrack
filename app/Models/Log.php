@@ -42,4 +42,6 @@ public function newUser()
 {
     return $this->belongsTo(User::class, 'new_user');
 }
+
+
 }

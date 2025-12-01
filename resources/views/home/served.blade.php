@@ -193,4 +193,14 @@
     @include('modal.docEdit')
     @include('modal.addTrans')
     @include('modal.addRoutslip')
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script>
+    $('#example1').DataTable({
+        "pageLength": 50
+    });
+</script>
+
+
 @endsection

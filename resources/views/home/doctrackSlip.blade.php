@@ -71,7 +71,8 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-hover" style="font-size: 0.8rem;">
+                                    <table id="example1" class="table table-bordered table-hover"
+                                        style="font-size: 0.8rem;">
                                         <thead>
                                             <tr>
                                                 @if (auth()->user()->id == 1235)
@@ -262,9 +263,9 @@
 
 
                                 </div>
-                                <div class="d-flex justify-content-center mt-3">
+                                {{-- <div class="d-flex justify-content-center mt-3">
                                     {{ $documentTrack->links('pagination::bootstrap-4') }}
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                     </div>
@@ -289,6 +290,11 @@
     <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
+    <script>
+        $('#example1').DataTable({
+            "pageLength": 50
+        });
+    </script>
     <script>
         $.ajaxSetup({
             headers: {
