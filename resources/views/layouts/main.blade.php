@@ -604,26 +604,40 @@
 
                    <div class="form-group text-left">
     <label>Select Personnels</label>
-    <select name="update_by[]" class="form-control select2" data-placeholder="Select users..."  multiple="multiple"  required>
+    <select name="update_by[]" 
+            class="form-control select2" 
+            data-placeholder="Select users..."  
+            multiple="multiple"  
+            required>
 
+        {{-- ✅ SHOW GROUP LIST ONLY IF NOT super_user OR staff --}}
+        @if (!in_array(auth()->user()->role, ['super_user', 'staff']))
+            <option disabled>— Select by Group —</option>
+            @foreach ($groups as $group)
+                <option value="group:{{ $group->group_name }}">
+                    {{ $group->group_name }}
+                </option>
+            @endforeach
 
+            <option disabled>──────────</option>
+        @endif
 
-        {{-- Group list --}}
-
-        <option disabled>— Select by Group —</option>
-        @foreach ($groups as $group)
-            <option value="group:{{ $group->group_name }}">{{ $group->group_name }}</option>
-        @endforeach
-
-        {{-- Individual users --}}
-        <option disabled>──────────</option>
+        {{-- ✅ INDIVIDUAL USERS --}}
         <option disabled>— Select by Individual User —</option>
         @foreach ($users as $user)
-            <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
+
+            {{-- ✅ REMOVE USER ID 1235 FOR super_user & staff --}}
+            @if (!(in_array(auth()->user()->role, ['super_user', 'staff']) && $user->id == 1235))
+                <option value="{{ $user->id }}">
+                    {{ $user->fname }} {{ $user->lname }}
+                </option>
+            @endif
+
         @endforeach
 
     </select>
 </div>
+
 
                     <div class="form-group text-left">
                         <label>Attach File (optional)</label>

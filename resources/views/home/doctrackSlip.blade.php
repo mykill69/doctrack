@@ -76,7 +76,7 @@
                                         <thead>
                                             <tr>
                                                 @if (auth()->user()->id == 1235)
-                                                    <th>CTRL #</th>
+                                                    <th style="width: 8%;">CTRL #</th>
                                                 @endif
                                                 <th>DATE RECEIVED</th>
                                                 <th>SOURCE</th>
