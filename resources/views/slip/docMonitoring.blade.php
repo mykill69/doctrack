@@ -248,10 +248,10 @@
                                                                 onclick="submitStatus({{ $loopIndex }}, 3)">
                                                                 <i class="fas fa-check-circle mr-1"></i> Signed
                                                             </a> --}}
-                                                            <a class="dropdown-item" href="#"
+                                                            {{-- <a class="dropdown-item" href="#"
                                                                 onclick="submitStatus({{ $loopIndex }}, 4)">
                                                                 <i class="fas fa-undo mr-1"></i> Return with Comment
-                                                            </a>
+                                                            </a> --}}
                                                             {{-- <a class="dropdown-item" href="#"
                                                                 onclick="submitStatus({{ $loopIndex }}, 5)">
                                                                 <i class="fas fa-user-check mr-1"></i> Checked
@@ -380,11 +380,7 @@
 
 <script src="{{ asset('template/plugins/jquery/jquery.min.js') }}"></script>
 <!-- Bootstrap 4 -->
-<script src="{{ asset('template/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-<!-- AdminLTE App -->
-<script src="{{ asset('template/dist/js/adminlte.min.js') }}"></script>
-<!-- Toastr -->
-<script src="{{ asset('template/plugins/toastr/toastr.min.js') }}"></script>
+
 <!-- DataTables  & Plugins -->
 <script src="{{ asset('template/plugins/datatables/jquery.dataTables.min.js') }}"></script>
 <script src="{{ asset('template/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>

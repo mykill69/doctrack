@@ -578,65 +578,65 @@
             Swal.fire({
                 title: 'Document Transmittal',
                 html: `
-                <form id="docForm" enctype="multipart/form-data">
-                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+                        <form id="docForm" enctype="multipart/form-data">
+                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
 
-                    <div class="form-group text-left">
-                        <label>Document Type</label>
-                        <select name="doc_type" class="form-control" required>
-                            <option value="">Select</option>
-                            <option value="Issuance">Issuance</option>
-                            <option value="Correspondence">Correspondence</option>
-                            <option value="DPCR/IPCR">DPCR/IPCR</option>
-                            <option value="PAPS-PRE">PAPS-PRE</option>
-                            <option value="PPMP">PPMP</option>
-                            <option value="Reimbursement">Reimbursement</option>
-                            <option value="Travel Authority">Travel Authority</option>
-                            <option value="Other Document">Other Document</option>
-                        </select>
-                    </div>
+                            <div class="form-group text-left">
+                                <label>Document Type</label>
+                                <select name="doc_type" class="form-control" required>
+                                    <option value="">Select</option>
+                                    <option value="Issuance">Issuance</option>
+                                    <option value="Correspondence">Correspondence</option>
+                                    <option value="DPCR/IPCR">DPCR/IPCR</option>
+                                    <option value="PAPS-PRE">PAPS-PRE</option>
+                                    <option value="PPMP">PPMP</option>
+                                    <option value="Reimbursement">Reimbursement</option>
+                                    <option value="Travel Authority">Travel Authority</option>
+                                    <option value="Other Document">Other Document</option>
+                                </select>
+                            </div>
 
-                    <div class="form-group text-left">
-                        <label>Document Title</label>
-                        <textarea name="doc_title" class="form-control" rows="2" required></textarea>
-                    </div>
+                            <div class="form-group text-left">
+                                <label>Document Title</label>
+                                <textarea name="doc_title" class="form-control" rows="2" required></textarea>
+                            </div>
 
-                   <div class="form-group text-left">
-    <label>Select Personnels</label>
-    <select name="update_by[]" 
-            class="form-control select2" 
-            data-placeholder="Select users..."  
-            multiple="multiple"  
-            required>
+                        <div class="form-group text-left">
+            <label>Select Personnels</label>
+            <select name="update_by[]" 
+                    class="form-control select2" 
+                    data-placeholder="Select users..."  
+                    multiple="multiple"  
+                    required>
 
-        {{-- ✅ SHOW GROUP LIST ONLY IF NOT super_user OR staff --}}
-        @if (!in_array(auth()->user()->role, ['super_user', 'staff']))
-            <option disabled>— Select by Group —</option>
-            @foreach ($groups as $group)
-                <option value="group:{{ $group->group_name }}">
-                    {{ $group->group_name }}
-                </option>
-            @endforeach
+                {{-- ✅ SHOW GROUP LIST ONLY IF NOT super_user OR staff --}}
+                @if (!in_array(auth()->user()->role, ['super_user', 'staff']))
+                    <option disabled>— Select by Group —</option>
+                    @foreach ($groups as $group)
+                        <option value="group:{{ $group->group_name }}">
+                            {{ $group->group_name }}
+                        </option>
+                    @endforeach
 
-            <option disabled>──────────</option>
-        @endif
+                    <option disabled>──────────</option>
+                @endif
 
-        {{-- ✅ INDIVIDUAL USERS --}}
-        <option disabled>— Select by Individual User —</option>
-        @foreach ($users as $user)
+                {{-- ✅ INDIVIDUAL USERS --}}
+                <option disabled>— Select by Individual User —</option>
+                @foreach ($users as $user)
 
-            {{-- ✅ REMOVE USER ID 1235 FOR super_user & staff --}}
-            @if (!(in_array(auth()->user()->role, ['super_user', 'staff']) && $user->id == 1235))
-                <option value="{{ $user->id }}">
-                    {{ $user->fname }} {{ $user->lname }}
-                </option>
-            @endif
+                    {{-- ✅ REMOVE USER ID 1235 FOR super_user & staff --}}
+                    @if (!(in_array(auth()->user()->role, ['super_user', 'staff']) && $user->id == 1235))
+                        <option value="{{ $user->id }}">
+                            {{ $user->fname }} {{ $user->lname }}
+                        </option>
+                    @endif
 
-        @endforeach
+                @endforeach
 
-    </select>
-</div>
+            </select>
+        </div>
 
 
                     <div class="form-group text-left">
