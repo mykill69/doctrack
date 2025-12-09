@@ -596,12 +596,15 @@ public function pending()
             $documentTrack = $documentTrack->merge($batch);
         });
 
-    $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+    $doctrackCount = Doctrack::where('doctrack_stat', 2)
+        ->where(function ($query) use ($userId, $userFullName) {
             $query->where('user_id', $userId)
                   ->orWhere('update_by', $userId)
-                  ->orWhere('user_name', $userFullName);
+                  ->orWhere(function ($q) use ($userFullName, $userId) {
+                      $q->where('user_name', $userFullName)
+                        ->where('user_id', $userId);
+                  });
         })
-        ->where('doctrack_stat', 2)
         ->count();
 
     return view('home.pending', compact(
@@ -760,7 +763,10 @@ public function served()
         ->where(function ($query) use ($userId, $userFullName) {
             $query->where('user_id', $userId)
                   ->orWhere('update_by', $userId)
-                  ->orWhere('user_name', $userFullName);
+                  ->orWhere(function ($q) use ($userFullName, $userId) {
+                      $q->where('user_name', $userFullName)
+                        ->where('user_id', $userId);
+                  });
         })
         ->count();
 
