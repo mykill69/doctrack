@@ -320,12 +320,62 @@ public function storeDoc(Request $request)
 }
 
 
+// public function update(Request $request, $id)
+// {
+//     $request->validate([
+//         'comments' => 'nullable|string',
+//         'user_id' => 'required|integer',
+//         'new_user' => 'required|integer',
+//     ]);
+
+//     $document = Document::find($id);
+//     if (!$document) {
+//         return redirect()->back()->with('error', 'Document not found.');
+//     }
+
+//     $routeId = $document->route_id;
+
+//     // Correct way to get the logged-in user
+//     $currentUser = Auth::user(); // Use Auth facade, not 'auth'
+//     $fullName = $currentUser->fname . ' ' . $currentUser->lname;
+
+//     $logToUpdate = Log::where('route_id', $routeId)
+//                       ->where('new_destination', $fullName)
+//                       ->whereNull('new_user')
+//                       ->first();
+
+//     if ($logToUpdate) {
+//         $logToUpdate->user_id = $request->input('user_id');
+//         $logToUpdate->new_user = $request->input('new_user');
+//         $logToUpdate->action = 'Acknowledged';
+//         $logToUpdate->status_update = $request->input('status_update');
+//         $logToUpdate->prev_file = $logToUpdate->new_file;
+//         $logToUpdate->comments = $request->input('comments', null);
+//         $logToUpdate->updated_at = now();
+//         $logToUpdate->save();
+
+//         if ($logToUpdate->status_update == 3) {
+//             LogsHistory::create([
+//                 'doc_id' => $logToUpdate->doc_id,
+//                 'action' => $logToUpdate->action,
+//                 'status_update' => $logToUpdate->status_update,
+//                 'created_at' => now(),
+//                 'updated_at' => now(),
+//             ]);
+//         }
+
+//         return redirect($request->input('redirectUrl'))->with('success', 'The document was acknowledged successfully.');
+//     }
+
+//     return redirect()->back()->with('error', 'No matching log entry found for acknowledgment.');
+// }
+
 public function update(Request $request, $id)
 {
     $request->validate([
-        'comments' => 'nullable|string',
         'user_id' => 'required|integer',
         'new_user' => 'required|integer',
+        'status_update' => 'required|in:2,3'
     ]);
 
     $document = Document::find($id);
@@ -335,40 +385,76 @@ public function update(Request $request, $id)
 
     $routeId = $document->route_id;
 
-    // Correct way to get the logged-in user
-    $currentUser = Auth::user(); // Use Auth facade, not 'auth'
+    // ✅ ORIGINAL: logged-in user full name
+    $currentUser = Auth::user();
     $fullName = $currentUser->fname . ' ' . $currentUser->lname;
 
+    /*
+    |--------------------------------------------------------------------------
+    | ✅ ACKNOWLEDGE — YOUR ORIGINAL UNTOUCHED LOGIC
+    |--------------------------------------------------------------------------
+    */
+    if ($request->status_update == 3) {
+
     $logToUpdate = Log::where('route_id', $routeId)
-                      ->where('new_destination', $fullName)
-                      ->whereNull('new_user')
-                      ->first();
+        ->where('new_destination', 'LIKE', "%$fullName%")
+        ->latest('id')
+        ->first();
 
-    if ($logToUpdate) {
-        $logToUpdate->user_id = $request->input('user_id');
-        $logToUpdate->new_user = $request->input('new_user');
-        $logToUpdate->action = 'Acknowledged';
-        $logToUpdate->status_update = $request->input('status_update');
-        $logToUpdate->prev_file = $logToUpdate->new_file;
-        $logToUpdate->comments = $request->input('comments', null);
-        $logToUpdate->updated_at = now();
-        $logToUpdate->save();
-
-        if ($logToUpdate->status_update == 3) {
-            LogsHistory::create([
-                'doc_id' => $logToUpdate->doc_id,
-                'action' => $logToUpdate->action,
-                'status_update' => $logToUpdate->status_update,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        return redirect($request->input('redirectUrl'))->with('success', 'The document was acknowledged successfully.');
+    if (!$logToUpdate) {
+        return redirect()->back()->with('error', 'No matching log entry found for acknowledgment.');
     }
 
-    return redirect()->back()->with('error', 'No matching log entry found for acknowledgment.');
+    $logToUpdate->user_id = $request->input('user_id');
+    $logToUpdate->new_user = $request->input('new_user');
+    $logToUpdate->action = 'Acknowledged';
+    $logToUpdate->status_update = 3;
+    $logToUpdate->prev_file = $logToUpdate->new_file;
+    $logToUpdate->comments = $request->input('comments', null);
+    $logToUpdate->updated_at = now();
+    $logToUpdate->save();
+
+    LogsHistory::create([
+        'doc_id' => $logToUpdate->doc_id,
+        'action' => $logToUpdate->action,
+        'status_update' => 3,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return redirect($request->input('redirectUrl'))
+        ->with('success', 'The document was acknowledged successfully.');
 }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ✅ RE-OPEN — ONLY STATUS_UPDATE, ONLY USER 56, ONLY CLICKED ROW
+    |--------------------------------------------------------------------------
+    */
+    if ($request->status_update == 2 && auth()->id() == 56) {
+
+    $logToUpdate = Log::find($request->input('log_id')); // ✅ get exact row
+
+    if (!$logToUpdate) {
+        return redirect()->back()->with('error', 'No matching log entry found for re-open.');
+    }
+
+    $logToUpdate->status_update = 2;
+    $logToUpdate->action = 'Re-opened';
+    $logToUpdate->updated_at = now();
+    $logToUpdate->save();
+
+    return redirect($request->input('redirectUrl'))
+        ->with('success', 'The document was re-opened successfully.');
+}
+
+    return redirect()->back()->with('error', 'Invalid operation.');
+}
+
+
+
+
+
 
 
 

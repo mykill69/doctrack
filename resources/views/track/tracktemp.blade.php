@@ -120,7 +120,8 @@
                                                 @foreach ($logs as $log)
                                                     @php
                                                         // $isUserMatched = $log->new_destination === $userFullName;
-                                                        $isUserMatched = strtolower(trim($log->new_destination)) === $userFullName;
+                                                        $isUserMatched =
+                                                            strtolower(trim($log->new_destination)) === $userFullName;
 
                                                         $hasComment = !is_null($log->comments);
                                                         $isDisabled =
@@ -174,6 +175,7 @@
                                                             <div class="timeline-footer mb-2 mt-2">
                                                                 <div class="row align-items-center">
                                                                     <div class="col-md-4">
+                                                                        {{-- ✅ ACKNOWLEDGE --}}
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-primary swalAcknowledge"
                                                                             data-doc-id="{{ $document->id }}"
@@ -182,7 +184,8 @@
                                                                             @if ($isDisabled) disabled @endif>
                                                                             {{ $log->status_update == 3 ? 'Acknowledged' : 'Acknowledge' }}
                                                                         </button>
-                                                                        <!-- Re-route Button -->
+
+                                                                        {{-- ✅ RE-ROUTE --}}
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-warning swalReRoute"
                                                                             data-route-id="{{ $log->route_id }}"
@@ -190,6 +193,20 @@
                                                                             @if ($isDisabled) disabled @endif>
                                                                             Re-route
                                                                         </button>
+
+                                                                        {{-- ✅ RE-OPEN (ONLY USER 56) --}}
+                                                                        @if (auth()->id() == 56)
+                                                                            <button type="button"
+                                                                                class="btn btn-sm btn-danger btnReopen"
+                                                                                data-doc-id="{{ $document->id }}"
+                                                                                data-log-id="{{ $log->id }}"
+                                                                                {{-- pass the log id --}}
+                                                                                data-route-id="{{ $log->route_id }}"
+                                                                                data-user-id="{{ $document->user_id }}">
+                                                                                <i class="fas fa-undo"></i> Re-open
+                                                                            </button>
+                                                                        @endif
+
                                                                     </div>
                                                                     <div class="col-md-3">
                                                                         <span
@@ -356,9 +373,9 @@
                     <input type="hidden" name="status_update" value="3">
 
                     <div class="form-group mb-2">
-                        <label for="comments" class="form-label"><strong>Comments (optional):</strong></label>
+
                         <textarea class="form-control" id="comments" name="comments" rows="3"
-                            placeholder="Add your comments here..." style="resize: none;"></textarea>
+                            placeholder="Add your comments here..." style="resize: none;" hidden></textarea>
                     </div>
 
                     <div class="text-end mt-3">
@@ -417,14 +434,50 @@
                         <button type="submit" class="btn btn-warning" form="swal-reroute-form">Submit</button>
                     </div>
                 </form>
-            `,
+                `,
                     showConfirmButton: false,
                     width: 650,
                     padding: '2em'
                 });
             });
+
+            // Re-open Button (ONLY USER 56)
+            $('.btnReopen').click(function() {
+                const docId = $(this).data('doc-id');
+                const logId = $(this).data('log-id'); // ✅ new
+                const routeId = $(this).data('route-id');
+                const userId = $(this).data('user-id');
+
+                if (!docId || !logId || !routeId || !userId) return;
+
+                const reopenUrl = `/doctrack/public/documents/${docId}`;
+
+                Swal.fire({
+                    title: 'Re-open Document',
+                    icon: 'warning',
+                    html: `
+            <form method="POST" action="${reopenUrl}">
+                <input type="hidden" name="_token" value="${csrfToken}">
+                <input type="hidden" name="route_id" value="${routeId}">
+                <input type="hidden" name="user_id" value="${userId}">
+                <input type="hidden" name="new_user" value="${newUser}">
+                <input type="hidden" name="log_id" value="${logId}">  {{-- send log id --}}
+                <input type="hidden" name="status_update" value="2">
+                <input type="hidden" name="redirectUrl" value="${redirectUrl}">
+
+                <div class="text-end mt-3">
+                    <button type="submit" class="btn btn-danger">Re-open</button>
+                </div>
+            </form>
+        `,
+                    showConfirmButton: false,
+                    width: 600
+                });
+            });
         });
     </script>
+
+
 
 
 
