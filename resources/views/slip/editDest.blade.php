@@ -160,6 +160,7 @@
                                             value="{{ $routingSlips->subject }}" readonly>
                                     </div>
                                 </div>
+                                <input type="hidden" name="routing_slip_id" value="{{ $routingSlips->id }}">
                                 <input type="hidden" class="form-control" name="route_id"
                                     value="{{ $routingSlips->rslip_id }}" readonly required>
 

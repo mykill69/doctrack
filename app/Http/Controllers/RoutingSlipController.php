@@ -127,15 +127,65 @@ public function storeSlip(Request $request)
 //     ));
 // }
 
+
+//updated January 6, 2025
+
+// public function viewSlip()
+// {
+//     $user = auth()->user();
+
+//     $userId = $user->id;
+//     $userRole = $user->role; // make sure this is role, not id
+//     $userDepartment = $user->department;
+
+//     // ✅ Check existence only (NO LOOP, NO GET)
+//     $hasStatusThree = Log::where('user_id', $userId)
+//         ->where('status_update', 3)
+//         ->exists();
+
+//     $routingSlipCount = !$hasStatusThree
+//         ? RoutingSlip::where('route_status', 3)->count()
+//         : 0;
+
+//     $superUserCount = $userRole === 'super_user'
+//         ? RoutingSlip::where('route_status', 1)->count()
+//         : 0;
+
+//     $recordsOfficerCount = $userRole === 'records_officer'
+//         ? RoutingSlip::where('route_status', 2)->count()
+//         : 0;
+
+//     $routingSlips = RoutingSlip::all();
+//     $offices = Office::all();
+
+//     // ✅ Doctrack Count (already efficient)
+//     $userFullName = $user->fname . ' ' . $user->lname;
+
+//     $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->where('doctrack_stat', 2)
+//         ->count();
+
+//     return view('slip.routingSlip', compact(
+//         'routingSlips',
+//         'routingSlipCount',
+//         'superUserCount',
+//         'offices',
+//         'recordsOfficerCount',
+//         'doctrackCount'
+//     ));
+// }
 public function viewSlip()
 {
     $user = auth()->user();
 
     $userId = $user->id;
-    $userRole = $user->role; // make sure this is role, not id
+    $userRole = $user->role;
     $userDepartment = $user->department;
 
-    // ✅ Check existence only (NO LOOP, NO GET)
     $hasStatusThree = Log::where('user_id', $userId)
         ->where('status_update', 3)
         ->exists();
@@ -152,10 +202,17 @@ public function viewSlip()
         ? RoutingSlip::where('route_status', 2)->count()
         : 0;
 
+    // ✅ CONDITIONAL VIEW
+    if ($userId == 38) {
+    // ID 38 can view ALL routing slips
     $routingSlips = RoutingSlip::all();
+    } else {
+        // Others can view only their own
+        $routingSlips = RoutingSlip::where('user_id', $userId)->get();
+    }
+
     $offices = Office::all();
 
-    // ✅ Doctrack Count (already efficient)
     $userFullName = $user->fname . ' ' . $user->lname;
 
     $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
@@ -689,6 +746,7 @@ public function editDest($id)
 public function storeRouteDoc(Request $request)
 {
     $validatedData = $request->validate([
+        'routing_slip_id' => 'required|integer',
         'doc_type'        => 'required|string',
         'full_name'       => 'required|string',
         'subject'         => 'required|string',
@@ -716,7 +774,8 @@ public function storeRouteDoc(Request $request)
         'route_id'   => $validatedData['route_id'],
     ]);
 
-    $routingSlip = RoutingSlip::where('rslip_id', $validatedData['route_id'])->first();
+    // $routingSlip = RoutingSlip::where('rslip_id', $validatedData['route_id'])->first();
+    $routingSlip = RoutingSlip::find($validatedData['routing_slip_id']);
     $finalDestinations = [];
 
     foreach ($validatedData['routed_users'] as $destination) {
