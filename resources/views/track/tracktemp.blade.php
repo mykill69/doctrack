@@ -89,8 +89,28 @@
             $uniqueDocs = $documents->unique('id');
         @endphp
 
+        @php
+            $hasAccess = \App\Models\Log::where('doc_id', $doc->id)
+                ->whereRaw('LOWER(TRIM(new_destination)) = ?', [$userFullName])
+                ->exists();
+        @endphp
+
+        @if (!$hasAccess)
+            @continue
+        @endif
+
         @if ($uniqueDocs->isNotEmpty())
             @foreach ($uniqueDocs as $doc)
+                @php
+                    $hasAccess = \App\Models\Log::where('doc_id', $doc->id)
+                        ->whereRaw('LOWER(TRIM(new_destination)) = ?', [$userFullName])
+                        ->exists();
+                @endphp
+
+                @if (!$hasAccess)
+                    @continue
+                @endif
+
                 <div class="col-md-12" style="padding-top: 1%;">
                     <div class="card">
                         <div class="card-header p-2">
@@ -149,7 +169,8 @@
                                                                     <div class="col-md-3 text-center">
                                                                         <span class="text-sm"
                                                                             style="font-weight: bold;">Comments
-                                                                            (optional):</span>
+                                                                            (optional)
+                                                                            :</span>
                                                                     </div>
                                                                     <div class="col-md-3 text-right text-muted"
                                                                         style="font-size:11px;">
