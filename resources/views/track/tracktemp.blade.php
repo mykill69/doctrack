@@ -89,16 +89,6 @@
             $uniqueDocs = $documents->unique('id');
         @endphp
 
-        @php
-            $hasAccess = \App\Models\Log::where('doc_id', $doc->id)
-                ->whereRaw('LOWER(TRIM(new_destination)) = ?', [$userFullName])
-                ->exists();
-        @endphp
-
-        @if (!$hasAccess)
-            @continue
-        @endif
-
         @if ($uniqueDocs->isNotEmpty())
             @foreach ($uniqueDocs as $doc)
                 @php
@@ -151,7 +141,7 @@
                                                     @endphp
 
                                                     <div>
-                                                        <i class="{{ $iconClass }}"></i> {{ $log->doc_id }}
+                                                        <i class="{{ $iconClass }}"></i> 
                                                         <div class="timeline-item">
                                                             <div class="timeline-header">
                                                                 <div class="row">
@@ -198,7 +188,7 @@
                                                                             data-user-id="{{ $log->user_id }}"
                                                                             @if ($isDisabled) disabled @endif>
                                                                             {{ $log->status_update == 3 ? 'Acknowledged' : 'Acknowledge' }}
-                                                                            {{ $log->doc_id }}
+                                                                           
                                                                         </button>
 
                                                                         <button type="button"
