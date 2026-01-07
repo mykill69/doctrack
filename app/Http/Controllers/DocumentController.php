@@ -285,9 +285,13 @@ public function tracking(Request $request)
         $matchesRoutedUsers = in_array($fullName, $routedUsers);
 
         // PRIORITY: only logs where logs.doc_id == routing_slip_id
-        $matchesLogs = \App\Models\Log::where('doc_id', $document->routing_slip_id)
-            ->whereRaw('LOWER(new_destination) = ?', [strtolower($fullName)])
-            ->exists();
+        // $matchesLogs = \App\Models\Log::where('doc_id', $document->routing_slip_id)
+        //     ->whereRaw('LOWER(new_destination) = ?', [strtolower($fullName)])
+        //     ->exists();
+
+        $matchesLogs = \App\Models\Log::where('doc_id', $document->id)
+    ->whereRaw('LOWER(TRIM(new_destination)) = ?', [strtolower(trim($fullName))])
+    ->exists();
 
         return $matchesRoutedUsers || $matchesLogs || $document->user_id == $userId;
     });

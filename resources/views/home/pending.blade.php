@@ -139,7 +139,7 @@
                                                             <i class="fas fa-pen"></i>
                                                         </a>
                                                     </td> --}}
-
+                                                    {{-- 
                                                     @php
                                                         $routingSlipId = \App\Models\RoutingSlip::where(
                                                             'rslip_id',
@@ -153,6 +153,24 @@
                                                         <a href="{{ route('tracking', [
                                                             'route_id' => $log->route_id,
                                                             'routing_slip_id' => $log->routing_slip_id,
+                                                        ]) }}"
+                                                            class="btn btn-primary" target="_blank">
+                                                            <i class="fas fa-pen"></i>
+                                                        </a>
+                                                    </td> --}}
+                                                    @php
+                                                        $routingSlipId = \App\Models\RoutingSlip::where(
+                                                            'rslip_id',
+                                                            $log->route_id,
+                                                        )
+                                                            ->orderBy('id', 'desc')
+                                                            ->value('id');
+                                                    @endphp
+
+                                                    <td>
+                                                        <a href="{{ route('tracking', [
+                                                            'route_id' => $log->route_id,
+                                                            'routing_slip_id' => $routingSlipId,
                                                         ]) }}"
                                                             class="btn btn-primary" target="_blank">
                                                             <i class="fas fa-pen"></i>
