@@ -178,6 +178,7 @@ public function storeSlip(Request $request)
 //         'doctrackCount'
 //     ));
 // }
+
 public function viewSlip()
 {
     $user = auth()->user();

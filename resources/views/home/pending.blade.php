@@ -53,7 +53,7 @@
                                                     </td>
                                                     <td>{{ $log->source ?? 'N/A' }}</td>
                                                     <td>{{ $log->subject ?? 'N/A' }}</td>
-   
+
                                                     <td>{{ $log->pres_dept ?? 'N/A' }}</td>
                                                     <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
                                                     </td>
@@ -133,12 +133,32 @@
                                                         </p>
                                                     </td>
                                                     {{-- <td>{{ $log->new_destination }}</td> --}}
-                                                    <td>
+                                                    {{-- <td>
                                                         <a href="{{ route('tracking', ['route_id' => $log->route_id]) }}"
                                                             class="btn btn-primary" target="_blank">
                                                             <i class="fas fa-pen"></i>
                                                         </a>
+                                                    </td> --}}
+
+                                                    @php
+                                                        $routingSlipId = \App\Models\RoutingSlip::where(
+                                                            'rslip_id',
+                                                            $log->route_id,
+                                                        )
+                                                            ->orderBy('id', 'desc')
+                                                            ->value('id');
+                                                    @endphp
+
+                                                    <td>
+                                                        <a href="{{ route('tracking', [
+                                                            'route_id' => $log->route_id,
+                                                            'routing_slip_id' => $log->routing_slip_id,
+                                                        ]) }}"
+                                                            class="btn btn-primary" target="_blank">
+                                                            <i class="fas fa-pen"></i>
+                                                        </a>
                                                     </td>
+
                                                 </tr>
                                             @endforeach
                                         </tbody>

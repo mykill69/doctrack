@@ -538,18 +538,35 @@ $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
 
 //     return view('home.pending', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount', 'doctrackCount'));
 // }
+
+
 public function pending()
 {
     $user = auth()->user();
     $userFullName = $user->fname . ' ' . $user->lname;
     $userId = $user->id;
+    $userRole = $user->role;
+    $userDepartment = $user->department;
 
-    $logs = collect(); // container for batched results
-
-    Log::with('routingSlip')
+    // Step 1: Get logs joined with documents and routing_slip
+    $logs = Log::with('routingSlip')
         ->leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
-        ->leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
-        ->select('logs.*', 'documents.*', 'routing_slip.*')
+        ->leftJoin('routing_slip', function ($join) {
+            $join->on('logs.route_id', '=', 'routing_slip.rslip_id')
+                 ->on('logs.user_id', '=', 'routing_slip.user_id'); // ensure correct user
+        })
+        ->select(
+            'logs.*',
+            'documents.id as doc_id',
+            'documents.file_name',
+            'routing_slip.id as routing_slip_id',
+            'routing_slip.date_received',
+            'routing_slip.source',
+            'routing_slip.subject',
+            'routing_slip.pres_dept',
+            'routing_slip.trans_remarks',
+            'routing_slip.r_destination as routing_destination'
+        )
         ->where('logs.status_update', 2)
         ->where(function ($q) {
             $q->whereNull('logs.new_user')
@@ -559,57 +576,50 @@ public function pending()
             $q->where('logs.new_destination', $userFullName)
               ->orWhere('logs.user_id', $userId);
         })
-        ->orderBy('logs.created_at', 'desc')
-        ->chunk(50, function ($batch) use (&$logs) {
-            $logs = $logs->merge($batch);
-        });
+        ->orderByDesc('logs.created_at')
+        ->get();
 
-    // Deduplicate in PHP after loading
-    $logs = $logs->unique('route_id')->values();
+    // Step 2: Remove duplicate doc_id
+    $logs = $logs->unique('doc_id')->values();
 
+    // Step 3: Other data
     $offices = Office::all();
+    $recordsOfficerCount = 0;
+    $superUserCount = 0;
 
-    $documentTrack = collect();
-
-    Doctrack::with(['createdBy', 'doctrackFile'])
+    // Get all Doctrack records (no grouping)
+    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
         ->where(function ($query) use ($userId, $userFullName) {
             $query->where('user_id', $userId)
                   ->orWhere('update_by', $userId)
                   ->orWhere('user_name', $userFullName);
         })
         ->orderByDesc('created_at')
-        ->chunk(50, function ($batch) use (&$documentTrack) {
-            $batch->transform(function ($item) {
-                $start = \Carbon\Carbon::parse($item->created_at);
-                $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
-                $diffInMinutes = $end->diffInMinutes($start);
+        ->get();
 
-                $item->time_diff = [
-                    'days' => floor($diffInMinutes / 1440),
-                    'hours' => floor(($diffInMinutes % 1440) / 60),
-                    'minutes' => $diffInMinutes % 60,
-                ];
+    // Calculate time_diff for each record here
+    $documentTrack->transform(function ($item) {
+        $start = \Carbon\Carbon::parse($item->created_at);
+        $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+        $diffInMinutes = $end->diffInMinutes($start);
 
-                return $item;
-            });
+        $item->time_diff = [
+            'days' => floor($diffInMinutes / 1440),
+            'hours' => floor(($diffInMinutes % 1440) / 60),
+            'minutes' => $diffInMinutes % 60,
+        ];
 
-            $documentTrack = $documentTrack->merge($batch);
-        });
+        return $item;
+    });
 
-    $doctrackCount = Doctrack::where('doctrack_stat', 2)
-        ->where(function ($query) use ($userId, $userFullName) {
-            $query->where('user_id', $userId)
-                  ->orWhere('update_by', $userId)
-                  ->orWhere(function ($q) use ($userFullName, $userId) {
-                      $q->where('user_name', $userFullName)
-                        ->where('user_id', $userId);
-                  });
-        })
-        ->count();
+    // Count only records with doctrack_stat == 2
+    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
     return view('home.pending', compact(
         'logs', 
         'offices', 
+        'recordsOfficerCount', 
+        'superUserCount', 
         'doctrackCount',
         'documentTrack'
     ));

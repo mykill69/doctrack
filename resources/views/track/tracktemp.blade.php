@@ -84,8 +84,13 @@
             $userFullName = strtolower(trim(auth()->user()->fname . ' ' . auth()->user()->lname));
         @endphp
 
-        @if ($documents->isNotEmpty())
-            @foreach ($documents as $document)
+        @php
+            // Get all unique doc_ids (regardless of route_id)
+            $uniqueDocs = $documents->unique('id');
+        @endphp
+
+        @if ($uniqueDocs->isNotEmpty())
+            @foreach ($uniqueDocs as $doc)
                 <div class="col-md-12" style="padding-top: 1%;">
                     <div class="card">
                         <div class="card-header p-2">
@@ -105,24 +110,17 @@
                                         <div class="card-body p-0">
                                             <div class="timeline timeline-inverse pt-3">
                                                 @php
-                                                    $logs = \App\Models\Log::where('doc_id', $document->id)
+                                                    // Fetch logs for this doc_id
+                                                    $logs = \App\Models\Log::where('doc_id', $doc->id)
                                                         ->orderBy('created_at')
-                                                        ->get()
-                                                        ->groupBy(
-                                                            fn($log) => $log->route_id . '_' . $log->new_destination,
-                                                        )
-                                                        ->map(fn($groupedLogs) => $groupedLogs->last());
-
+                                                        ->get();
                                                     $previousLogTime = null;
-                                                    $allServed = $logs->every(fn($log) => $log->status_update == 3);
                                                 @endphp
 
                                                 @foreach ($logs as $log)
                                                     @php
-                                                        // $isUserMatched = $log->new_destination === $userFullName;
                                                         $isUserMatched =
                                                             strtolower(trim($log->new_destination)) === $userFullName;
-
                                                         $hasComment = !is_null($log->comments);
                                                         $isDisabled =
                                                             $log->status_update == 3 || !$isUserMatched || $hasComment;
@@ -133,7 +131,7 @@
                                                     @endphp
 
                                                     <div>
-                                                        <i class="{{ $iconClass }}"></i>
+                                                        <i class="{{ $iconClass }}"></i> {{ $log->doc_id }}
                                                         <div class="timeline-item">
                                                             <div class="timeline-header">
                                                                 <div class="row">
@@ -151,20 +149,17 @@
                                                                     <div class="col-md-3 text-center">
                                                                         <span class="text-sm"
                                                                             style="font-weight: bold;">Comments
-                                                                            (optional)
-                                                                            :</span>
+                                                                            (optional):</span>
                                                                     </div>
                                                                     <div class="col-md-3 text-right text-muted"
                                                                         style="font-size:11px;">
                                                                         @if ($previousLogTime)
                                                                             <span><i class="far fa-clock"></i>
                                                                                 {{ $log->updated_at->diffForHumans($previousLogTime) }}
-                                                                                previous
-                                                                            </span>
+                                                                                previous</span>
                                                                         @else
                                                                             <span><i class="far fa-clock"></i>
-                                                                                {{ $log->created_at->diffForHumans() }}
-                                                                            </span>
+                                                                                {{ $log->created_at->diffForHumans() }}</span>
                                                                         @endif
                                                                         <br>
                                                                         <small>{{ $log->updated_at->format('F j, Y h:i A') }}</small>
@@ -175,38 +170,34 @@
                                                             <div class="timeline-footer mb-2 mt-2">
                                                                 <div class="row align-items-center">
                                                                     <div class="col-md-4">
-                                                                        {{-- ✅ ACKNOWLEDGE --}}
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-primary swalAcknowledge"
-                                                                            data-doc-id="{{ $document->id }}"
+                                                                            data-doc-id="{{ $log->doc_id }}"
                                                                             data-route-id="{{ $log->route_id }}"
-                                                                            data-user-id="{{ $document->user_id }}"
+                                                                            data-user-id="{{ $log->user_id }}"
                                                                             @if ($isDisabled) disabled @endif>
                                                                             {{ $log->status_update == 3 ? 'Acknowledged' : 'Acknowledge' }}
+                                                                            {{ $log->doc_id }}
                                                                         </button>
 
-                                                                        {{-- ✅ RE-ROUTE --}}
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-warning swalReRoute"
                                                                             data-route-id="{{ $log->route_id }}"
-                                                                            data-user-id="{{ $document->user_id }}"
+                                                                            data-user-id="{{ $log->user_id }}"
                                                                             @if ($isDisabled) disabled @endif>
                                                                             Re-route
                                                                         </button>
 
-                                                                        {{-- ✅ RE-OPEN (ONLY USER 56) --}}
                                                                         @if (auth()->id() == 56)
                                                                             <button type="button"
                                                                                 class="btn btn-sm btn-danger btnReopen"
-                                                                                data-doc-id="{{ $document->id }}"
+                                                                                data-doc-id="{{ $log->doc_id }}"
                                                                                 data-log-id="{{ $log->id }}"
-                                                                                {{-- pass the log id --}}
                                                                                 data-route-id="{{ $log->route_id }}"
-                                                                                data-user-id="{{ $document->user_id }}">
+                                                                                data-user-id="{{ $log->user_id }}">
                                                                                 <i class="fas fa-undo"></i> Re-open
                                                                             </button>
                                                                         @endif
-
                                                                     </div>
                                                                     <div class="col-md-3">
                                                                         <span
@@ -225,17 +216,6 @@
 
                                                     @php $previousLogTime = $log->updated_at; @endphp
                                                 @endforeach
-
-                                                @if ($allServed)
-                                                    <div>
-                                                        <i class="fa fa-check bg-success"></i>
-                                                        <div class="timeline-item">
-                                                            <div class="timeline-body text-center text-success">
-                                                                <strong>All documents were served successfully.</strong>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -250,8 +230,8 @@
                                         <div class="card-body">
                                             <p>
                                                 <strong>File Name:</strong>
-                                                {{ str_replace('_', ' ', $document->file_name) }}
-                                                <a href="{{ route('documents.viewPdf', $document->id) }}" target="_blank"
+                                                {{ str_replace('_', ' ', $doc->file_name) }}
+                                                <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
                                                     class="ml-2 btn btn-info btn-sm text-white">
                                                     View PDF <i class="fas fa-file-pdf ml-1"></i>
                                                 </a>
@@ -259,23 +239,23 @@
                                             <table class="table table-sm table-bordered text-sm">
                                                 <tr>
                                                     <th>Control No.</th>
-                                                    <td>{{ $document->route_id }}</td>
+                                                    <td>{{ $doc->route_id }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Subject</th>
-                                                    <td>{{ $document->subject }}</td>
+                                                    <td>{{ $doc->subject }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Source</th>
-                                                    <td>{{ $document->source }}</td>
+                                                    <td>{{ $doc->source }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Action</th>
-                                                    <td>{{ $document->trans_remarks }}</td>
+                                                    <td>{{ $doc->trans_remarks }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Created By</th>
-                                                    <td>{{ $document->full_name }}</td>
+                                                    <td>{{ $doc->full_name }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Recipient/s</th>
@@ -283,11 +263,11 @@
                                                         @php
                                                             $destinationUser = $users->firstWhere(
                                                                 'id',
-                                                                $document->r_destination ?? null,
+                                                                $doc->r_destination ?? null,
                                                             );
                                                             $assignedUser = $users->firstWhere(
                                                                 'id',
-                                                                $document->assigned_to ?? null,
+                                                                $doc->assigned_to ?? null,
                                                             );
                                                         @endphp
 
@@ -298,7 +278,7 @@
                                                             </strong>
                                                         @else
                                                             <strong
-                                                                class="text-danger">{{ $document->r_destination ?? 'N/A' }}</strong>
+                                                                class="text-danger">{{ $doc->r_destination ?? 'N/A' }}</strong>
                                                         @endif
 
                                                         @if ($assignedUser)
@@ -312,15 +292,15 @@
 
                                                 <tr>
                                                     <th>Created At</th>
-                                                    <td>{{ $document->created_at->format('F j, Y h:i A') }}</td>
+                                                    <td>{{ $doc->created_at->format('F j, Y h:i A') }}</td>
                                                 </tr>
                                             </table>
                                         </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
-
                     </div>
                 </div>
             @endforeach
@@ -334,36 +314,35 @@
                 </div>
             </div>
         @endif
-    </div>
 
 
-    <!-- SweetAlert2 -->
-    <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+        <!-- SweetAlert2 -->
+        <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
 
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const csrfToken = '{{ csrf_token() }}';
-            const newUser = {{ auth()->id() }};
-            const redirectUrl = window.location.href;
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const csrfToken = '{{ csrf_token() }}';
+                const newUser = {{ auth()->id() }};
+                const redirectUrl = window.location.href;
 
-            // Acknowledge Button
-            $('.swalAcknowledge').click(function() {
-                const docId = $(this).data('doc-id');
-                const routeId = $(this).data('route-id');
-                const userId = $(this).data('user-id');
+                // Acknowledge Button
+                $('.swalAcknowledge').click(function() {
+                    const docId = $(this).data('doc-id');
+                    const routeId = $(this).data('route-id');
+                    const userId = $(this).data('user-id');
 
-                if (!docId || !routeId || !userId) {
-                    console.error('Missing required data attributes.');
-                    return;
-                }
+                    if (!docId || !routeId || !userId) {
+                        console.error('Missing required data attributes.');
+                        return;
+                    }
 
-                const acknowledgeUrl = `/doctrack/public/documents/${docId}`;
+                    const acknowledgeUrl = `/doctrack/public/documents/${docId}`;
 
-                Swal.fire({
-                    title: 'Acknowledge Document',
-                    icon: 'info',
-                    html: `
+                    Swal.fire({
+                        title: 'Acknowledge Document',
+                        icon: 'info',
+                        html: `
                 <form id="swal-acknowledge-form" method="POST" action="${acknowledgeUrl}" enctype="multipart/form-data">
                     <input type="hidden" name="_token" value="${csrfToken}">
                     <input type="hidden" name="route_id" value="${routeId}">
@@ -383,32 +362,32 @@
                     </div>
                 </form>
             `,
-                    showConfirmButton: false,
-                    customClass: {
-                        popup: 'p-3 rounded-lg'
-                    },
-                    width: 600,
-                    padding: '1.5rem',
-                    heightAuto: false
+                        showConfirmButton: false,
+                        customClass: {
+                            popup: 'p-3 rounded-lg'
+                        },
+                        width: 600,
+                        padding: '1.5rem',
+                        heightAuto: false
+                    });
                 });
-            });
 
-            // Re-route Button
-            $('.swalReRoute').click(function() {
-                const routeId = $(this).data('route-id');
-                const userId = $(this).data('user-id');
+                // Re-route Button
+                $('.swalReRoute').click(function() {
+                    const routeId = $(this).data('route-id');
+                    const userId = $(this).data('user-id');
 
-                if (!routeId || !userId) {
-                    console.error('Missing required data attributes.');
-                    return;
-                }
+                    if (!routeId || !userId) {
+                        console.error('Missing required data attributes.');
+                        return;
+                    }
 
-                const reRouteUrl = `/doctrack/public/update-assign/${routeId}`;
+                    const reRouteUrl = `/doctrack/public/update-assign/${routeId}`;
 
-                Swal.fire({
-                    title: 'Re-route Slip Form',
-                    icon: 'info',
-                    html: `
+                    Swal.fire({
+                        title: 'Re-route Slip Form',
+                        icon: 'info',
+                        html: `
                 <form id="swal-reroute-form" method="POST" action="${reRouteUrl}" enctype="multipart/form-data">
                     <input type="hidden" name="_token" value="${csrfToken}">
                     <input type="hidden" name="route_id" value="${routeId}">
@@ -435,27 +414,27 @@
                     </div>
                 </form>
                 `,
-                    showConfirmButton: false,
-                    width: 650,
-                    padding: '2em'
+                        showConfirmButton: false,
+                        width: 650,
+                        padding: '2em'
+                    });
                 });
-            });
 
-            // Re-open Button (ONLY USER 56)
-            $('.btnReopen').click(function() {
-                const docId = $(this).data('doc-id');
-                const logId = $(this).data('log-id'); // ✅ new
-                const routeId = $(this).data('route-id');
-                const userId = $(this).data('user-id');
+                // Re-open Button (ONLY USER 56)
+                $('.btnReopen').click(function() {
+                    const docId = $(this).data('doc-id');
+                    const logId = $(this).data('log-id'); // ✅ new
+                    const routeId = $(this).data('route-id');
+                    const userId = $(this).data('user-id');
 
-                if (!docId || !logId || !routeId || !userId) return;
+                    if (!docId || !logId || !routeId || !userId) return;
 
-                const reopenUrl = `/doctrack/public/documents/${docId}`;
+                    const reopenUrl = `/doctrack/public/documents/${docId}`;
 
-                Swal.fire({
-                    title: 'Re-open Document',
-                    icon: 'warning',
-                    html: `
+                    Swal.fire({
+                        title: 'Re-open Document',
+                        icon: 'warning',
+                        html: `
             <form method="POST" action="${reopenUrl}">
                 <input type="hidden" name="_token" value="${csrfToken}">
                 <input type="hidden" name="route_id" value="${routeId}">
@@ -470,12 +449,12 @@
                 </div>
             </form>
         `,
-                    showConfirmButton: false,
-                    width: 600
+                        showConfirmButton: false,
+                        width: 600
+                    });
                 });
             });
-        });
-    </script>
+        </script>
 
 
 
@@ -484,7 +463,7 @@
 
 
 
-    {{-- <script>
+        {{-- <script>
         function updateAssign(routeId) {
             $.ajax({
                 url: '/update-assign/' + routeId,
@@ -501,6 +480,6 @@
             });
         }
     </script> --}}
-    @include('modal.addRoute')
-    @include('modal.reAssign')
-@endsection
+        @include('modal.addRoute')
+        @include('modal.reAssign')
+    @endsection

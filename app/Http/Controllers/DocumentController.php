@@ -184,17 +184,84 @@ public function dashboard()
 
 
 
+// public function tracking(Request $request)
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $fullName = $user->fname . ' ' . $user->lname;
+//     $routeId = $request->input('route_id');
+
+//     $query = Document::query()
+//         ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
+//         ->select(
+//             'documents.*',
+//             'routing_slip.routed_users',
+//             'routing_slip.r_destination',
+//             'routing_slip.trans_remarks',
+//             'routing_slip.source'
+//         );
+
+//     if ($routeId) {
+//         $query->where('documents.route_id', $routeId);
+//     }
+
+//     $documents = $query->get();
+
+//     $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
+//         // Convert routed_users to lowercase
+//         $routedUsers = explode(', ', $document->routed_users ?? '');
+//         $matchesRoutedUsers = in_array($fullName, $routedUsers);
+
+//         // Check logs (case-insensitive)
+//         $matchesLogs = \App\Models\Log::where('doc_id', $document->id)
+//             ->where('new_destination', $fullName)
+//             ->exists();
+
+//         // Owner or matched
+//         return $matchesRoutedUsers || $matchesLogs || $document->user_id == $userId;
+//     });
+
+//     // Routing slip counts
+//     $logs = Log::where('user_id', $userId)->get();
+
+//     $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+//         ? RoutingSlip::where('route_status', 3)->count()
+//         : 0;
+
+//     $superUserCount = $user->role === 'super_user'
+//         ? RoutingSlip::where('route_status', 1)->count()
+//         : 0;
+
+//     $recordsOfficerCount = $user->role === 'records_officer'
+//         ? RoutingSlip::where('route_status', 2)->count()
+//         : 0;
+
+//     $offices = Office::all();
+
+//     return view('track.tracktemp', [
+//         'documents' => $filteredDocuments,
+//         'offices' => $offices,
+//         'docNumber' => $routeId,
+//         'routingSlipCount' => $routingSlipCount,
+//         'superUserCount' => $superUserCount,
+//         'recordsOfficerCount' => $recordsOfficerCount,
+//     ]);
+// }
+
 public function tracking(Request $request)
 {
     $user = auth()->user();
     $userId = $user->id;
     $fullName = $user->fname . ' ' . $user->lname;
-    $routeId = $request->input('route_id');
+
+    $routeId = $request->input('route_id');              // rslip_id
+    $routingSlipId = $request->input('routing_slip_id'); // routing_slip.id
 
     $query = Document::query()
         ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
         ->select(
             'documents.*',
+            'routing_slip.id as routing_slip_id', // primary key of routing slip
             'routing_slip.routed_users',
             'routing_slip.r_destination',
             'routing_slip.trans_remarks',
@@ -205,26 +272,30 @@ public function tracking(Request $request)
         $query->where('documents.route_id', $routeId);
     }
 
+    if ($routingSlipId) {
+        $query->where('routing_slip.id', $routingSlipId);
+    }
+
     $documents = $query->get();
 
+    // ✅ Filter documents where the log's doc_id matches routing_slip_id
     $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
-        // Convert routed_users to lowercase
-        $routedUsers = explode(', ', $document->routed_users ?? '');
+
+        $routedUsers = array_map('trim', explode(',', $document->routed_users ?? ''));
         $matchesRoutedUsers = in_array($fullName, $routedUsers);
 
-        // Check logs (case-insensitive)
-        $matchesLogs = \App\Models\Log::where('doc_id', $document->id)
-            ->where('new_destination', $fullName)
+        // PRIORITY: only logs where logs.doc_id == routing_slip_id
+        $matchesLogs = \App\Models\Log::where('doc_id', $document->routing_slip_id)
+            ->whereRaw('LOWER(new_destination) = ?', [strtolower($fullName)])
             ->exists();
 
-        // Owner or matched
         return $matchesRoutedUsers || $matchesLogs || $document->user_id == $userId;
     });
 
-    // Routing slip counts
+    // Counts
     $logs = Log::where('user_id', $userId)->get();
 
-    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+    $routingSlipCount = $logs->every(fn ($log) => $log->status_update != 3)
         ? RoutingSlip::where('route_status', 3)->count()
         : 0;
 
@@ -236,17 +307,16 @@ public function tracking(Request $request)
         ? RoutingSlip::where('route_status', 2)->count()
         : 0;
 
-    $offices = Office::all();
-
     return view('track.tracktemp', [
         'documents' => $filteredDocuments,
-        'offices' => $offices,
+        'offices' => Office::all(),
         'docNumber' => $routeId,
         'routingSlipCount' => $routingSlipCount,
         'superUserCount' => $superUserCount,
         'recordsOfficerCount' => $recordsOfficerCount,
     ]);
 }
+
 
 
 public function storeDoc(Request $request)
