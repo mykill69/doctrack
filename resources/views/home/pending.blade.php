@@ -59,29 +59,44 @@
                                                     </td>
                                                     <td>
                                                         @php
-                                                            $destinationUser = $users->firstWhere(
-                                                                'id',
-                                                                $log->r_destination,
-                                                            );
-                                                            $assignedUser = $users->firstWhere('id', $log->assigned_to);
+                                                            $routingSlip = $log->routingSlip ?? null;
+
+                                                            $destinationUser = $routingSlip
+                                                                ? $users->firstWhere('id', $routingSlip->r_destination)
+                                                                : null;
+
+                                                            $assignedUser = $routingSlip
+                                                                ? $users->firstWhere('id', $routingSlip->assigned_to)
+                                                                : null;
                                                         @endphp
 
-                                                        @if ($destinationUser)
+                                                        {{-- Routing destination --}}
+                                                        @if ($routingSlip && $destinationUser)
                                                             <strong class="text-danger">
                                                                 {{ ucwords(strtolower($destinationUser->fname)) }}
                                                                 {{ ucwords(strtolower($destinationUser->lname)) }}
                                                             </strong>
-                                                        @else
-                                                            <strong
-                                                                class="text-danger">{{ ucwords(strtolower($log->r_destination)) }}</strong>
+                                                        @elseif ($routingSlip && $routingSlip->r_destination)
+                                                            <strong class="text-danger">
+                                                                {{ ucwords(strtolower($routingSlip->r_destination)) }}
+                                                            </strong>
                                                         @endif
 
-                                                        @if ($assignedUser)
-                                                            , was re-assigned to <strong
-                                                                class="text-danger">{{ $assignedUser->fname }}
-                                                                {{ $assignedUser->lname }}</strong>
+                                                        {{-- Re-assigned user --}}
+                                                        @if ($routingSlip && $assignedUser)
+                                                            , was re-assigned to
+                                                            <strong class="text-danger">
+                                                                {{ ucwords(strtolower($assignedUser->fname)) }}
+                                                                {{ ucwords(strtolower($assignedUser->lname)) }}
+                                                            </strong>
+                                                        @elseif ($routingSlip && $routingSlip->assigned_to)
+                                                            , was re-assigned to
+                                                            <strong class="text-danger">
+                                                                {{ ucwords(strtolower($routingSlip->assigned_to)) }}
+                                                            </strong>
                                                         @endif
                                                     </td>
+
 
                                                     <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td style="font-size:10px;width:5%;">
