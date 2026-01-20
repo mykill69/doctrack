@@ -92,9 +92,10 @@
         @if ($uniqueDocs->isNotEmpty())
             @foreach ($uniqueDocs as $doc)
                 @php
-                    $hasAccess = \App\Models\Log::where('doc_id', $doc->id)
-                        ->whereRaw('LOWER(TRIM(new_destination)) = ?', [$userFullName])
-                        ->exists();
+                    $hasAccess =
+                        \App\Models\Log::where('doc_id', $doc->id)
+                            ->whereRaw('LOWER(TRIM(new_destination)) = ?', [$userFullName])
+                            ->exists() || $doc->routing_slip_user_id === auth()->id();
                 @endphp
 
                 @if (!$hasAccess)
@@ -141,7 +142,7 @@
                                                     @endphp
 
                                                     <div>
-                                                        <i class="{{ $iconClass }}"></i> 
+                                                        <i class="{{ $iconClass }}"></i>
                                                         <div class="timeline-item">
                                                             <div class="timeline-header">
                                                                 <div class="row">
@@ -188,7 +189,7 @@
                                                                             data-user-id="{{ $log->user_id }}"
                                                                             @if ($isDisabled) disabled @endif>
                                                                             {{ $log->status_update == 3 ? 'Acknowledged' : 'Acknowledge' }}
-                                                                           
+
                                                                         </button>
 
                                                                         <button type="button"
