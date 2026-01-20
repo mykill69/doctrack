@@ -326,7 +326,7 @@
                     </div>
                 </div>
                 <div class="form-inline">
-                    <form action="{{ route('tracking') }}" method="GET" onsubmit="return validateForm()">
+                    {{-- <form action="{{ route('tracking') }}" method="GET" onsubmit="return validateForm()">
                         @csrf
                         <div class="input-group" data-widget="sidebar">
                             <input class="form-control form-control-sidebar text-sm" type="search" name="route_id"
@@ -338,7 +338,20 @@
                                 </button>
                             </div>
                         </div>
+                    </form> --}}
+                    <form action="{{ route('documents.tracking') }}" method="GET"
+                        onsubmit="return validateForm()">
+
+                        <div class="input-group">
+                            <input class="form-control form-control-sidebar text-sm" type="search" name="route_id"
+                                id="route_id" placeholder="Routed Docs CTRL #" value="{{ request('route_id') }}">
+
+                            <button class="btn btn-sidebar" type="submit" style="background:#1F5036">
+                                <i class="fas fa-search fa-fw text-white"></i>
+                            </button>
+                        </div>
                     </form>
+
                 </div>
                 @include('menu.sidebar')
             </div>
@@ -539,7 +552,7 @@
         });
     </script>
 
-    <script>
+    {{-- <script>
         // validate search bar entry
         function validateForm() {
             const docNumber = document.getElementById('route_id').value.trim();
@@ -549,7 +562,28 @@
             }
             return true; // Allow form submission
         }
+    </script> --}}
+    <script>
+        function validateForm() {
+            const input = document.getElementById('route_id');
+            const value = input.value.trim();
+
+            if (!value) {
+                alert("Please enter a valid document number.");
+                input.focus();
+                return false;
+            }
+
+            if (!/^\d+$/.test(value)) {
+                alert("Document number must be numeric.");
+                input.focus();
+                return false;
+            }
+
+            return true;
+        }
     </script>
+
     <script>
         $(document).ready(function() {
             // When the edit button is clicked
