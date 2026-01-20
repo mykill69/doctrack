@@ -322,7 +322,6 @@ public function dashboard()
 //         'recordsOfficerCount' => $recordsOfficerCount,
 //     ]);
 // }
-
 public function tracking(Request $request)
 {
     $user = auth()->user();
@@ -332,12 +331,21 @@ public function tracking(Request $request)
     $routeId = $request->query('route_id');
     $routingSlipId = $request->query('routing_slip_id');
 
-    // Auto-resolve routing_slip_id if missing
+    // 🔁 Force canonical URL like the <a href>
     if ($routeId && !$routingSlipId) {
-        $routingSlipId = RoutingSlip::where('rslip_id', $routeId)->value('id');
+        $routingSlipId = RoutingSlip::where('rslip_id', $routeId)
+            ->orderBy('id', 'desc')
+            ->value('id');
+
+        if ($routingSlipId) {
+            return redirect()->route('documents.tracking', [
+                'route_id' => $routeId,
+                'routing_slip_id' => $routingSlipId,
+            ]);
+        }
     }
 
-    $query = Document::query()
+    $documents = Document::query()
         ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
         ->select(
             'documents.*',
@@ -346,45 +354,28 @@ public function tracking(Request $request)
             'routing_slip.r_destination',
             'routing_slip.trans_remarks',
             'routing_slip.source'
-        );
+        )
+        ->where('documents.route_id', $routeId)
+        ->where('routing_slip.id', $routingSlipId)
+        ->get();
 
-    if ($routeId) {
-        $query->where('documents.route_id', $routeId);
-    }
-
-    if ($routingSlipId) {
-        $query->where('routing_slip.id', $routingSlipId);
-    }
-
-    $documents = $query->get();
-
-    // Filter access
     $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
-
         $routedUsers = array_map('trim', explode(',', $document->routed_users ?? ''));
-        $matchesRoutedUsers = in_array($fullName, $routedUsers);
 
-        $matchesLogs = Log::where('doc_id', $document->id)
-            ->whereRaw('LOWER(TRIM(new_destination)) = ?', [strtolower($fullName)])
-            ->exists();
-
-        return $matchesRoutedUsers || $matchesLogs || $document->user_id == $userId;
+        return in_array($fullName, $routedUsers)
+            || Log::where('doc_id', $document->id)
+                ->whereRaw('LOWER(TRIM(new_destination)) = ?', [strtolower($fullName)])
+                ->exists()
+            || $document->user_id == $userId;
     });
-
-    // Counts
-    $logs = Log::where('user_id', $userId)->get();
-
-    $routingSlipCount = $logs->every(fn ($log) => $log->status_update != 3)
-        ? RoutingSlip::where('route_status', 3)->count()
-        : 0;
 
     return view('track.tracktemp', [
         'documents' => $filteredDocuments,
         'offices' => Office::all(),
         'docNumber' => $routeId,
-        'routingSlipCount' => $routingSlipCount,
     ]);
 }
+
 
 
 public function storeDoc(Request $request)

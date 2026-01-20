@@ -326,7 +326,7 @@
                     </div>
                 </div>
                 <div class="form-inline">
-                    {{-- <form action="{{ route('tracking') }}" method="GET" onsubmit="return validateForm()">
+                    <form action="{{ route('tracking') }}" method="GET" onsubmit="return validateForm()">
                         @csrf
                         <div class="input-group" data-widget="sidebar">
                             <input class="form-control form-control-sidebar text-sm" type="search" name="route_id"
@@ -338,8 +338,8 @@
                                 </button>
                             </div>
                         </div>
-                    </form> --}}
-                    <form action="{{ route('documents.tracking') }}" method="GET"
+                    </form>
+                    {{-- <form action="{{ route('documents.tracking') }}" method="GET"
                         onsubmit="return validateForm()">
 
                         <div class="input-group">
@@ -350,7 +350,7 @@
                                 <i class="fas fa-search fa-fw text-white"></i>
                             </button>
                         </div>
-                    </form>
+                    </form> --}}
 
                 </div>
                 @include('menu.sidebar')
