@@ -36,274 +36,319 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h3 class="card-title">List of Routing Slips</h3>
                         </div>
-                      <div class="card-body">
-    <div class="card card-success card-outline">
+                        <div class="card-body">
+                            <div class="card card-success card-outline">
 
-        <div class="card-header p-2">
-            @php
-                $role = auth()->user()->role;
-            @endphp
+                                <div class="card-header p-2">
+                                    @php
+                                        $role = auth()->user()->role;
+                                    @endphp
 
-            @if ($role !== 'staff')
-                <ul class="nav nav-tabs" id="routingTabs" role="tablist">
-                    @php
-                        $tabs = [
-                            'routed2' => 'Routed back to Records',
-                            'routed1' => 'Routed to President',
-                            'enroute' => 'Pending',
-                        ];
-
-                        if ($role === 'super_user') {
-                            $tabs = [
-                                'routed1' => 'Routed to President',
-                                'routed2' => 'Routed back to Records',
-                                'enroute' => 'Pending',
-                            ];
-                        }
-                    @endphp
-
-                    @foreach ($tabs as $tabId => $label)
-                        <li class="nav-item">
-                            <a class="nav-link {{ $loop->first ? 'active' : '' }}"
-                                href="#{{ $tabId }}" data-toggle="tab">
-                                {{ $label }}
-                            </a>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-        </div>
-
-        <style>
-            .nav-tabs .nav-link.active {
-                background-color: #ffc107 !important;
-                color: #212529 !important;
-                font-weight: bold;
-            }
-        </style>
-
-        <div class="card-body">
-            <div class="tab-content">
-
-                {{-- ✅ determineTab WITHOUT status_update == 3 --}}
-                @php
-                    function determineTab($slip)
-                    {
-                        if ($slip->route_status == 2) {
-                            return 'routed2';
-                        }
-
-                        if ($slip->route_status == 1) {
-                            return 'routed1';
-                        }
-
-                        return 'enroute';
-                    }
-                @endphp
-
-                @if ($role !== 'staff')
-                    @foreach ($tabs as $tabId => $label)
-                        <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
-                            id="{{ $tabId }}">
-
-                            <div class="table-responsive mt-3">
-                                <table class="table table-bordered table-hover" style="font-size: 0.8rem;">
-                                    <thead>
-                                        <tr>
-                                            <th>CTRL #</th>
-                                            <th>DATE RECEIVED</th>
-                                            <th>SOURCE</th>
-                                            <th>SUBJECT MATTER</th>
-                                            <th>FILE NAME</th>
-                                            <th>TRANSACTION REMARKS</th>
-                                            <th>OTHER REMARKS</th>
-                                            <th>ACTION TAKEN</th>
-                                            <th>STATUS</th>
-                                            <th>RECEIVED BY/DATE</th>
-                                            <th>ACTION</th>
-                                        </tr>
-                                    </thead>
-
-                                    <tbody>
-                                        @foreach ($routingSlips as $slip)
+                                    @if ($role !== 'staff')
+                                        <ul class="nav nav-tabs" id="routingTabs" role="tablist">
                                             @php
-                                                $routeId = $slip->rslip_id;
+                                                $tabs = [
+                                                    'routed2' => 'Routed back to Records',
+                                                    'routed1' => 'Routed to President',
+                                                    'enroute' => 'Pending',
+                                                ];
 
-                                                // ✅ Lightweight checks only
-                                                $logStatusMatches = \App\Models\Log::where('route_id', $routeId)
-                                                    ->where('status_update', $slip->route_status)
-                                                    ->exists();
-
-                                                $existsInDocuments = \App\Models\Document::where('route_id', $routeId)
-                                                    ->exists();
-
-                                                $currentTab = determineTab($slip);
-
-                                                $isRecordsOfficer = auth()->user()->role === 'records_officer';
-                                                $isSuperUser = auth()->user()->role === 'super_user';
+                                                if ($role === 'super_user') {
+                                                    $tabs = [
+                                                        'routed1' => 'Routed to President',
+                                                        'routed2' => 'Routed back to Records',
+                                                        'enroute' => 'Pending',
+                                                    ];
+                                                }
                                             @endphp
 
-                                            @if ($currentTab === $tabId)
+                                            @foreach ($tabs as $tabId => $label)
+                                                <li class="nav-item">
+                                                    <a class="nav-link {{ $loop->first ? 'active' : '' }}"
+                                                        href="#{{ $tabId }}" data-toggle="tab">
+                                                        {{ $label }}
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                </div>
 
-                                            
-                                                <tr>
-                                                    @php
-    // Get the latest routing_slip_id for this rslip
-    $routingSlipId = \App\Models\RoutingSlip::where('rslip_id', $slip->rslip_id)
-                        ->orderBy('id', 'desc')
-                        ->value('id');
-@endphp
+                                <style>
+                                    .nav-tabs .nav-link.active {
+                                        background-color: #ffc107 !important;
+                                        color: #212529 !important;
+                                        font-weight: bold;
+                                    }
+                                </style>
 
-<a href="{{ route('slipForm', ['id' => $slip->rslip_id]) . '?routing_slip_id=' . $routingSlipId }}"
-   target="_blank" style="color:#007bff;">
-    @if ($isSuperUser || auth()->user()->role === 'Administrator')
-        {{ $slip->op_ctrl }}
-    @else
-        {{ $slip->rslip_id }}
-    @endif
-</a>
+                                <div class="card-body">
+                                    <div class="tab-content">
 
-                                                    <td>{{ \Carbon\Carbon::parse($slip->date_received)->format('F j, Y') }}</td>
-                                                    <td>{{ $slip->source }}</td>
-                                                    <td>{{ $slip->subject }}</td>
+                                        {{-- ✅ determineTab WITHOUT status_update == 3 --}}
+                                        @php
+                                            function determineTab($slip)
+                                            {
+                                                if ($slip->route_status == 2) {
+                                                    return 'routed2';
+                                                }
 
-                                                    <td>
-                                                        <a href="{{ route('viewPdfslip', $slip->id) }}"
-                                                            target="_blank" style="color:#007bff;">
-                                                            {{ \Illuminate\Support\Str::limit($slip->document, 22) }}
-                                                        </a>
-                                                    </td>
+                                                if ($slip->route_status == 1) {
+                                                    return 'routed1';
+                                                }
 
-                                                    <td>{{ $slip->trans_remarks }}</td>
-                                                    <td>{{ $slip->other_remarks }}</td>
+                                                return 'enroute';
+                                            }
+                                        @endphp
 
-                                                    <td>{{ $slip->r_destination }}</td>
+                                        @if ($role !== 'staff')
+                                            @foreach ($tabs as $tabId => $label)
+                                                <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
+                                                    id="{{ $tabId }}">
 
-                                                    {{-- ✅ STATUS (NO status_update == 3 CHECKS) --}}
-                                                    <td>
-                                                        @switch($slip->route_status)
-                                                            @case(1)
-                                                                <span class="badge badge-warning" style="font-size:9px;">
-                                                                    Routed to President
-                                                                </span>
-                                                                @break
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-bordered table-hover"
+                                                            style="font-size: 0.8rem;">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>CTRL #</th>
+                                                                    <th>DATE RECEIVED</th>
+                                                                    <th>SOURCE</th>
+                                                                    <th>SUBJECT MATTER</th>
+                                                                    <th>FILE NAME</th>
+                                                                    <th>TRANSACTION REMARKS</th>
+                                                                    <th>OTHER REMARKS</th>
+                                                                    <th>ACTION TAKEN</th>
+                                                                    <th>STATUS</th>
+                                                                    <th>RECEIVED BY/DATE</th>
+                                                                    <th>ACTION</th>
+                                                                </tr>
+                                                            </thead>
 
-                                                            @case(2)
-                                                                <span class="badge badge-info" style="font-size:9px;">
-                                                                    Routed back to Records
-                                                                </span>
-                                                                @break
+                                                            <tbody>
+                                                                @foreach ($routingSlips as $slip)
+                                                                    @php
+                                                                        $routeId = $slip->rslip_id;
 
-                                                            @case(3)
-                                                                <span class="badge badge-success" style="font-size:9px;">
-                                                                    Served!
-                                                                </span>
-                                                                @break
-                                                        @endswitch
-                                                    </td>
+                                                                        // ✅ Lightweight checks only
+                                                                        $logStatusMatches = \App\Models\Log::where(
+                                                                            'route_id',
+                                                                            $routeId,
+                                                                        )
+                                                                            ->where(
+                                                                                'status_update',
+                                                                                $slip->route_status,
+                                                                            )
+                                                                            ->exists();
 
-                                                    <td>
-                                                        {{ $slip->pres_dept }} /
-                                                        {{ $slip->updated_at->format('F j, Y') }}
-                                                    </td>
+                                                                        $existsInDocuments = \App\Models\Document::where(
+                                                                            'route_id',
+                                                                            $routeId,
+                                                                        )->exists();
 
-                                                    {{-- ACTION --}}
-                                                    <td>
-                                                    <div class="btn-group btn-group-sm">
-                                                        @php
-                                                            $isRecordsOfficer = auth()->user()->role === 'records_officer';
-                                                            $isSuperUser = auth()->user()->role === 'super_user';
-                                                        @endphp
+                                                                        $currentTab = determineTab($slip);
 
-                                                        {{-- EDIT / ASSIGN LOGIC --}}
-                                                        @if ($isRecordsOfficer && $slip->route_status == 2)
-                                                            @if ($slip->assigned_to != null)
-                                                                {{-- If already assigned, show editAssign --}}
-                                                                <a href="{{ route('editAssign', $slip->id) }}" class="btn btn-info" style="text-decoration: none; color: white;">
-                                                                    <i class="fas fa-plus"></i>
-                                                                </a>
-                                                            @else
-                                                                {{-- Not assigned yet, default to editDest --}}
-                                                                <a href="{{ route('editDest', $slip->id) }}" class="btn btn-info" style="text-decoration: none; color: white;">
-                                                                    <i class="fas fa-plus"></i>
-                                                                </a>
-                                                            @endif
+                                                                        $isRecordsOfficer =
+                                                                            auth()->user()->role === 'records_officer';
+                                                                        $isSuperUser =
+                                                                            auth()->user()->role === 'super_user';
+                                                                    @endphp
 
-                                                        @elseif ($isSuperUser && $slip->route_status == 1)
-                                                            <a href="{{ route('editSlip', $slip->id) }}" class="btn btn-info" style="text-decoration: none; color: white;">
-                                                                <i class="fas fa-pen"></i>
-                                                            </a>
+                                                                    @if ($currentTab === $tabId)
+                                                                        <tr>
+                                                                            <td>
+                                                                                @php
+                                                                                    // Get the latest routing_slip_id for this rslip
+                                                                                    $routingSlipId = \App\Models\RoutingSlip::where(
+                                                                                        'rslip_id',
+                                                                                        $slip->rslip_id,
+                                                                                    )
+                                                                                        ->orderBy('id', 'desc')
+                                                                                        ->value('id');
+                                                                                @endphp
 
-                                                        @elseif ($isSuperUser && $slip->route_status == 3)
-                                                            <button class="btn btn-secondary" disabled>
-                                                                <i class="fas fa-pen"></i>
-                                                            </button>
+                                                                                <a href="{{ route('slipForm', ['id' => $slip->rslip_id]) . '?routing_slip_id=' . $routingSlipId }}"
+                                                                                    target="_blank" style="color:#007bff;">
+                                                                                    @if ($isSuperUser || auth()->user()->role === 'Administrator')
+                                                                                        {{ $slip->op_ctrl }}
+                                                                                    @else
+                                                                                        {{ $slip->rslip_id }}
+                                                                                    @endif
+                                                                                </a>
+                                                                            </td>
 
-                                                        @elseif ($slip->route_status == 3)
-                                                            @if ($existsInDocuments)
-                                                                <button class="btn btn-secondary" disabled>
-                                                                    <i class="fas fa-plus"></i>
-                                                                </button>
-                                                            @else
-                                                                <a href="{{ route('editDest', $slip->id) }}" class="btn btn-info" style="text-decoration: none; color: white;">
-                                                                    <i class="fas fa-plus"></i>
-                                                                </a>
-                                                            @endif
+                                                                            <td>{{ \Carbon\Carbon::parse($slip->date_received)->format('F j, Y') }}
+                                                                            </td>
+                                                                            <td>{{ $slip->source }}</td>
+                                                                            <td>{{ $slip->subject }}</td>
 
-                                                        @elseif ($slip->route_status == 2 && $logStatusMatches)
-                                                            <button class="btn btn-secondary" disabled>
-                                                                <i class="fas fa-plus"></i>
-                                                            </button>
+                                                                            <td>
+                                                                                <a href="{{ route('viewPdfslip', $slip->id) }}"
+                                                                                    target="_blank" style="color:#007bff;">
+                                                                                    {{ \Illuminate\Support\Str::limit($slip->document, 22) }}
+                                                                                </a>
+                                                                            </td>
 
-                                                        @else
-                                                            <button class="btn btn-secondary" disabled>
-                                                                <i class="fas fa-pen"></i>
-                                                            </button>
-                                                        @endif
+                                                                            <td>{{ $slip->trans_remarks }}</td>
+                                                                            <td>{{ $slip->other_remarks }}</td>
 
-                                                        {{-- DELETE --}}
-                                                        <form action="{{ route('routingSlip.destroy', $slip->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this routing slip?');">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-danger no-left-radius"
-                                                                @if(
-                                                                    ($isRecordsOfficer && !empty($slip->trans_remarks) && !empty($slip->r_destination)) ||
-                                                                    ($isSuperUser && !empty($slip->trans_remarks) && !empty($slip->r_destination))
-                                                                ) disabled @endif>
-                                                                <i class="fas fa-trash"></i>
-                                                            </button>
-                                                        </form>
+                                                                            <td>{{ $slip->r_destination }}</td>
 
-                                                        {{-- RECALL --}}
-                                                        @if ($slip->route_status == 3 && ($isRecordsOfficer || auth()->user()->role === 'Administrator'))
-                                                            @php
-                                                                $hasStatus2Log = \App\Models\Log::where('route_id', $slip->rslip_id)
-                                                                    ->where('status_update', 2)
-                                                                    ->exists();
-                                                            @endphp
+                                                                            {{-- ✅ STATUS (NO status_update == 3 CHECKS) --}}
+                                                                            <td>
+                                                                                @switch($slip->route_status)
+                                                                                    @case(1)
+                                                                                        <span class="badge badge-warning"
+                                                                                            style="font-size:9px;">
+                                                                                            Routed to President
+                                                                                        </span>
+                                                                                    @break
 
-                                                            @if ($hasStatus2Log)
-                                                                <a href="{{ route('recallSlip', $slip->id) }}" class="btn btn-primary no-left-radius" title="Recall">
-                                                                    <i class="fas fa-undo"></i>
-                                                                </a>
-                                                            @endif
-                                                        @endif
+                                                                                    @case(2)
+                                                                                        <span class="badge badge-info"
+                                                                                            style="font-size:9px;">
+                                                                                            Routed back to Records
+                                                                                        </span>
+                                                                                    @break
+
+                                                                                    @case(3)
+                                                                                        <span class="badge badge-success"
+                                                                                            style="font-size:9px;">
+                                                                                            Served!
+                                                                                        </span>
+                                                                                    @break
+                                                                                @endswitch
+                                                                            </td>
+
+                                                                            <td>
+                                                                                {{ $slip->pres_dept }} /
+                                                                                {{ $slip->updated_at->format('F j, Y') }}
+                                                                            </td>
+
+                                                                            {{-- ACTION --}}
+                                                                            <td>
+                                                                                <div class="btn-group btn-group-sm">
+                                                                                    @php
+                                                                                        $isRecordsOfficer =
+                                                                                            auth()->user()->role ===
+                                                                                            'records_officer';
+                                                                                        $isSuperUser =
+                                                                                            auth()->user()->role ===
+                                                                                            'super_user';
+                                                                                    @endphp
+
+                                                                                    {{-- EDIT / ASSIGN LOGIC --}}
+                                                                                    @if ($isRecordsOfficer && $slip->route_status == 2)
+                                                                                        @if ($slip->assigned_to != null)
+                                                                                            {{-- If already assigned, show editAssign --}}
+                                                                                            <a href="{{ route('editAssign', $slip->id) }}"
+                                                                                                class="btn btn-info"
+                                                                                                style="text-decoration: none; color: white;">
+                                                                                                <i class="fas fa-plus"></i>
+                                                                                            </a>
+                                                                                        @else
+                                                                                            {{-- Not assigned yet, default to editDest --}}
+                                                                                            <a href="{{ route('editDest', $slip->id) }}"
+                                                                                                class="btn btn-info"
+                                                                                                style="text-decoration: none; color: white;">
+                                                                                                <i class="fas fa-plus"></i>
+                                                                                            </a>
+                                                                                        @endif
+                                                                                        @elseif
+                                                                                        ($isSuperUser && $slip->route_status == 1)
+                                                                                        <a href="{{ route('editSlip', $slip->id) }}"
+                                                                                            class="btn btn-info"
+                                                                                            style="text-decoration: none; color: white;">
+                                                                                            <i class="fas fa-pen"></i>
+                                                                                        </a>
+                                                                                        @elseif
+                                                                                        ($isSuperUser && $slip->route_status == 3)
+                                                                                        <button class="btn btn-secondary"
+                                                                                            disabled>
+                                                                                            <i class="fas fa-pen"></i>
+                                                                                        </button>
+                                                                                        @elseif
+                                                                                        ($slip->route_status == 3)
+                                                                                        @if ($existsInDocuments)
+                                                                                            <button
+                                                                                                class="btn btn-secondary"
+                                                                                                disabled>
+                                                                                                <i class="fas fa-plus"></i>
+                                                                                            </button>
+                                                                                        @else
+                                                                                            <a href="{{ route('editDest', $slip->id) }}"
+                                                                                                class="btn btn-info"
+                                                                                                style="text-decoration: none; color: white;">
+                                                                                                <i class="fas fa-plus"></i>
+                                                                                            </a>
+                                                                                        @endif
+                                                                                        @elseif
+                                                                                        ($slip->route_status == 2 && $logStatusMatches)
+                                                                                        <button class="btn btn-secondary"
+                                                                                            disabled>
+                                                                                            <i class="fas fa-plus"></i>
+                                                                                        </button>
+                                                                                    @else
+                                                                                        <button class="btn btn-secondary"
+                                                                                            disabled>
+                                                                                            <i class="fas fa-pen"></i>
+                                                                                        </button>
+                                                                                    @endif
+
+                                                                                    {{-- DELETE --}}
+                                                                                    <form
+                                                                                        action="{{ route('routingSlip.destroy', $slip->id) }}"
+                                                                                        method="POST"
+                                                                                        onsubmit="return confirm('Are you sure you want to delete this routing slip?');">
+                                                                                        @csrf
+                                                                                        @method('DELETE')
+                                                                                        <button type="submit"
+                                                                                            class="btn btn-danger no-left-radius"
+                                                                                            @if (
+                                                                                                ($isRecordsOfficer && !empty($slip->trans_remarks) && !empty($slip->r_destination)) ||
+                                                                                                    ($isSuperUser && !empty($slip->trans_remarks) && !empty($slip->r_destination))) disabled @endif>
+                                                                                            <i class="fas fa-trash"></i>
+                                                                                        </button>
+                                                                                    </form>
+
+                                                                                    {{-- RECALL --}}
+                                                                                    @if ($slip->route_status == 3 && ($isRecordsOfficer || auth()->user()->role === 'Administrator'))
+                                                                                        @php
+                                                                                            $hasStatus2Log = \App\Models\Log::where(
+                                                                                                'route_id',
+                                                                                                $slip->rslip_id,
+                                                                                            )
+                                                                                                ->where(
+                                                                                                    'status_update',
+                                                                                                    2,
+                                                                                                )
+                                                                                                ->exists();
+                                                                                        @endphp
+
+                                                                                        @if ($hasStatus2Log)
+                                                                                            <a href="{{ route('recallSlip', $slip->id) }}"
+                                                                                                class="btn btn-primary no-left-radius"
+                                                                                                title="Recall">
+                                                                                                <i class="fas fa-undo"></i>
+                                                                                            </a>
+                                                                                        @endif
+                                                                                    @endif
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endif
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
                                                     </div>
-                                                </td>
-                                                </tr>
-                                            @endif
-                                        @endforeach
-                                    </tbody>
-                                </table>
+                                                </div>
+                                            @endforeach
+                                        @endif
+
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    @endforeach
-                @endif
-
-            </div>
-        </div>
-    </div>
-</div>
 
                     </div>
                 </div>
