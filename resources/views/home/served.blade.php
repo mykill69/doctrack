@@ -60,9 +60,21 @@
                                                         trim($log->new_destination) === trim($userFullName) ||
                                                         trim($log->new_destination) === trim($userDepartment))
                                                     <tr>
-                                                        <td><a href="{{ route('slipForm', $log->route_id) }}"
-                                                                style="color: #007bff;"
-                                                                target="_blank">{{ $log->route_id }}</a></td>
+                                                        @php
+                                                            $routingSlipId = \App\Models\RoutingSlip::where(
+                                                                'rslip_id',
+                                                                $log->route_id,
+                                                            )
+                                                                ->orderBy('id', 'desc')
+                                                                ->value('id');
+                                                        @endphp
+
+                                                        <td data-order="{{ $log->route_id ?? 0 }}">
+                                                            <a href="{{ route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId }}"
+                                                                target="_blank" style="color: #007bff;">
+                                                                {{ $log->route_id }}
+                                                            </a>
+                                                        </td>
                                                         <td>
                                                             {{ optional($document->routingSlip)->date_received
                                                                 ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('F d, Y')
@@ -197,10 +209,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
     <script>
-    $('#example1').DataTable({
-        "pageLength": 50
-    });
-</script>
-
-
+        $('#example1').DataTable({
+            "pageLength": 50
+        });
+    </script>
 @endsection

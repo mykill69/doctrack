@@ -86,6 +86,13 @@
                                             @foreach ($logsToShow as $log)
                                                 @php
                                                     $document = $log->document;
+
+                                                    $routingSlipId = \App\Models\RoutingSlip::where(
+                                                        'rslip_id',
+                                                        $log->route_id,
+                                                    )
+                                                        ->orderBy('id', 'desc')
+                                                        ->value('id');
                                                 @endphp
                                                 <tr>
                                                     {{-- <td>
@@ -101,7 +108,7 @@
                                                         @if ($log->route_id == 0)
                                                             N/A
                                                         @else
-                                                            <a href="{{ route('slipForm', ['id' => $log->route_id]) }}"
+                                                            <a href="{{ route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId }}"
                                                                 target="_blank" style="color: #007bff;">
                                                                 {{ $log->route_id }}
                                                             </a>
@@ -222,8 +229,11 @@
                                                             </small>
                                                         </p>
                                                     </td>
-                                                    <td><span class="badge badge-secondary">{{$log->new_destination}}</span> <br> 
-                                                        {{ $log->updated_at->format('m-d-Y h:i:s A') }}</td>
+                                                    <td><span
+                                                            class="badge badge-secondary">{{ $log->new_destination }}</span>
+                                                        <br>
+                                                        {{ $log->updated_at->format('m-d-Y h:i:s A') }}
+                                                    </td>
                                                     <td>
                                                         @php
                                                             $documentCreatedAt = \Carbon\Carbon::parse(
