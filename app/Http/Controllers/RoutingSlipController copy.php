@@ -249,49 +249,28 @@ public function viewPdfslip($id)
     }
 }
 
-public function slipForm(Request $request, $id)
+
+public function slipForm($id)
 {
     /** @var \App\Models\User $user */
     $user = auth()->user();
 
-    // ✅ Get routing_slip_id
-    $routingSlipId = $request->query('routing_slip_id');
+    // Fetch the routing slip record based on the given ID
+    $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
 
-    // ✅ Fallback (same logic as tracking/pdf)
-    if (!$routingSlipId) {
-        $routingSlipId = DB::table('routing_slip')
-            ->where('rslip_id', $id)
-            ->orderByDesc('id')
-            ->value('id');
-    }
-
-    // ✅ Get EXACT routing slip version
-    $routingSlip = DB::table('routing_slip')
-        ->where('rslip_id', $id)
-        ->where('id', $routingSlipId)
-        ->first();
-
+    // Fetch all remarks from the remarks table
     $remarks = Remark::all();
 
-    $relatedDocuments = DB::table('documents')
-        ->where('route_id', $id)
-        ->get();
-
+    // Fetch related documents
+    $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
     $users = User::select('id', 'fname', 'lname')->get();
 
-    $recordsOfficerCount = $user->hasRole('records_officer')
-        ? RoutingSlip::where('route_status', 2)->count()
-        : 0;
-
-    $superUserCount = $user->hasRole('super_user')
-        ? RoutingSlip::where('route_status', 1)->count()
-        : 0;
+    $recordsOfficerCount = $user->hasRole('records_officer') ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $user->hasRole('super_user') ? RoutingSlip::where('route_status', 1)->count() : 0;
 
     return view('slip.slipForm', compact(
         'remarks',
         'routingSlip',
-        'routingSlipId', // ✅ IMPORTANT
-        'id',            // route_id
         'relatedDocuments',
         'recordsOfficerCount',
         'superUserCount',
@@ -338,42 +317,20 @@ public function slipForm(Request $request, $id)
 //     return $pdf->stream('routing-slip.pdf');
 // }
 
-public function pdfSlip(Request $request, $id)
+public function pdfSlip($id)
 {
-    // ✅ Get routing_slip_id
-    $routingSlipId = $request->query('routing_slip_id');
-
-    // ✅ Fallback
-    if (!$routingSlipId) {
-        $routingSlipId = DB::table('routing_slip')
-            ->where('rslip_id', $id)
-            ->orderByDesc('id')
-            ->value('id');
-    }
-
-    // ✅ Get EXACT routing slip
-    $routingSlip = DB::table('routing_slip')
-        ->where('rslip_id', $id)
-        ->where('id', $routingSlipId)
-        ->first();
-
+    $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
     $remarks = Remark::all();
+    $relatedDocuments = DB::table('documents')->where('route_id', $id)->get();
 
-    $relatedDocuments = DB::table('documents')
-        ->where('route_id', $id)
-        ->get();
-
-    // ✅ Logs (still route-based unless you add routing_slip_id column)
+    // Logs with action 're-assigned' or 'Acknowledged' and new_destination not null
     $logs = DB::table('logs')
         ->where('route_id', $id)
         ->whereIn('action', ['re-assigned', 'Acknowledged'])
         ->whereNotNull('new_destination')
         ->get();
 
-    // ==============================
-    // REASSIGNING USER LOGIC
-    // ==============================
-
+    // First try via assign_logs
     $reassigningUser = DB::table('logs')
         ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
         ->join('users', 'assign_logs.new_user', '=', 'users.id')
@@ -385,7 +342,7 @@ public function pdfSlip(Request $request, $id)
 
     $reassignUserDept = $reassigningUser->department ?? null;
 
-    // ✅ Fallback
+    // Fallback: check logs.new_user if assign_logs gave no valid user
     if (!$reassigningUser || empty($reassigningUser->id)) {
         $directUser = DB::table('logs')
             ->join('users', 'logs.new_user', '=', 'users.id')
@@ -404,55 +361,53 @@ public function pdfSlip(Request $request, $id)
     $reassigningUserEsig = null;
     $groupName = null;
 
-    // ==============================
-    // GROUP FALLBACK LOGIC
-    // ==============================
+// If no logs found at all, check assigned_to and match logs.new_user to users.id
+if ($logs->isEmpty()) {
+    $assignedTo = DB::table('logs')
+        ->where('route_id', $id)
+        ->whereNotNull('assigned_to')
+        ->orderByDesc('id')
+        ->value('assigned_to');
 
-    if ($logs->isEmpty()) {
-        $assignedTo = DB::table('logs')
-            ->where('route_id', $id)
-            ->whereNotNull('assigned_to')
-            ->orderByDesc('id')
-            ->value('assigned_to');
+    if ($assignedTo) {
+        $group = \App\Models\Group::where('group_name', $assignedTo)->first();
 
-        if ($assignedTo) {
-            $group = \App\Models\Group::where('group_name', $assignedTo)->first();
+        if ($group) {
+            $groupName = $group->group_name;
 
-            if ($group) {
-                $groupName = $group->group_name;
+            // Get latest log with new_user for this group
+            $logWithUser = DB::table('logs')
+                ->where('route_id', $id)
+                ->whereNotNull('new_user')
+                ->orderByDesc('id')
+                ->first();
 
-                $logWithUser = DB::table('logs')
-                    ->where('route_id', $id)
-                    ->whereNotNull('new_user')
-                    ->orderByDesc('id')
+            if ($logWithUser && $logWithUser->new_user) {
+                // Ensure the user belongs to this group
+                $userForGroup = $group->users()
+                    ->where('users.id', $logWithUser->new_user)
+                    ->select('users.id', 'users.fname', 'users.lname', 'users.department')
                     ->first();
 
-                if ($logWithUser && $logWithUser->new_user) {
-                    $userForGroup = $group->users()
-                        ->where('users.id', $logWithUser->new_user)
-                        ->select('users.id', 'users.fname', 'users.lname', 'users.department')
-                        ->first();
-
-                    if ($userForGroup) {
-                        $reassigningUser = $userForGroup;
-                        $reassignUserDept = $userForGroup->department;
-                        $reassigningUserEsig = Esig::where('user_id', $userForGroup->id)->first();
-                    }
+                if ($userForGroup) {
+                    $reassigningUser = $userForGroup;
+                    $reassignUserDept = $userForGroup->department;
+                    $reassigningUserEsig = Esig::where('user_id', $userForGroup->id)->first();
                 }
             }
         }
     }
+}
 
-    // ✅ Always load esig
+
+    // Always fetch esig if we have a valid reassigningUser
     if ($reassigningUser && !isset($reassigningUserEsig)) {
         $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id)->first();
     }
 
-    // ==============================
-    // PRESIDENT ESIGNATURE
-    // ==============================
-
+    // Determine e-signature based on president department
     $esigUserId = match ($routingSlip->pres_dept) {
+        // "PRESIDENT'S OFFICE" => 38,
         "Dr. Aladino C. Moraca" => 38,
         'VPAF' => 63,
         'VPAA' => 64,
@@ -460,19 +415,15 @@ public function pdfSlip(Request $request, $id)
     };
 
     $esig = null;
-
     if ($esigUserId) {
         $esig = Esig::where('user_id', $esigUserId)->first();
-
         if ($esig && $esig->esig_file) {
             $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
         }
     }
 
-    // ==============================
-    // PDF GENERATION
-    // ==============================
 
+    // Pass data to view
     $pdf = Pdf::loadView('slip.pdfSlip', compact(
         'remarks',
         'routingSlip',
@@ -485,16 +436,19 @@ public function pdfSlip(Request $request, $id)
         'groupName'
     ));
 
-    $pdf->setPaper('letter', 'portrait');
-    $pdf->setOption('isRemoteEnabled', true);
-    $pdf->setOption('isHtml5ParserEnabled', true);
-    $pdf->setOption('margin-top', 0);
-    $pdf->setOption('margin-right', 0);
-    $pdf->setOption('margin-bottom', 0);
-    $pdf->setOption('margin-left', 0);
+$pdf->setPaper('letter', 'portrait');           // full Letter canvas
+$pdf->setOption('isRemoteEnabled', true);
+$pdf->setOption('isHtml5ParserEnabled', true);
 
-    return $pdf->stream('routing-slip.pdf');
+// Remove DomPDF default margins so absolute positioning is exact
+$pdf->setOption('margin-top', 0);
+$pdf->setOption('margin-right', 0);
+$pdf->setOption('margin-bottom', 0);
+$pdf->setOption('margin-left', 0);
+
+return $pdf->stream('routing-slip.pdf');
 }
+
 
 
 

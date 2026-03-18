@@ -42,17 +42,8 @@
                                         <tbody>
                                             @foreach ($logs as $log)
                                                 <tr>
-                                                    @php
-                                                        $routingSlipId = \App\Models\RoutingSlip::where(
-                                                            'rslip_id',
-                                                            $log->route_id,
-                                                        )
-                                                            ->orderBy('id', 'desc')
-                                                            ->value('id');
-                                                    @endphp
-
                                                     <td data-order="{{ $log->route_id ?? 0 }}">
-                                                        <a href="{{ route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId }}"
+                                                        <a href="{{ route('slipForm', ['id' => $log->route_id]) }}"
                                                             target="_blank" style="color: #007bff;">
                                                             {{ $log->route_id }}
                                                         </a>
