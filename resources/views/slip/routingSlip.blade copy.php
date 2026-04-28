@@ -254,18 +254,19 @@
                                                                                                 <i class="fas fa-plus"></i>
                                                                                             </a>
                                                                                         @endif
-                                                                                    @elseif ($isSuperUser && $slip->route_status == 1)
+                                                                                        @elseif ($isSuperUser && $slip->route_status == 1)
                                                                                         <a href="{{ route('editSlip', $slip->id) }}"
                                                                                             class="btn btn-info"
                                                                                             style="text-decoration: none; color: white;">
                                                                                             <i class="fas fa-pen"></i>
                                                                                         </a>
-                                                                                    @elseif ($isSuperUser && $slip->route_status == 3)
+                                                                                        @elseif ($isSuperUser && $slip->route_status == 3)
                                                                                         <button class="btn btn-secondary"
                                                                                             disabled>
                                                                                             <i class="fas fa-pen"></i>
                                                                                         </button>
-                                                                                    @elseif ($slip->route_status == 3)
+                                                                                        @elseif
+                                                                                        ($slip->route_status == 3)
                                                                                         @if ($existsInDocuments)
                                                                                             <button
                                                                                                 class="btn btn-secondary"
@@ -279,7 +280,7 @@
                                                                                                 <i class="fas fa-plus"></i>
                                                                                             </a>
                                                                                         @endif
-                                                                                    @elseif ($slip->route_status == 2 && $logStatusMatches)
+                                                                                        @elseif ($slip->route_status == 2 && $logStatusMatches)
                                                                                         <button class="btn btn-secondary"
                                                                                             disabled>
                                                                                             <i class="fas fa-plus"></i>
