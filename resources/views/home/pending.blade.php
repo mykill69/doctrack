@@ -141,19 +141,18 @@
                                                     </td>
 
                                                     <td>
-                                                        <a href="{{ route('documents.viewPdf', $log->doc_id) }}"
-                                                            target="_blank" style="color: #007bff;">
-                                                            <i class="fas fa-file-pdf text-danger"></i>
-                                                            {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
-                                                        </a>
-                                                        <p>
-                                                            <small class="text-muted">
-                                                                @if ($log->viewed_status)
-                                                                    Viewed on <br>
-                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
-                                                                @else
-                                                                @endif
-                                                            </small>
+                                                        @if ($log->doc_id)
+                                                            <a href="{{ route('documents.viewPdf', ['id' => $log->doc_id]) }}"
+                                                                target="_blank" style="color: #007bff;">
+                                                                <i class="fas fa-file-pdf text-danger"></i>
+                                                                {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
+                                                            </a>
+                                                        @else
+                                                            <span class="text-muted">
+                                                                <i class="fas fa-file-times text-secondary"></i>
+                                                                No PDF Available
+                                                            </span>
+                                                        @endif
                                                         </p>
                                                     </td>
                                                     {{-- <td>{{ $log->new_destination }}</td> --}}

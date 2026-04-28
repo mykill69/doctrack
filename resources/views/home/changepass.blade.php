@@ -108,5 +108,5 @@
                 message.style.display = 'none';
             }
         }
-        </script>
-    @endsection
+    </script>
+@endsection

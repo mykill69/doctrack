@@ -580,7 +580,10 @@ public function pending()
         ->get();
 
     // Step 2: Remove duplicate doc_id
-    $logs = $logs->unique('doc_id')->values();
+    // $logs = $logs->unique('doc_id')->values();
+    $logs = $logs->whereNotNull('doc_id')
+             ->unique('doc_id')
+             ->values();
 
     // Step 3: Other data
     $offices = Office::all();
