@@ -33,7 +33,7 @@
             box-shadow: 0 20px 30px rgba(0, 0, 0, 0.2) !important;
         }
 
-        /* Animated fade-in elements */
+        /* Animated fade-in elements - keep the entrance animation */
         .login-logo,
         .input-group,
         .icheck-primary,
@@ -64,70 +64,110 @@
             background-color: #bcbdbc !important;
         }
 
-        /* Outer card wrapper with glowing border */
+        /* Outer card wrapper with glowing border - keep border effect */
         .login-card {
             border: 1px solid #04401f;
             border-radius: 10px;
             padding: 3px;
-            /* space for glow */
             box-sizing: border-box;
             animation: borderGlow 3s infinite;
         }
 
-        /* Inner card body */
+        /* Inner card body - remove hover expand and background changes */
         .login-card-body {
             position: relative;
-            height: 240px;
-            overflow: hidden;
             border-radius: 10px;
             background-color: white;
-            transition: height 0.5s ease, background-color 0.5s ease;
+            transition: none; /* Remove all transitions */
             box-sizing: border-box;
             box-shadow: 0 0 5px rgba(255, 255, 255, 0.5) !important;
+            /* Fixed height - remove dynamic height on hover */
+            height: auto;
+            min-height: 380px;
         }
 
-        /* Expand on hover and change background to transparent */
-        .login-card-body:hover {
-            height: 380px;
-            background-color: transparent;
-            border: 1px solid white !important;
-            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5) !important;
-            color: #fff;
-        }
+        /* Completely remove hover effects that change height/background */
+        /* No hover styles for login-card-body */
 
-        /* Form field animation */
+        /* Form fields stay visible at all times - no opacity/transform tricks */
         .login-card-body form .input-group,
         .login-card-body form .row.mt-4,
         .login-card-body form span.form-text {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
-            pointer-events: none;
-        }
-
-        /* Show form fields on hover */
-        .login-card-body:hover form .input-group,
-        .login-card-body:hover form .row.mt-4,
-        .login-card-body:hover form span.form-text {
             opacity: 1;
             transform: translateY(0);
+            transition: none;
             pointer-events: auto;
         }
 
-        /* Mobile: always show form fields */
-        @media (max-width: 768px) {
-            .login-card-body {
-            height: auto !important;
-            background-color: white !important;
-            }
-
-            .login-card-body form .input-group,
-            .login-card-body form .row.mt-4,
-            .login-card-body form span.form-text {
+        /* Ensure all form elements are always visible and interactive */
+        .login-card-body form .input-group,
+        .login-card-body form .row.mt-4,
+        .login-card-body form span.form-text,
+        .login-card-body form .icheck-success,
+        .login-card-body form button {
             opacity: 1 !important;
             transform: translateY(0) !important;
             pointer-events: auto !important;
+        }
+
+        /* Mobile styles - consistent with desktop, no hidden elements */
+        @media (max-width: 768px) {
+            .login-card-body {
+                height: auto !important;
+                background-color: white !important;
             }
+        }
+
+        /* Keep the border glow animation if desired */
+        @keyframes borderGlow {
+            0% {
+                border-color: #04401f;
+                box-shadow: 0 0 5px rgba(4, 64, 31, 0.3);
+            }
+            50% {
+                border-color: #0a7340;
+                box-shadow: 0 0 12px rgba(4, 64, 31, 0.6);
+            }
+            100% {
+                border-color: #04401f;
+                box-shadow: 0 0 5px rgba(4, 64, 31, 0.3);
+            }
+        }
+
+        /* Keep the fade-in animation for initial load */
+        @keyframes showSlowlyElement {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Adjust spacing to maintain clean layout */
+        .login-card-body {
+            padding: 1rem;
+        }
+        
+        .login-logo {
+            margin-bottom: 1rem;
+        }
+        
+        .login-box-msg {
+            margin-bottom: 1rem;
+        }
+        
+        /* Ensure alert messages are visible */
+        .alert {
+            margin-top: 1rem;
+            margin-bottom: 0;
+        }
+        
+        /* Keep show password checkbox styling */
+        .icheck-success {
+            margin-top: 0.5rem;
         }
     </style>
 </head>
@@ -139,13 +179,13 @@
             <div class="login-card-body">
                 <div class="login-logo">
                     <img src="{{ asset('template/img/cpsu_logo.png') }}" class="img-circle" width="103px"
-                        height="100px">
+                        height="100px" alt="CPSU Logo">
                     <h4 style="font-family: monospace;">Document Tracking System</h4>
                 </div>
                 <p class="login-box-msg">Sign in to start your session</p>
+                
                 <form action="{{ route('postLogin') }}" method="post">
                     @csrf
-                 
 
                     <div class="input-group mb-2">
                         <input type="text" class="form-control" name="email" placeholder="Institutional Email"
@@ -190,24 +230,22 @@
                             </button>
                         </div>
                     </div>
-                    
                 </form>
-                
-                   @if (session('error'))
-                        <div class="alert alert-danger" style="font-size: 12px;">
-                            <i class="fas fa-exclamation-triangle "></i> {{ session('error') }}
-                        </div>
-                    @endif
 
-                    @if (session('success'))
-                        <div class="alert alert-success" style="font-size: 12px;">
-                            <i class="fas fa-check"></i> {{ session('success') }}
-                        </div>
-                    @endif
+                @if (session('error'))
+                    <div class="alert alert-danger" style="font-size: 12px;">
+                        <i class="fas fa-exclamation-triangle"></i> {{ session('error') }}
+                    </div>
+                @endif
+
+                @if (session('success'))
+                    <div class="alert alert-success" style="font-size: 12px;">
+                        <i class="fas fa-check"></i> {{ session('success') }}
+                    </div>
+                @endif
             </div>
         </div>
     </div>
-
 
     <script src="{{ asset('particles/particles.js') }}"></script>
     <script src="{{ asset('particles/app.js') }}"></script>
@@ -228,8 +266,6 @@
             }
         }
     </script>
-
-
 </body>
 
 </html>
