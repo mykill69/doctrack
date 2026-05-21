@@ -218,28 +218,23 @@
                     @php
                         $user = auth()->user();
                         $userId = $user->id;
-                        $userFullName = $user->fname . ' ' . $user->lname;
+                        $userDepartment = trim($user->department);
+                        $userFullName = trim($user->fname . ' ' . $user->lname);
                         $userRole = $user->role;
 
-                        $servedQuery = Log::leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
-                            ->where('logs.status_update', 3)
-                            ->whereNotNull('logs.new_user');
+                        $servedQuery = Log::whereNotNull('new_user');
 
-                        if ($userRole === 'records_officer') {
-                            // ✅ Records officer only sees served docs they created
-                            $servedQuery->where('routing_slip.user_id', $userId);
-                        } else {
-                            // ✅ Others: only filter by fullname or user_id (no department)
-                            $servedQuery->where(function ($q) use ($userId, $userFullName) {
-                                $q->where('logs.new_user', $userId)
-                                    ->orWhere('logs.user_id', $userId)
-                                    ->orWhere('logs.new_destination', $userFullName);
+                        if ($userRole !== 'records_officer') {
+                            $servedQuery->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+                                $q->where('new_user', $userId)
+                                    ->orWhere('user_id', $userId)
+                                    ->orWhere('new_destination', $userDepartment)
+                                    ->orWhere('new_destination', $userFullName);
                             });
                         }
 
-                        $statusUpdateCount = $servedQuery->distinct('logs.route_id')->count();
+                        $statusUpdateCount = $servedQuery->distinct('route_id')->count();
                     @endphp
-
 
                     <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
                 </p>
