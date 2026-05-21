@@ -835,7 +835,7 @@ public function served()
     Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
         ->whereIn('id', $uniqueRouteIds)
         ->orderByDesc('created_at')
-        ->chunk(200, function ($chunk) use (&$logs) {
+        ->chunk(50, function ($chunk) use (&$logs) {
             $logs = $logs->merge($chunk);
         });
 
