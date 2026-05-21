@@ -1,7 +1,8 @@
 @extends('layouts.main')
 @php
-    use App\Models\Log; // Ensure you import your Log model here
+    use App\Models\Log;
 @endphp
+
 <style>
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
         background-color: #007bff !important;
@@ -10,24 +11,33 @@
         padding: 0 10px;
         margin-top: 0.31rem;
     }
+    
+    /* Loading indicator */
+    .dataTables_processing {
+        background: rgba(255,255,255,0.9);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        font-weight: bold;
+        z-index: 1000;
+    }
 </style>
+
 @section('body')
     <div class="content-wrapper">
-
-        <!-- Main content -->
         <div class="content" style="padding-top: 1%;">
             <div class="container-fluid">
                 <div class="row">
-
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-header">
                                 <h3 class="card-title">DOCUMENT LOGBOOK</h3>
+                               
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
                                     <table id="dashboardTable" class="table table-bordered table-hover"
-                                        style="font-size: 0.8rem;">
+                                        style="font-size: 0.8rem; width: 100%;">
                                         <thead>
                                             <tr>
                                                 <th>CTRL #</th>
@@ -51,6 +61,7 @@
                                                 $currentUserDepartment = auth()->user()->department;
                                                 $currentUserId = auth()->user()->id;
                                             @endphp
+                                            
                                             @foreach ($logs as $log)
                                                 @php
                                                     $document = $log->document;
@@ -60,6 +71,7 @@
                                                         $log->doc_id .
                                                         '-' .
                                                         $log->new_destination;
+                                                        
                                                     // Skip logs if they have a new user already processed
                                                     if (
                                                         isset($processedLogs[$uniqueIdentifier]) &&
@@ -67,6 +79,7 @@
                                                     ) {
                                                         continue;
                                                     }
+                                                    
                                                     // Process the log based on whether it has a new user
                                                     if (!is_null($log->new_user)) {
                                                         $processedLogs[$uniqueIdentifier] = ['hasNewUser' => true];
@@ -77,16 +90,17 @@
                                                             $logsToShow[$uniqueIdentifier] = $log;
                                                         }
                                                     }
+                                                    
                                                     // Ensure the current user department is included in the logs to show
                                                     if ($currentUserDepartment === $log->new_destination) {
                                                         $logsToShow[$uniqueIdentifier] = $log;
                                                     }
                                                 @endphp
                                             @endforeach
+                                            
                                             @foreach ($logsToShow as $log)
                                                 @php
                                                     $document = $log->document;
-
                                                     $routingSlipId = \App\Models\RoutingSlip::where(
                                                         'rslip_id',
                                                         $log->route_id,
@@ -95,15 +109,6 @@
                                                         ->value('id');
                                                 @endphp
                                                 <tr>
-                                                    {{-- <td>
-                                                        @if ($log->route_id == 0)
-                                                            N/A
-                                                        @else
-                                                            <a href="{{ route('slipForm', ['id' => $log->route_id]) }}"
-                                                                target="_blank"
-                                                                style="color: #007bff;">{{ $log->route_id }}</a>
-                                                        @endif
-                                                    </td> --}}
                                                     <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
                                                         @if ($log->route_id == 0)
                                                             N/A
@@ -121,14 +126,10 @@
                                                                 ? \Carbon\Carbon::parse($document->created_at)->format('F d, Y')
                                                                 : 'N/A') }}
                                                     </td>
-                                                    <td>{{ optional($document->routingSlip)->source ?? ($document->department ?? 'N/A') }}
-                                                    </td>
-                                                    <td>{{ optional($document->routingSlip)->subject ?? ($document->subject ?? 'N/A') }}
-                                                    </td>
-
+                                                    <td>{{ optional($document->routingSlip)->source ?? ($document->department ?? 'N/A') }}</td>
+                                                    <td>{{ optional($document->routingSlip)->subject ?? ($document->subject ?? 'N/A') }}</td>
                                                     <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
-                                                    <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}
-                                                    </td>
+                                                    <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}</td>
                                                     <td>
                                                         @if ($log->routingSlip)
                                                             <strong class="text-danger">
@@ -143,44 +144,8 @@
                                                             </strong>
                                                         @endif
                                                     </td>
-
-                                                    <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
-
+                                                    <td>{{ optional($document)->created_at ? $document->created_at->format('m-d-Y h:i:s A') : 'N/A' }}</td>
                                                     <td style="font-size:10px;">
-                                                        {{--  @if ($document->assn_code != null && $log->status_update == 2)
-                                                        <span class="badge badge-info">Routed back to <br> Records Office</span>
-                                                        @elseif($log->status_update == 3)
-                                                        <span class="badge badge-success">Served</span>
-                                                        @else
-                                                        <span class="badge badge-danger">En route</span>
-                                                        @endif --}}
-                                                        {{-- <span class="badge badge-success"
-                                                            style="font-size:10px;display: block;">{{ $document->routingSlip->trans_remarks ?? '' }}</span><span
-                                                            class="badge badge-warning"
-                                                            style="font-size:10px;">{{ $document->routingSlip->assign_com ?? '' }}</span>
-                                                        <span class="badge badge-danger"
-                                                            style="font-size:10px;display: block;">{{ $document->routingSlip->other_remarks ?? '' }}</span>
-
-                                                        @php
-                                                            $comment = $log->comments ?? '';
-                                                            $wrappedComment = preg_replace(
-                                                                '/((?:\S+\s+){4})/',
-                                                                '$1<br>',
-                                                                $comment,
-                                                            );
-                                                        @endphp
-
-                                                        <span class="badge badge-warning"
-                                                            style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
-                                                            {!! $wrappedComment !!}
-                                                        </span> --}}
-
-                                                        {{-- <span class="badge badge-warning"
-                                                            style="margin-top: 2px; font-size:10px;">{{ $log->comments ?? '' }}</span>
-
-                                                     --}}
-
-                                                        {{-- Display trans_remarks if not empty --}}
                                                         @if (!empty($document->routingSlip->trans_remarks))
                                                             <span class="badge badge-success"
                                                                 style="font-size:10px; display: block;">
@@ -188,7 +153,6 @@
                                                             </span>
                                                         @endif
 
-                                                        {{-- Display other_remarks if not empty --}}
                                                         @if (!empty($document->routingSlip->other_remarks))
                                                             <span class="badge badge-danger"
                                                                 style="font-size:10px; display: block;">
@@ -196,7 +160,6 @@
                                                             </span>
                                                         @endif
 
-                                                        {{-- Process and display logs.comments if not empty --}}
                                                         @php
                                                             $comment = $log->comments ?? '';
                                                             $wrappedComment = preg_replace(
@@ -214,30 +177,31 @@
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        <a href="{{ route('documents.viewPdf', $document->id) }}"
-                                                            target="_blank" style="color: #007bff;">
-                                                            <i class="fas fa-file-pdf text-danger"></i>
-                                                            {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
-                                                        </a>
-                                                        <p>
-                                                            <small class="text-muted">
-                                                                @if ($log->viewed_status)
-                                                                    Viewed on <br>
-                                                                    {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
-                                                                @else
-                                                                @endif
-                                                            </small>
-                                                        </p>
+                                                        @if($document)
+                                                            <a href="{{ route('documents.viewPdf', $document->id) }}"
+                                                                target="_blank" style="color: #007bff;">
+                                                                <i class="fas fa-file-pdf text-danger"></i>
+                                                                {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
+                                                            </a>
+                                                            <p>
+                                                                <small class="text-muted">
+                                                                    @if ($log->viewed_status)
+                                                                        Viewed on <br>
+                                                                        {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
+                                                                    @endif
+                                                                </small>
+                                                            </p>
+                                                        @endif
                                                     </td>
-                                                    <td><span
-                                                            class="badge badge-secondary">{{ $log->new_destination }}</span>
+                                                    <td>
+                                                        <span class="badge badge-secondary">{{ $log->new_destination }}</span>
                                                         <br>
                                                         {{ $log->updated_at->format('m-d-Y h:i:s A') }}
                                                     </td>
                                                     <td>
                                                         @php
                                                             $documentCreatedAt = \Carbon\Carbon::parse(
-                                                                $document->created_at,
+                                                                optional($document)->created_at ?? now(),
                                                             );
                                                             $logUpdatedAt = $log->updated_at
                                                                 ? \Carbon\Carbon::parse($log->updated_at)
@@ -297,10 +261,8 @@
                                                         @endphp
                                                         {{ $formattedDiff }}
                                                     </td>
-
                                                 </tr>
                                             @endforeach
-
                                         </tbody>
                                     </table>
                                 </div>
@@ -314,13 +276,10 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
-
     @if (!$dpa)
         <script>
             document.addEventListener("DOMContentLoaded", function() {
                 console.log("DPA modal trigger running");
-
-                // Wait until Bootstrap modal is available
                 if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
                     $('#dpaPopupAuto').modal({
                         backdrop: 'static',
@@ -333,37 +292,39 @@
         </script>
     @endif
 
-
-
     <script>
         $(document).ready(function() {
+            // Check if DataTable is already initialized
+            if ($.fn.DataTable.isDataTable('#dashboardTable')) {
+                $('#dashboardTable').DataTable().destroy();
+            }
+            
+            // Initialize DataTable with deferred rendering for performance
             var t = $('#dashboardTable').DataTable({
-                "order": [
-                    [0, "desc"]
-                ], // sort CTRL # descending
+                "order": [[0, "desc"]],
                 "pageLength": 20,
+                "deferRender": true,  // Only render visible rows
+                "processing": true,   // Show processing indicator
                 "columnDefs": [{
                     "targets": 0,
                     "type": "num",
                     "orderable": true
-                }]
+                }],
+                "language": {
+                    "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
+                    "search": "Search:",
+                    "lengthMenu": "Show _MENU_ entries",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries"
+                }
             });
 
-            // Re-apply sort in case AdminLTE interferes
+            // Re-apply sort
             t.order([0, "desc"]).draw();
         });
     </script>
-
-
-
-
-
 
     @include('modal.docAdd')
     @include('modal.docEdit')
     @include('modal.addTrans')
     @include('modal.addRoutslip')
-    {{-- @include('modal.dpaPopup') --}}
-
-    {{-- @include('modal.addIncoming') --}}
 @endsection

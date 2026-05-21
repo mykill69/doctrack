@@ -16,10 +16,10 @@
         padding: 0 10px;
         margin-top: 0.31rem;
     }
-    
+
     /* DataTables loading indicator */
     .dataTables_processing {
-        background: rgba(255,255,255,0.9);
+        background: rgba(255, 255, 255, 0.9);
         border: 1px solid #ddd;
         border-radius: 4px;
         padding: 10px;
@@ -36,11 +36,7 @@
                         <div class="card">
                             <div class="card-header">
                                 <h3 class="card-title">DOCUMENT LOGBOOK</h3>
-                                <div class="card-tools">
-                                    <span class="badge badge-info" id="total-records">
-                                        Total: {{ count($logs) }} records
-                                    </span>
-                                </div>
+
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -217,7 +213,7 @@
             if ($.fn.DataTable.isDataTable('#example1')) {
                 $('#example1').DataTable().destroy();
             }
-            
+
             // Initialize DataTable with deferred rendering for better performance
             $('#example1').DataTable({
                 "pageLength": 25,
@@ -226,9 +222,12 @@
                 "ordering": true,
                 "info": true,
                 "lengthChange": true,
-                "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                "deferRender": true,  // Important: Only render visible rows
-                "processing": true,    // Show processing indicator
+                "lengthMenu": [
+                    [10, 25, 50, 100, -1],
+                    [10, 25, 50, 100, "All"]
+                ],
+                "deferRender": true, // Important: Only render visible rows
+                "processing": true, // Show processing indicator
                 "language": {
                     "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
                     "search": "Search:",
