@@ -215,40 +215,6 @@
                 <i class="nav-icon fas fa-check"></i>
                 <p>Completed
 
-                    {{-- @php
-
-                        $user = auth()->user();
-                        $userDepartment = $user->department;
-                        $userId = $user->id;
-                        $userFullName = $user->fname . ' ' . $user->lname;
-                        $userRole = $user->role;
-
-                        $servedQuery = Log::where('status_update', 3)
-                            ->whereNotNull('new_user')
-                            ->when(
-                                $userRole === 'records_officer',
-                                function ($query) {
-                                    return $query; // No extra filter
-                                },
-                                function ($query) use ($userId, $userDepartment, $userFullName) {
-                                    return $query->where(function ($subQuery) use (
-                                        $userId,
-                                        $userDepartment,
-                                        $userFullName,
-                                    ) {
-                                        $subQuery
-                                            ->where('new_user', $userId)
-                                            ->orWhere('user_id', $userId)
-                                            ->orWhere('new_destination', $userDepartment)
-                                            ->orWhere('new_destination', $userFullName);
-                                    });
-                                },
-                            );
-
-                        $statusUpdateCount = $servedQuery->distinct('route_id')->count();
-                    @endphp --}}
-
-
                     @php
                         $user = auth()->user();
                         $userId = $user->id;

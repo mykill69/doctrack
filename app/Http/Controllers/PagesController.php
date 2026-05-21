@@ -693,6 +693,110 @@ public function pending()
 
 //     return view('home.served', compact('logs', 'offices', 'recordsOfficerCount', 'superUserCount','doctrackCount', 'users'));
 //     }
+// public function served()
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userDepartment = trim($user->department);
+//     $userFullName = trim($user->fname . ' ' . $user->lname);
+//     $userRole = $user->role;
+
+//     $users = User::select('id','fname','lname')->get();
+//     $offices = Office::all();
+
+//     // -----------------------------
+//     // Load logs in chunks
+//     // -----------------------------
+//     $logs = collect();
+//     Log::with(['user:id,fname,lname','newUser:id,fname,lname','document','routingSlip'])
+//         ->whereNotNull('new_user')
+//         ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
+//             $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+//                 $q->where('new_user', $userId)
+//                   ->orWhere('user_id', $userId)
+//                   ->orWhere('new_destination', $userDepartment)
+//                   ->orWhere('new_destination', $userFullName);
+//             });
+//         })
+//         ->orderByDesc('created_at')
+//         ->chunk(100, function ($batch) use (&$logs) {
+//             $logs = $logs->merge($batch);
+//         });
+
+//     // Keep only the first log for each unique route_id (CTRL #)
+//     $logs = $logs->unique('route_id')->values();
+
+//     // -----------------------------
+//     // Doctrack records
+//     // -----------------------------
+//     $documentTrack = Doctrack::with(['createdBy:id,fname,lname','doctrackFile'])
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->orderByDesc('created_at')
+//         ->get();
+
+//     // Preload views and comments
+//     $docslipIds = $documentTrack->pluck('docslip_id')->toArray();
+
+//     $views = LogsTracking::whereIn('docslip_id', $docslipIds)
+//         ->whereNotNull('viewed_status')
+//         ->whereNotNull('viewed_at')
+//         ->get()
+//         ->groupBy('docslip_id');
+
+//     $comments = LogsTracking::whereIn('docslip_id', $docslipIds)
+//         ->whereNotNull('comments')
+//         ->get()
+//         ->groupBy('docslip_id');
+
+//     $documentTrack->transform(function ($item) use ($views, $comments) {
+//         $item->views = $views[$item->docslip_id] ?? collect();
+//         $item->all_comments = $comments[$item->docslip_id] ?? collect();
+
+//         $start = \Carbon\Carbon::parse($item->created_at);
+//         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+//         $diffInMinutes = $end->diffInMinutes($start);
+
+//         $item->time_diff = [
+//             'days' => floor($diffInMinutes / 1440),
+//             'hours' => floor(($diffInMinutes % 1440) / 60),
+//             'minutes' => $diffInMinutes % 60,
+//         ];
+
+//         return $item;
+//     });
+
+//     // -----------------------------
+//     // Counts
+//     // -----------------------------
+//     $doctrackCount = Doctrack::where('doctrack_stat', 2)
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere(function ($q) use ($userFullName, $userId) {
+//                       $q->where('user_name', $userFullName)
+//                         ->where('user_id', $userId);
+//                   });
+//         })
+//         ->count();
+
+//     $recordsOfficerCount = $userRole === 'records_officer'
+//         ? RoutingSlip::where('route_status', 2)->count()
+//         : 0;
+
+//     $superUserCount = $userRole === 'super_user'
+//         ? RoutingSlip::where('route_status', 1)->count()
+//         : 0;
+
+//     return view('home.served', compact(
+//         'logs','offices','recordsOfficerCount','superUserCount',
+//         'doctrackCount','users','documentTrack'
+//     ));
+// }
+
 public function served()
 {
     $user = auth()->user();
@@ -710,11 +814,17 @@ public function served()
     $logs = collect();
     Log::with(['user:id,fname,lname','newUser:id,fname,lname','document','routingSlip'])
         ->whereNotNull('new_user')
-        ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
-            $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+        ->where('status_update', 3) // Added this to match sidebar
+        ->when($userRole === 'records_officer', function ($query) use ($userId) {
+            // Records officer sees served docs they created
+            $query->whereHas('routingSlip', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
+        }, function ($query) use ($userId, $userFullName) {
+            // Others: filter by fullname or user_id (no department to match sidebar)
+            $query->where(function ($q) use ($userId, $userFullName) {
                 $q->where('new_user', $userId)
                   ->orWhere('user_id', $userId)
-                  ->orWhere('new_destination', $userDepartment)
                   ->orWhere('new_destination', $userFullName);
             });
         })
@@ -770,8 +880,24 @@ public function served()
     });
 
     // -----------------------------
-    // Counts
+    // Counts - Match sidebar query exactly
     // -----------------------------
+    $servedQuery = Log::leftJoin('routing_slip', 'logs.route_id', '=', 'routing_slip.rslip_id')
+        ->where('logs.status_update', 3)
+        ->whereNotNull('logs.new_user');
+
+    if ($userRole === 'records_officer') {
+        $servedQuery->where('routing_slip.user_id', $userId);
+    } else {
+        $servedQuery->where(function ($q) use ($userId, $userFullName) {
+            $q->where('logs.new_user', $userId)
+              ->orWhere('logs.user_id', $userId)
+              ->orWhere('logs.new_destination', $userFullName);
+        });
+    }
+
+    $servedCount = $servedQuery->distinct('logs.route_id')->count();
+
     $doctrackCount = Doctrack::where('doctrack_stat', 2)
         ->where(function ($query) use ($userId, $userFullName) {
             $query->where('user_id', $userId)
@@ -793,7 +919,7 @@ public function served()
 
     return view('home.served', compact(
         'logs','offices','recordsOfficerCount','superUserCount',
-        'doctrackCount','users','documentTrack'
+        'doctrackCount','users','documentTrack','servedCount'
     ));
 }
 public function viewLogs() 
