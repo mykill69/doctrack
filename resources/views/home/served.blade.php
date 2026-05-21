@@ -196,7 +196,10 @@
                                         </tbody>
                                     </table>
 
-                                
+                                    <!-- Laravel Pagination -->
+                                    <div class="d-flex justify-content-center mt-3">
+                                        {{ $logs->links() }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -209,8 +212,8 @@
     @include('modal.docEdit')
     @include('modal.addTrans')
     @include('modal.addRoutslip')
-{{-- 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> --}}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
     <script>
         $(document).ready(function() {
