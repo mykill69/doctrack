@@ -705,10 +705,9 @@ public function served()
     $offices = Office::all();
 
     // -----------------------------
-    // Load logs in chunks
+    // Load logs with pagination
     // -----------------------------
-    $logs = collect();
-    Log::with(['user:id,fname,lname','newUser:id,fname,lname','document','routingSlip'])
+    $logsQuery = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
         ->whereNotNull('new_user')
         ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
             $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
@@ -718,13 +717,20 @@ public function served()
                   ->orWhere('new_destination', $userFullName);
             });
         })
-        ->orderByDesc('created_at')
-        ->chunk(100, function ($batch) use (&$logs) {
-            $logs = $logs->merge($batch);
-        });
+        ->orderByDesc('created_at');
 
-    // Keep only the first log for each unique route_id (CTRL #)
-    $logs = $logs->unique('route_id')->values();
+    // Get unique route_ids first with a subquery
+    $uniqueRouteIds = (clone $logsQuery)
+        ->select('route_id')
+        ->selectRaw('MIN(id) as min_id')
+        ->groupBy('route_id')
+        ->pluck('min_id');
+
+    // Get only the first log for each route_id
+    $logs = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
+        ->whereIn('id', $uniqueRouteIds)
+        ->orderByDesc('created_at')
+        ->paginate(50);
 
     // -----------------------------
     // Doctrack records
