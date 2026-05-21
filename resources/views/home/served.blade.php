@@ -16,6 +16,19 @@
         padding: 0 10px;
         margin-top: 0.31rem;
     }
+    
+    /* Fix pagination styling */
+    .pagination {
+        margin-top: 20px;
+        margin-bottom: 0;
+    }
+    .pagination .page-link {
+        font-size: 0.875rem;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
 </style>
 
 @section('body')
@@ -183,8 +196,10 @@
                                         </tbody>
                                     </table>
 
-                                    <!-- Add pagination links -->
-                                    
+                                    <!-- Laravel Pagination -->
+                                    <div class="d-flex justify-content-center mt-3">
+                                        {{ $logs->links() }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -197,25 +212,24 @@
     @include('modal.docEdit')
     @include('modal.addTrans')
     @include('modal.addRoutslip')
-
+{{-- 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> --}}
 
     <script>
-    $(document).ready(function() {
-        // Check if DataTable is already initialized and destroy it first
-        if ($.fn.DataTable.isDataTable('#example1')) {
-            $('#example1').DataTable().destroy();
-        }
-        
-        // Initialize DataTable with its own pagination
-        $('#example1').DataTable({
-            "pageLength": 50,
-            "paging": true,  // Enable DataTables pagination
-            "searching": true,
-            "ordering": true,
-            "info": true,    // Show "Showing X to Y of Z entries"
-            "lengthChange": true,  // Allow changing page length
-            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]]
+        $(document).ready(function() {
+            // Check if DataTable is already initialized
+            if ($.fn.DataTable.isDataTable('#example1')) {
+                $('#example1').DataTable().destroy();
+            }
+            
+            // Initialize DataTable WITHOUT pagination (since we're using Laravel's)
+            $('#example1').DataTable({
+                "paging": false,      // Disable DataTables pagination
+                "searching": true,
+                "ordering": true,
+                "info": false,        // Disable DataTables info (showing X of Y)
+                "lengthChange": false // Disable page length change
+            });
         });
-    });
-</script>
+    </script>
 @endsection
