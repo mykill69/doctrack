@@ -200,34 +200,11 @@
     @include('modal.addTrans')
     @include('modal.addRoutslip')
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
-<script>
-    // Handle both initial load and dynamic page loads
-    $(document).on('turbolinks:load', function() {
-        initDataTable();
-    });
-    
-    $(document).ready(function() {
-        initDataTable();
-    });
-    
-    function initDataTable() {
-        // Check and destroy existing DataTable
-        if ($.fn.DataTable.isDataTable('#example1')) {
-            $('#example1').DataTable().destroy();
-        }
-        
-        // Remove any existing DataTable wrapper to get clean HTML
-        $('#example1').show();
-        
-        // Initialize DataTable
+    <script>
         $('#example1').DataTable({
-            "pageLength": 50,
-            "paging": false,
-            "searching": true,
-            "ordering": true,
-            "info": false
+            "pageLength": 50
         });
-    }
-</script>
+    </script>
 @endsection
