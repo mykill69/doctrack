@@ -184,9 +184,7 @@
                                     </table>
 
                                     <!-- Add pagination links -->
-                                    <div class="mt-3">
-                                        {{ $logs->links() }}
-                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -203,8 +201,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
     <script>
+    $(document).ready(function() {
+        // Check if DataTable is already initialized and destroy it first
+        if ($.fn.DataTable.isDataTable('#example1')) {
+            $('#example1').DataTable().destroy();
+        }
+        
+        // Initialize DataTable with its own pagination
         $('#example1').DataTable({
-            "pageLength": 50
+            "pageLength": 50,
+            "paging": true,  // Enable DataTables pagination
+            "searching": true,
+            "ordering": true,
+            "info": true,    // Show "Showing X to Y of Z entries"
+            "lengthChange": true,  // Allow changing page length
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]]
         });
-    </script>
+    });
+</script>
 @endsection

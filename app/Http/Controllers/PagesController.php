@@ -705,7 +705,7 @@ public function served()
     $offices = Office::all();
 
     // -----------------------------
-    // Load logs with pagination
+    // Load logs efficiently with chunking but return as collection for DataTables
     // -----------------------------
     $logsQuery = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
         ->whereNotNull('new_user')
@@ -719,18 +719,18 @@ public function served()
         })
         ->orderByDesc('created_at');
 
-    // Get unique route_ids first with a subquery
+    // Get unique route_ids first
     $uniqueRouteIds = (clone $logsQuery)
         ->select('route_id')
         ->selectRaw('MIN(id) as min_id')
         ->groupBy('route_id')
         ->pluck('min_id');
 
-    // Get only the first log for each route_id
+    // Get only the first log for each route_id - use get() instead of paginate()
     $logs = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
         ->whereIn('id', $uniqueRouteIds)
         ->orderByDesc('created_at')
-        ->paginate(50);
+        ->get();  // Changed from paginate(50) to get()
 
     // -----------------------------
     // Doctrack records
@@ -802,6 +802,8 @@ public function served()
         'doctrackCount','users','documentTrack'
     ));
 }
+
+
 public function viewLogs() 
 {
     $user = auth()->user();
