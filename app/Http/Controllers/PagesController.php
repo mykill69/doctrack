@@ -809,7 +809,7 @@ public function served()
     $offices = Office::all();
 
     // -----------------------------
-    // Load logs with pagination
+    // Load logs efficiently with chunking
     // -----------------------------
     $logsQuery = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
         ->whereNotNull('new_user')
@@ -830,12 +830,14 @@ public function served()
         ->groupBy('route_id')
         ->pluck('min_id');
 
-    // Get only the first log for each route_id with pagination
-    $logs = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
+    // Load all unique logs using chunking to avoid memory issues
+    $logs = collect();
+    Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
         ->whereIn('id', $uniqueRouteIds)
         ->orderByDesc('created_at')
-        ->paginate(50)
-        ->appends(request()->query()); // Preserve query parameters
+        ->chunk(200, function ($chunk) use (&$logs) {
+            $logs = $logs->merge($chunk);
+        });
 
     // -----------------------------
     // Doctrack records
@@ -907,7 +909,6 @@ public function served()
         'doctrackCount','users','documentTrack'
     ));
 }
-
 public function viewLogs() 
 {
     $user = auth()->user();

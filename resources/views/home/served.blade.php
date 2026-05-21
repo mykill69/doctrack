@@ -17,17 +17,13 @@
         margin-top: 0.31rem;
     }
     
-    /* Fix pagination styling */
-    .pagination {
-        margin-top: 20px;
-        margin-bottom: 0;
-    }
-    .pagination .page-link {
-        font-size: 0.875rem;
-    }
-    .pagination .page-item.active .page-link {
-        background-color: #007bff;
-        border-color: #007bff;
+    /* DataTables loading indicator */
+    .dataTables_processing {
+        background: rgba(255,255,255,0.9);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        font-weight: bold;
     }
 </style>
 
@@ -40,11 +36,16 @@
                         <div class="card">
                             <div class="card-header">
                                 <h3 class="card-title">DOCUMENT LOGBOOK</h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-info" id="total-records">
+                                        Total: {{ count($logs) }} records
+                                    </span>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
                                     <table id="example1" class="table table-bordered table-hover"
-                                        style="font-size: 0.8rem;">
+                                        style="font-size: 0.8rem; width: 100%;">
                                         <thead>
                                             <tr>
                                                 <th>CTRL #</th>
@@ -195,11 +196,6 @@
                                             @endforeach
                                         </tbody>
                                     </table>
-
-                                    <!-- Laravel Pagination -->
-                                    <div class="d-flex justify-content-center mt-3">
-                                        {{ $logs->links() }}
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -213,7 +209,7 @@
     @include('modal.addTrans')
     @include('modal.addRoutslip')
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    {{-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> --}}
 
     <script>
         $(document).ready(function() {
@@ -222,13 +218,25 @@
                 $('#example1').DataTable().destroy();
             }
             
-            // Initialize DataTable WITHOUT pagination (since we're using Laravel's)
+            // Initialize DataTable with deferred rendering for better performance
             $('#example1').DataTable({
-                "paging": false,      // Disable DataTables pagination
+                "pageLength": 25,
+                "paging": true,
                 "searching": true,
                 "ordering": true,
-                "info": false,        // Disable DataTables info (showing X of Y)
-                "lengthChange": false // Disable page length change
+                "info": true,
+                "lengthChange": true,
+                "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                "deferRender": true,  // Important: Only render visible rows
+                "processing": true,    // Show processing indicator
+                "language": {
+                    "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
+                    "search": "Search:",
+                    "lengthMenu": "Show _MENU_ entries",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                    "infoEmpty": "Showing 0 to 0 of 0 entries",
+                    "infoFiltered": "(filtered from _MAX_ total entries)"
+                }
             });
         });
     </script>
