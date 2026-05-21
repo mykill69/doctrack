@@ -200,25 +200,34 @@
     @include('modal.addTrans')
     @include('modal.addRoutslip')
 
-   
 
-    <script>
-        $(document).ready(function() {
-            // Check if DataTable is already initialized and destroy it first
-            if ($.fn.DataTable.isDataTable('#example1')) {
-                $('#example1').DataTable().destroy();
-            }
-
-            // Initialize DataTable fresh
-            $('#example1').DataTable({
-                "pageLength": 50,
-                "paging": false, // Disable DataTables pagination since we're using Laravel's
-                "searching": true,
-                "ordering": true,
-                "info": false,
-                "retrieve": true, // Add this to prevent reinitialization errors
-                "destroy": true // Add this as a safety net
-            });
+<script>
+    // Handle both initial load and dynamic page loads
+    $(document).on('turbolinks:load', function() {
+        initDataTable();
+    });
+    
+    $(document).ready(function() {
+        initDataTable();
+    });
+    
+    function initDataTable() {
+        // Check and destroy existing DataTable
+        if ($.fn.DataTable.isDataTable('#example1')) {
+            $('#example1').DataTable().destroy();
+        }
+        
+        // Remove any existing DataTable wrapper to get clean HTML
+        $('#example1').show();
+        
+        // Initialize DataTable
+        $('#example1').DataTable({
+            "pageLength": 50,
+            "paging": false,
+            "searching": true,
+            "ordering": true,
+            "info": false
         });
-    </script>
+    }
+</script>
 @endsection
