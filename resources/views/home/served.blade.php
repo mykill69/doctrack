@@ -77,9 +77,11 @@
                                                     <td>{{ optional($document->routingSlip)->source ?? 'N/A' }}</td>
                                                     <td>{{ optional($document->routingSlip)->subject ?? 'N/A' }}</td>
                                                     <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
-                                                    <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}</td>
+                                                    <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}
+                                                    </td>
                                                     <td>
-                                                        <strong class="text-danger">{{ ucwords(strtolower($document->for_to ?? '')) }}</strong>
+                                                        <strong
+                                                            class="text-danger">{{ ucwords(strtolower($document->for_to ?? '')) }}</strong>
 
                                                         @php
                                                             $destinationUser = $users->firstWhere(
@@ -116,7 +118,8 @@
                                                             </strong>
                                                         @endif
                                                     </td>
-                                                    <td>{{ optional($document)->created_at ? $document->created_at->format('m-d-Y h:i:s A') : 'N/A' }}</td>
+                                                    <td>{{ optional($document)->created_at ? $document->created_at->format('m-d-Y h:i:s A') : 'N/A' }}
+                                                    </td>
                                                     <td style="font-size:10px;width:5%;">
                                                         @if (!empty($document->routingSlip->trans_remarks))
                                                             <span class="badge badge-success"
@@ -149,7 +152,7 @@
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        @if($document)
+                                                        @if ($document)
                                                             <a href="{{ route('documents.viewPdf', $document->id) }}"
                                                                 style="color: #007bff;" target="_blank">
                                                                 <i class="fas fa-file-pdf text-danger"></i>
@@ -170,7 +173,8 @@
                                                         @php
                                                             $created = optional($document)->created_at;
                                                             $updated = $log->updated_at;
-                                                            $diff = $created && $updated ? $created->diff($updated) : null;
+                                                            $diff =
+                                                                $created && $updated ? $created->diff($updated) : null;
                                                         @endphp
                                                         {{ $diff ? "{$diff->days} days, {$diff->h} hours, {$diff->i} minutes" : 'N/A' }}
                                                     </td>
@@ -178,7 +182,7 @@
                                             @endforeach
                                         </tbody>
                                     </table>
-                                    
+
                                     <!-- Add pagination links -->
                                     <div class="mt-3">
                                         {{ $logs->links() }}
@@ -196,16 +200,24 @@
     @include('modal.addTrans')
     @include('modal.addRoutslip')
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+   
 
     <script>
         $(document).ready(function() {
+            // Check if DataTable is already initialized and destroy it first
+            if ($.fn.DataTable.isDataTable('#example1')) {
+                $('#example1').DataTable().destroy();
+            }
+
+            // Initialize DataTable fresh
             $('#example1').DataTable({
                 "pageLength": 50,
                 "paging": false, // Disable DataTables pagination since we're using Laravel's
                 "searching": true,
                 "ordering": true,
-                "info": false
+                "info": false,
+                "retrieve": true, // Add this to prevent reinitialization errors
+                "destroy": true // Add this as a safety net
             });
         });
     </script>
