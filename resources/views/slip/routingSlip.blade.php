@@ -89,8 +89,4 @@
     @include('modal.addRoutslip')
     @include('modal.addDestination')
 
-
-
-
-    
 @endsection
