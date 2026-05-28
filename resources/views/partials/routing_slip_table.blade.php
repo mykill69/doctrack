@@ -40,7 +40,7 @@
             @forelse ($filteredSlips as $slip)
                 <tr>
                     @php
-                        $routingSlipId = \App\Models\RoutingSlip::where('rslip_id', $slip->rslip_id)
+                        $routingSlipId = RoutingSlip::where('rslip_id', $slip->rslip_id)
                             ->orderBy('id', 'desc')
                             ->value('id');
 
@@ -139,6 +139,7 @@
                                             ($isSuperUser && !empty($slip->trans_remarks) && !empty($slip->r_destination))) disabled @endif>
                                     <i class="fas fa-trash"></i>
                                 </button>
+
                             </form>
 
                             {{-- RECALL --}}
