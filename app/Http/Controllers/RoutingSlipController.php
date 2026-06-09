@@ -236,6 +236,66 @@ public function storeSlip(Request $request)
 //     ));
 // }
 
+// public function viewSlip()
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userRole = $user->role;
+
+//     $perPage = 15;
+
+//     if ($userRole === 'super_user') {
+//         // Super User: Get ALL Routed to President (status 1) - use get() not paginate()
+//         $routingSlips = RoutingSlip::where('route_status', 1)
+//                         ->orderBy('updated_at', 'desc')
+//                         ->get();  // Changed from paginate() to get() to get ALL records
+//     } 
+//     elseif ($userRole === 'records_officer') {
+//         // Records Officer: Get ALL records with route_status == 2
+//         $routingSlips = RoutingSlip::where('route_status', 2)
+//                         ->orderBy('updated_at', 'desc')
+//                         ->get();
+//     }
+//     else {
+//         // Staff and other roles: Get only their own records
+//         $routingSlips = RoutingSlip::where('user_id', $userId)
+//                         ->orderBy('updated_at', 'desc')
+//                         ->get();
+//     }
+
+//     // Counts
+//     $hasStatusThree = Log::where('user_id', $userId)
+//                         ->where('status_update', 3)
+//                         ->exists();
+
+//     $routingSlipCount = !$hasStatusThree 
+//         ? RoutingSlip::where('route_status', 3)->count() 
+//         : 0;
+
+//     $recordsOfficerCount = $userRole === 'records_officer' 
+//         ? RoutingSlip::where('route_status', 2)->count() 
+//         : 0;
+
+//     $offices = Office::all();
+//     $userFullName = $user->fname . ' ' . $user->lname;
+
+//     $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+//         $query->where('user_id', $userId)
+//               ->orWhere('update_by', $userId)
+//               ->orWhere('user_name', $userFullName);
+//     })->where('doctrack_stat', 2)->count();
+
+//     return view('slip.routingSlip', compact(
+//         'routingSlips',
+//         'routingSlipCount',
+//         'recordsOfficerCount',
+//         'offices',
+//         'doctrackCount',
+//         'userRole'
+//     ));
+// }
+
+
 public function viewSlip()
 {
     $user = auth()->user();
@@ -245,14 +305,15 @@ public function viewSlip()
     $perPage = 15;
 
     if ($userRole === 'super_user') {
-        // Super User: Get ALL Routed to President (status 1) - use get() not paginate()
+        // Super User: Get ALL Routed to President (status 1)
         $routingSlips = RoutingSlip::where('route_status', 1)
                         ->orderBy('updated_at', 'desc')
-                        ->get();  // Changed from paginate() to get() to get ALL records
+                        ->get();
     } 
     elseif ($userRole === 'records_officer') {
-        // Records Officer: Get ALL records with route_status == 2
+        // Records Officer: Get ONLY their own created routing slips with route_status == 2
         $routingSlips = RoutingSlip::where('route_status', 2)
+                        ->where('user_id', $userId)  // Only show records created by this records_officer
                         ->orderBy('updated_at', 'desc')
                         ->get();
     }
@@ -273,7 +334,7 @@ public function viewSlip()
         : 0;
 
     $recordsOfficerCount = $userRole === 'records_officer' 
-        ? RoutingSlip::where('route_status', 2)->count() 
+        ? RoutingSlip::where('route_status', 2)->where('user_id', $userId)->count() 
         : 0;
 
     $offices = Office::all();
