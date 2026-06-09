@@ -179,58 +179,113 @@ public function storeSlip(Request $request)
 //     ));
 // }
 
+// 05/28/2026 update the viewslip for president's office
+
+// public function viewSlip()
+// {
+//     $user = auth()->user();
+
+//     $userId = $user->id;
+//     $userRole = $user->role;
+//     $userDepartment = $user->department;
+
+//     $hasStatusThree = Log::where('user_id', $userId)
+//         ->where('status_update', 3)
+//         ->exists();
+
+//     $routingSlipCount = !$hasStatusThree
+//         ? RoutingSlip::where('route_status', 3)->count()
+//         : 0;
+
+//     $superUserCount = $userRole === 'super_user'
+//         ? RoutingSlip::where('route_status', 1)->count()
+//         : 0;
+
+//     $recordsOfficerCount = $userRole === 'records_officer'
+//         ? RoutingSlip::where('route_status', 2)->count()
+//         : 0;
+
+//     // ✅ CONDITIONAL VIEW
+//     if ($userId == 38) {
+//     // ID 38 can view ALL routing slips
+//     $routingSlips = RoutingSlip::all();
+//     } else {
+//         // Others can view only their own
+//         $routingSlips = RoutingSlip::where('user_id', $userId)->get();
+//     }
+
+//     $offices = Office::all();
+
+//     $userFullName = $user->fname . ' ' . $user->lname;
+
+//     $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->where('doctrack_stat', 2)
+//         ->count();
+
+//     return view('slip.routingSlip', compact(
+//         'routingSlips',
+//         'routingSlipCount',
+//         'superUserCount',
+//         'offices',
+//         'recordsOfficerCount',
+//         'doctrackCount'
+//     ));
+// }
+
 public function viewSlip()
 {
     $user = auth()->user();
-
     $userId = $user->id;
     $userRole = $user->role;
-    $userDepartment = $user->department;
 
-    $hasStatusThree = Log::where('user_id', $userId)
-        ->where('status_update', 3)
-        ->exists();
+    $perPage = 15;
 
-    $routingSlipCount = !$hasStatusThree
-        ? RoutingSlip::where('route_status', 3)->count()
-        : 0;
-
-    $superUserCount = $userRole === 'super_user'
-        ? RoutingSlip::where('route_status', 1)->count()
-        : 0;
-
-    $recordsOfficerCount = $userRole === 'records_officer'
-        ? RoutingSlip::where('route_status', 2)->count()
-        : 0;
-
-    // ✅ CONDITIONAL VIEW
-    if ($userId == 38) {
-    // ID 38 can view ALL routing slips
-    $routingSlips = RoutingSlip::all();
-    } else {
-        // Others can view only their own
-        $routingSlips = RoutingSlip::where('user_id', $userId)->get();
+    if ($userRole === 'super_user') {
+        // Super User: Only Routed to President (status 1)
+        $routingSlips = RoutingSlip::where('route_status', 1)
+                        ->orderBy('updated_at', 'desc')
+                        ->paginate($perPage);
+    } 
+    else {
+        // Records Officer + Others: Load ALL their records (pagination will be handled per tab in view)
+        $routingSlips = RoutingSlip::where('user_id', $userId)
+                        ->orderBy('updated_at', 'desc')
+                        ->get();   // Use get() here, we will filter per tab
     }
 
-    $offices = Office::all();
+    // Counts
+    $hasStatusThree = Log::where('user_id', $userId)
+                        ->where('status_update', 3)
+                        ->exists();
 
+    $routingSlipCount = !$hasStatusThree 
+        ? RoutingSlip::where('route_status', 3)->count() 
+        : 0;
+
+    $recordsOfficerCount = $userRole === 'records_officer' 
+        ? RoutingSlip::where('route_status', 2)->count() 
+        : 0;
+
+    $offices = Office::all();
     $userFullName = $user->fname . ' ' . $user->lname;
 
     $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
-            $query->where('user_id', $userId)
-                  ->orWhere('update_by', $userId)
-                  ->orWhere('user_name', $userFullName);
-        })
-        ->where('doctrack_stat', 2)
-        ->count();
+        $query->where('user_id', $userId)
+              ->orWhere('update_by', $userId)
+              ->orWhere('user_name', $userFullName);
+    })->where('doctrack_stat', 2)->count();
 
     return view('slip.routingSlip', compact(
         'routingSlips',
         'routingSlipCount',
-        'superUserCount',
-        'offices',
         'recordsOfficerCount',
-        'doctrackCount'
+        'offices',
+        'doctrackCount',
+        'userRole'
     ));
 }
 

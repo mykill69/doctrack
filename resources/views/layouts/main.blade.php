@@ -172,6 +172,17 @@
             transform: translateY(0);
         }
     }
+
+
+
+    .pagination {
+        margin: 0;
+    }
+
+    .pagination .page-link {
+        border-radius: 4px;
+        margin: 0 2px;
+    }
 </style>
 
 <body
