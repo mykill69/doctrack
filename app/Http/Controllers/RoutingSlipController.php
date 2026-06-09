@@ -295,7 +295,6 @@ public function storeSlip(Request $request)
 //     ));
 // }
 
-
 public function viewSlip()
 {
     $user = auth()->user();
@@ -311,8 +310,8 @@ public function viewSlip()
                         ->get();
     } 
     elseif ($userRole === 'records_officer') {
-        // Records Officer: Get ONLY their own created routing slips with route_status == 2
-        $routingSlips = RoutingSlip::where('route_status', 2)
+        // Records Officer: Get ALL their created routing slips with route_status == 2 AND route_status == 1
+        $routingSlips = RoutingSlip::whereIn('route_status', [1, 2])  // Can see both Routed to President and Routed back to Records
                         ->where('user_id', $userId)  // Only show records created by this records_officer
                         ->orderBy('updated_at', 'desc')
                         ->get();
@@ -334,7 +333,7 @@ public function viewSlip()
         : 0;
 
     $recordsOfficerCount = $userRole === 'records_officer' 
-        ? RoutingSlip::where('route_status', 2)->where('user_id', $userId)->count() 
+        ? RoutingSlip::whereIn('route_status', [1, 2])->where('user_id', $userId)->count() 
         : 0;
 
     $offices = Office::all();
