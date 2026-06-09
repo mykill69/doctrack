@@ -2,14 +2,6 @@
 @section('body')
     <!-- Include CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    
-    <!-- Include DataTables CSS and JS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap4.min.css">
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    
     <style type="text/css">
         .no-left-radius {
             border-top-left-radius: 0;
@@ -18,63 +10,24 @@
 
         .disabled-icon {
             color: lightgrey;
+            /* Default color for disabled */
             pointer-events: none;
+            /* Prevent any interaction */
             opacity: 0.2;
+            /* Dim the icon to indicate it's disabled */
             transition: opacity 0.3s;
+            /* Smooth transition for hover */
         }
 
         .disabled-icon:hover {
             opacity: 0.4;
+            /* Change opacity on hover to indicate it's disabled */
             cursor: not-allowed;
+            /* Change cursor to indicate it's not clickable */
+            /* Optional: Add more styles for hover, like a shadow */
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
         }
-        
-        .dataTables_wrapper .dataTables_filter {
-            margin-bottom: 15px;
-        }
-        
-        .dataTables_wrapper .dataTables_filter input {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 6px 12px;
-            margin-left: 8px;
-        }
-        
-        .dataTables_wrapper .dataTables_length select {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 4px 8px;
-        }
-        
-        .search-container {
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .search-container label {
-            margin-bottom: 0;
-            font-weight: 500;
-        }
-        
-        .search-container input {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 6px 12px;
-            width: 250px;
-        }
-        
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            padding: 0.25rem 0.75rem;
-        }
-        
-        table.dataTable tbody tr:hover {
-            background-color: #f5f5f5;
-        }
     </style>
-    
     <div class="content-wrapper">
         <div class="content" style="padding-top: 1%;">
             <div class="container-fluid">
@@ -132,7 +85,7 @@
                                 <div class="card-body">
                                     <div class="tab-content">
 
-                                        {{-- determineTab WITHOUT status_update == 3 --}}
+                                        {{-- ✅ determineTab WITHOUT status_update == 3 --}}
                                         @php
                                             function determineTab($slip)
                                             {
@@ -154,9 +107,8 @@
                                                     id="{{ $tabId }}">
 
                                                     <div class="table-responsive mt-3">
-                                                        <table class="table table-bordered table-hover datatable-table"
-                                                            style="font-size: 0.8rem; width: 100%;"
-                                                            id="table-{{ $tabId }}">
+                                                        <table class="table table-bordered table-hover"
+                                                            style="font-size: 0.8rem;">
                                                             <thead>
                                                                 <tr>
                                                                     <th>CTRL #</th>
@@ -178,6 +130,7 @@
                                                                     @php
                                                                         $routeId = $slip->rslip_id;
 
+                                                                        // ✅ Lightweight checks only
                                                                         $logStatusMatches = \App\Models\Log::where(
                                                                             'route_id',
                                                                             $routeId,
@@ -204,6 +157,7 @@
                                                                     @if ($currentTab === $tabId)
                                                                         <tr>
                                                                             @php
+                                                                                // Get the latest routing_slip_id for this rslip
                                                                                 $routingSlipId = \App\Models\RoutingSlip::where(
                                                                                     'rslip_id',
                                                                                     $slip->rslip_id,
@@ -240,6 +194,7 @@
 
                                                                             <td>{{ $slip->r_destination }}</td>
 
+                                                                            {{-- ✅ STATUS (NO status_update == 3 CHECKS) --}}
                                                                             <td>
                                                                                 @switch($slip->route_status)
                                                                                     @case(1)
@@ -270,6 +225,7 @@
                                                                                 {{ $slip->updated_at->format('F j, Y') }}
                                                                             </td>
 
+                                                                            {{-- ACTION --}}
                                                                             <td>
                                                                                 <div class="btn-group btn-group-sm">
                                                                                     @php
@@ -281,14 +237,17 @@
                                                                                             'super_user';
                                                                                     @endphp
 
+                                                                                    {{-- EDIT / ASSIGN LOGIC --}}
                                                                                     @if ($isRecordsOfficer && $slip->route_status == 2)
                                                                                         @if ($slip->assigned_to != null)
+                                                                                            {{-- If already assigned, show editAssign --}}
                                                                                             <a href="{{ route('editAssign', $slip->id) }}"
                                                                                                 class="btn btn-info"
                                                                                                 style="text-decoration: none; color: white;">
                                                                                                 <i class="fas fa-plus"></i>
                                                                                             </a>
                                                                                         @else
+                                                                                            {{-- Not assigned yet, default to editDest --}}
                                                                                             <a href="{{ route('editDest', $slip->id) }}"
                                                                                                 class="btn btn-info"
                                                                                                 style="text-decoration: none; color: white;">
@@ -332,6 +291,7 @@
                                                                                         </button>
                                                                                     @endif
 
+                                                                                    {{-- DELETE --}}
                                                                                     <form
                                                                                         action="{{ route('routingSlip.destroy', $slip->id) }}"
                                                                                         method="POST"
@@ -347,6 +307,7 @@
                                                                                         </button>
                                                                                     </form>
 
+                                                                                    {{-- RECALL --}}
                                                                                     @if ($slip->route_status == 3 && ($isRecordsOfficer || auth()->user()->role === 'Administrator'))
                                                                                         @php
                                                                                             $hasStatus2Log = \App\Models\Log::where(
@@ -390,54 +351,9 @@
             </div>
         </div>
     </div>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    
-    <script>
-        $(document).ready(function() {
-            // Initialize DataTables for each tab
-            @if ($role !== 'staff')
-                @foreach ($tabs as $tabId => $label)
-                    $('#table-{{ $tabId }}').DataTable({
-                        "paging": true,
-                        "pageLength": 10,
-                        "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                        "searching": true,
-                        "ordering": true,
-                        "info": true,
-                        "responsive": true,
-                        "autoWidth": false,
-                        "language": {
-                            "search": "Search:",
-                            "lengthMenu": "Show _MENU_ entries",
-                            "info": "Showing _START_ to _END_ of _TOTAL_ entries",
-                            "infoEmpty": "Showing 0 to 0 of 0 entries",
-                            "infoFiltered": "(filtered from _MAX_ total entries)",
-                            "zeroRecords": "No matching records found",
-                            "paginate": {
-                                "first": "First",
-                                "last": "Last",
-                                "next": "→",
-                                "previous": "←"
-                            }
-                        },
-                        "order": [[1, 'desc']] // Sort by date received by default (column index 1)
-                    });
-                @endforeach
-            @endif
-            
-            // Reinitialize DataTables when tab is shown (fixes responsiveness issues)
-            $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
-                var target = $(e.target).attr("href");
-                var tableId = target.replace('#', '');
-                var table = $('#table-' + tableId).DataTable();
-                if (table) {
-                    table.columns.adjust().responsive.recalc();
-                }
-            });
-        });
-    </script>
 
     @include('modal.addRoutslip')
     @include('modal.addDestination')
+    {{-- @include('modal.pdfRoute') --}}
 @endsection
