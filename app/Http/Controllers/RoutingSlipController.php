@@ -245,16 +245,22 @@ public function viewSlip()
     $perPage = 15;
 
     if ($userRole === 'super_user') {
-        // Super User: Only Routed to President (status 1)
+        // Super User: Get ALL Routed to President (status 1) - use get() not paginate()
         $routingSlips = RoutingSlip::where('route_status', 1)
                         ->orderBy('updated_at', 'desc')
-                        ->paginate($perPage);
+                        ->get();  // Changed from paginate() to get() to get ALL records
     } 
+    elseif ($userRole === 'records_officer') {
+        // Records Officer: Get ALL records with route_status == 2
+        $routingSlips = RoutingSlip::where('route_status', 2)
+                        ->orderBy('updated_at', 'desc')
+                        ->get();
+    }
     else {
-        // Records Officer + Others: Load ALL their records (pagination will be handled per tab in view)
+        // Staff and other roles: Get only their own records
         $routingSlips = RoutingSlip::where('user_id', $userId)
                         ->orderBy('updated_at', 'desc')
-                        ->get();   // Use get() here, we will filter per tab
+                        ->get();
     }
 
     // Counts
@@ -288,6 +294,59 @@ public function viewSlip()
         'userRole'
     ));
 }
+
+// public function viewSlip()
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userRole = $user->role;
+
+//     $perPage = 15;
+
+//     if ($userRole === 'super_user') {
+//         // Super User: Only Routed to President (status 1)
+//         $routingSlips = RoutingSlip::where('route_status', 1)
+//                         ->orderBy('updated_at', 'desc')
+//                         ->paginate($perPage);
+//     } 
+//     else {
+//         // Records Officer + Others: Load ALL their records (pagination will be handled per tab in view)
+//         $routingSlips = RoutingSlip::where('user_id', $userId)
+//                         ->orderBy('updated_at', 'desc')
+//                         ->get();   // Use get() here, we will filter per tab
+//     }
+
+//     // Counts
+//     $hasStatusThree = Log::where('user_id', $userId)
+//                         ->where('status_update', 3)
+//                         ->exists();
+
+//     $routingSlipCount = !$hasStatusThree 
+//         ? RoutingSlip::where('route_status', 3)->count() 
+//         : 0;
+
+//     $recordsOfficerCount = $userRole === 'records_officer' 
+//         ? RoutingSlip::where('route_status', 2)->count() 
+//         : 0;
+
+//     $offices = Office::all();
+//     $userFullName = $user->fname . ' ' . $user->lname;
+
+//     $doctrackCount = Doctrack::where(function ($query) use ($userId, $userFullName) {
+//         $query->where('user_id', $userId)
+//               ->orWhere('update_by', $userId)
+//               ->orWhere('user_name', $userFullName);
+//     })->where('doctrack_stat', 2)->count();
+
+//     return view('slip.routingSlip', compact(
+//         'routingSlips',
+//         'routingSlipCount',
+//         'recordsOfficerCount',
+//         'offices',
+//         'doctrackCount',
+//         'userRole'
+//     ));
+// }
 
 
 public function viewPdfslip($id)
