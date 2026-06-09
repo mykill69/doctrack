@@ -15,29 +15,38 @@
         </li>
 
         <li class="nav-item">
-            @if (auth()->check() &&
-                    auth()->user()->id != 1235 &&
-                    (auth()->user()->hasRole('Administrator') ||
-                        auth()->user()->hasRole('super_user') ||
-                        auth()->user()->hasRole('records_officer')))
-                <a href="{{ route('viewSlip') }}"
-                    class="nav-link {{ request()->routeIs('viewSlip') || request()->routeIs('editDest') || request()->routeIs('editSlip') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-exclamation-circle"></i>
-                    <p>Documents for Action
-                        @php
-                            $user = auth()->user();
-                            $userRole = $user->role;
+    @if (auth()->check() &&
+            auth()->user()->id != 1235 &&
+            (auth()->user()->hasRole('Administrator') ||
+                auth()->user()->hasRole('super_user') ||
+                auth()->user()->hasRole('records_officer')))
+        <a href="{{ route('viewSlip') }}"
+            class="nav-link {{ request()->routeIs('viewSlip') || request()->routeIs('editDest') || request()->routeIs('editSlip') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-exclamation-circle"></i>
+            <p>Documents for Action
+                @php
+                    $user = auth()->user();
+                    $userRole = $user->role;
+                    $userId = $user->id;
 
-                            $userCount =
-                                $userRole === 'super_user'
-                                    ? \App\Models\RoutingSlip::where('route_status', 1)->count()
-                                    : \App\Models\RoutingSlip::where('route_status', 2)->count();
-                        @endphp
-                        <span class="badge badge-info ml-2">{{ $userCount }}</span>
-                    </p>
-                </a>
-            @endif
-        </li>
+                    if ($userRole === 'super_user') {
+                        // Super user: count ALL route_status == 1
+                        $userCount = \App\Models\RoutingSlip::where('route_status', 1)->count();
+                    } elseif ($userRole === 'records_officer') {
+                        // Records officer: count ONLY their created routing slips with route_status == 2
+                        $userCount = \App\Models\RoutingSlip::where('route_status', 2)
+                                        ->where('user_id', $userId)
+                                        ->count();
+                    } else {
+                        // Other roles: count their own records
+                        $userCount = \App\Models\RoutingSlip::where('user_id', $userId)->count();
+                    }
+                @endphp
+                <span class="badge badge-info ml-2">{{ $userCount }}</span>
+            </p>
+        </a>
+    @endif
+</li>
 
         {{-- @php
 
