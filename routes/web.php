@@ -109,6 +109,9 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/slipForm/view/{id}', [RoutingSlipController::class, 'slipForm'])->name('slipForm');
     Route::get('/pdfSlip/view/{id}', [RoutingSlipController::class, 'pdfSlip'])->name('pdfSlip');
 
+    Route::get('/routingSlip/editSubject/{id}', [RoutingSlipController::class, 'editSubject'])->name('editSubject');
+    Route::put('/routingSlip/updateSubject/{id}', [RoutingSlipController::class, 'updateSubject'])->name('updateSubject');
+
 
     //re-assign
     Route::post('/update-assign/{routeId}', [RoutingSlipController::class, 'updateAssign'])->name('updateAssign');

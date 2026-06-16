@@ -859,6 +859,76 @@ public function editSlip($id)
     return redirect()->route('viewSlip')->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
 }
 
+
+/**
+ * Show form to edit subject only (for records_officer in Routed to President tab)
+ */
+public function editSubject($id)
+{
+    $user = auth()->user();
+    
+    // Only records_officer can access this
+    if ($user->role !== 'records_officer') {
+        return redirect()->route('viewSlip')->with('error', 'Unauthorized access.');
+    }
+    
+    $routingSlips = RoutingSlip::findOrFail($id);
+    
+    // Only allow editing if route_status is 1 (Routed to President)
+    if ($routingSlips->route_status != 1) {
+        return redirect()->route('viewSlip')->with('error', 'Can only edit subject for slips routed to President.');
+    }
+    
+    $logs = Log::where('user_id', $user->id)->get();
+    
+    $routingSlipCount = ($logs->every(fn($log) => $log->status_update != 3))
+        ? RoutingSlip::where('route_status', 3)->count()
+        : 0;
+    $superUserCount = 0;
+    $recordsOfficerCount = RoutingSlip::where('route_status', 2)->count();
+    $users = User::select('id', 'fname', 'lname')->get();
+
+    return view('slip.editSubject', compact(
+        'routingSlips',
+        'routingSlipCount',
+        'superUserCount',
+        'recordsOfficerCount',
+        'users'
+    ));
+}
+
+/**
+ * Update subject only
+ */
+public function updateSubject(Request $request, $id)
+{
+    $user = auth()->user();
+    
+    // Only records_officer can update
+    if ($user->role !== 'records_officer') {
+        return redirect()->route('viewSlip')->with('error', 'Unauthorized access.');
+    }
+    
+    $request->validate([
+        'subject' => 'required|string|max:255',
+    ]);
+
+    $routingSlip = RoutingSlip::findOrFail($id);
+    
+    // Only allow updating if route_status is 1 (Routed to President)
+    if ($routingSlip->route_status != 1) {
+        return redirect()->route('viewSlip')->with('error', 'Can only edit subject for slips routed to President.');
+    }
+    
+    $oldSubject = $routingSlip->subject;
+    $routingSlip->subject = $request->input('subject');
+    $routingSlip->save();
+
+    return redirect()->route('viewSlip')->with('success', 'Subject for CTRL#' . $routingSlip->rslip_id . ' updated from "' . $oldSubject . '" to "' . $routingSlip->subject . '".');
+}
+
+
+
 public function routeBackToPresident($id)
 {
     $routingSlip = RoutingSlip::findOrFail($id);

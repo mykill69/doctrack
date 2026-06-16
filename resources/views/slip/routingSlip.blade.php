@@ -271,103 +271,118 @@
                                                                             </td>
 
                                                                             <td>
-                                                                                <div class="btn-group btn-group-sm">
-                                                                                    @php
-                                                                                        $isRecordsOfficer =
-                                                                                            auth()->user()->role ===
-                                                                                            'records_officer';
-                                                                                        $isSuperUser =
-                                                                                            auth()->user()->role ===
-                                                                                            'super_user';
-                                                                                    @endphp
+    <div class="btn-group btn-group-sm">
+        @php
+            $isRecordsOfficer = auth()->user()->role === 'records_officer';
+            $isSuperUser = auth()->user()->role === 'super_user';
+        @endphp
 
-                                                                                    @if ($isRecordsOfficer && $slip->route_status == 2)
-                                                                                        @if ($slip->assigned_to != null)
-                                                                                            <a href="{{ route('editAssign', $slip->id) }}"
-                                                                                                class="btn btn-info"
-                                                                                                style="text-decoration: none; color: white;">
-                                                                                                <i class="fas fa-plus"></i>
-                                                                                            </a>
-                                                                                        @else
-                                                                                            <a href="{{ route('editDest', $slip->id) }}"
-                                                                                                class="btn btn-info"
-                                                                                                style="text-decoration: none; color: white;">
-                                                                                                <i class="fas fa-plus"></i>
-                                                                                            </a>
-                                                                                        @endif
-                                                                                    @elseif ($isSuperUser && $slip->route_status == 1)
-                                                                                        <a href="{{ route('editSlip', $slip->id) }}"
-                                                                                            class="btn btn-info"
-                                                                                            style="text-decoration: none; color: white;">
-                                                                                            <i class="fas fa-pen"></i>
-                                                                                        </a>
-                                                                                    @elseif ($isSuperUser && $slip->route_status == 3)
-                                                                                        <button class="btn btn-secondary"
-                                                                                            disabled>
-                                                                                            <i class="fas fa-pen"></i>
-                                                                                        </button>
-                                                                                    @elseif ($slip->route_status == 3)
-                                                                                        @if ($existsInDocuments)
-                                                                                            <button
-                                                                                                class="btn btn-secondary"
-                                                                                                disabled>
-                                                                                                <i class="fas fa-plus"></i>
-                                                                                            </button>
-                                                                                        @else
-                                                                                            <a href="{{ route('editDest', $slip->id) }}"
-                                                                                                class="btn btn-info"
-                                                                                                style="text-decoration: none; color: white;">
-                                                                                                <i class="fas fa-plus"></i>
-                                                                                            </a>
-                                                                                        @endif
-                                                                                    @elseif ($slip->route_status == 2 && $logStatusMatches)
-                                                                                        <button class="btn btn-secondary"
-                                                                                            disabled>
-                                                                                            <i class="fas fa-plus"></i>
-                                                                                        </button>
-                                                                                    @else
-                                                                                        <button class="btn btn-secondary"
-                                                                                            disabled>
-                                                                                            <i class="fas fa-pen"></i>
-                                                                                        </button>
-                                                                                    @endif
+        {{-- Records Officer: Routed back to Records (route_status == 2) --}}
+        @if ($isRecordsOfficer && $slip->route_status == 2)
+            @if ($slip->assigned_to != null)
+                <a href="{{ route('editAssign', $slip->id) }}"
+                    class="btn btn-info"
+                    style="text-decoration: none; color: white;">
+                    <i class="fas fa-plus"></i>
+                </a>
+            @else
+                <a href="{{ route('editDest', $slip->id) }}"
+                    class="btn btn-info"
+                    style="text-decoration: none; color: white;">
+                    <i class="fas fa-plus"></i>
+                </a>
+            @endif
 
-                                                                                    @if(auth()->user()->role === 'records_officer')
-    <form action="{{ route('routingSlip.destroy', $slip->id) }}"
-          method="POST"
-          onsubmit="return confirm('Are you sure you want to delete this routing slip?');">
-        @csrf
-        @method('DELETE')
-        <button type="submit"
-                class="btn btn-danger no-left-radius">
-            <i class="fas fa-trash"></i>
-        </button>
-    </form>
-@endif
+        {{-- Routed to President (route_status == 1) --}}
+        @elseif ($slip->route_status == 1)
+            @if ($isSuperUser)
+                {{-- Super user: Full edit --}}
+                <a href="{{ route('editSlip', $slip->id) }}"
+                    class="btn btn-info"
+                    style="text-decoration: none; color: white;"
+                    title="Edit Routing Slip">
+                    <i class="fas fa-pen"></i>
+                </a>
+            @elseif ($isRecordsOfficer)
+                {{-- Records officer: Edit subject only --}}
+                <a href="{{ route('editSubject', $slip->id) }}"
+                    class="btn btn-warning"
+                    style="text-decoration: none; color: white;"
+                    title="Edit Subject Only">
+                    <i class="fas fa-edit"></i>
+                </a>
+            @else
+                <button class="btn btn-secondary" disabled>
+                    <i class="fas fa-pen"></i>
+                </button>
+            @endif
 
-                                                                                    @if ($slip->route_status == 3 && ($isRecordsOfficer || auth()->user()->role === 'Administrator'))
-                                                                                        @php
-                                                                                            $hasStatus2Log = \App\Models\Log::where(
-                                                                                                'route_id',
-                                                                                                $slip->rslip_id,
-                                                                                            )
-                                                                                                ->where(
-                                                                                                    'status_update',
-                                                                                                    2,
-                                                                                                )
-                                                                                                ->exists();
-                                                                                        @endphp
+        {{-- Served (route_status == 3) - Super user --}}
+        @elseif ($isSuperUser && $slip->route_status == 3)
+            <button class="btn btn-secondary" disabled>
+                <i class="fas fa-pen"></i>
+            </button>
 
-                                                                                        @if ($hasStatus2Log)
-                                                                                            <a href="{{ route('recallSlip', $slip->id) }}"
-                                                                                                class="btn btn-primary no-left-radius"
-                                                                                                title="Recall">
-                                                                                                <i class="fas fa-undo"></i>
-                                                                                            </a>
-                                                                                        @endif
-                                                                                    @endif
-                                                                                </div>
-                                                                            </td>
+        {{-- Served (route_status == 3) - Others --}}
+        @elseif ($slip->route_status == 3)
+            @if ($existsInDocuments)
+                <button class="btn btn-secondary" disabled>
+                    <i class="fas fa-plus"></i>
+                </button>
+            @else
+                <a href="{{ route('editDest', $slip->id) }}"
+                    class="btn btn-info"
+                    style="text-decoration: none; color: white;">
+                    <i class="fas fa-plus"></i>
+                </a>
+            @endif
+
+        {{-- Routed back to Records but log status matches --}}
+        @elseif ($slip->route_status == 2 && $logStatusMatches)
+            <button class="btn btn-secondary" disabled>
+                <i class="fas fa-plus"></i>
+            </button>
+
+        {{-- Default: Disabled --}}
+        @else
+            <button class="btn btn-secondary" disabled>
+                <i class="fas fa-pen"></i>
+            </button>
+        @endif
+
+        {{-- Delete button: Records officer only --}}
+        @if(auth()->user()->role === 'records_officer')
+            <form action="{{ route('routingSlip.destroy', $slip->id) }}"
+                  method="POST"
+                  onsubmit="return confirm('Are you sure you want to delete this routing slip?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit"
+                        class="btn btn-danger no-left-radius"
+                        title="Delete Routing Slip">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </form>
+        @endif
+
+        {{-- Recall button: Served slips with status 2 log --}}
+        @if ($slip->route_status == 3 && ($isRecordsOfficer || auth()->user()->role === 'Administrator'))
+            @php
+                $hasStatus2Log = \App\Models\Log::where('route_id', $slip->rslip_id)
+                    ->where('status_update', 2)
+                    ->exists();
+            @endphp
+
+            @if ($hasStatus2Log)
+                <a href="{{ route('recallSlip', $slip->id) }}"
+                    class="btn btn-primary no-left-radius"
+                    title="Recall">
+                    <i class="fas fa-undo"></i>
+                </a>
+            @endif
+        @endif
+    </div>
+</td>
                                                                         </tr>
                                                                     @endif
                                                                 @endforeach
