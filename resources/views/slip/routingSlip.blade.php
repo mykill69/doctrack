@@ -339,9 +339,7 @@
         @csrf
         @method('DELETE')
         <button type="submit"
-                class="btn btn-danger no-left-radius"
-                @if (!empty($slip->trans_remarks) && !empty($slip->r_destination)) disabled 
-                title="Cannot delete routed slips" @endif>
+                class="btn btn-danger no-left-radius">
             <i class="fas fa-trash"></i>
         </button>
     </form>
