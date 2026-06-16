@@ -35,6 +35,8 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/viewLogs-Tracking', [PagesController::class, 'viewLogsTracking'])->name('viewLogsTracking');
     Route::get('/viewPdfRoute', [PagesController::class, 'viewPdfRoute'])->name('viewPdfRoute');
     Route::get('/doctrackslip-list', [PagesController::class, 'doctrackSlip'])->name('doctrackSlip');
+    Route::get('/served/data', [PagesController::class, 'getServedData'])->name('served.data');
+    
 
     // update ctrl no in doctrack slip
     Route::put('/doctrack-slip/{doctrack}', [DoctrackController::class, 'update'])->name('doctrack.update');

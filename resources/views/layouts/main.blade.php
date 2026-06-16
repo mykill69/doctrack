@@ -544,13 +544,16 @@
         @endif
     </script>
     <script>
-        $(function() {
+    $(function() {
+        // Only initialize if #example1 exists AND isn't already a DataTable
+        if ($('#example1').length && !$.fn.DataTable.isDataTable('#example1')) {
             $("#example1").DataTable({
                 "responsive": false,
                 "lengthChange": true,
                 "autoWidth": true,
-                //"buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
             }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+        }
+        if ($('#example2').length && !$.fn.DataTable.isDataTable('#example2')) {
             $('#example2').DataTable({
                 "paging": true,
                 "lengthChange": false,
@@ -560,8 +563,9 @@
                 "autoWidth": false,
                 "responsive": true,
             });
-        });
-    </script>
+        }
+    });
+</script>
 
     {{-- <script>
         // validate search bar entry

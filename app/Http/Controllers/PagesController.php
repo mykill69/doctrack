@@ -21,6 +21,12 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+
+use Illuminate\Support\Facades\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 
@@ -797,6 +803,122 @@ public function pending()
 //     ));
 // }
 
+// June 16, 2026 optimized with batch loading selection
+
+// public function served()
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userDepartment = trim($user->department);
+//     $userFullName = trim($user->fname . ' ' . $user->lname);
+//     $userRole = $user->role;
+
+//     $users = User::select('id','fname','lname')->get();
+//     $offices = Office::all();
+
+//     // -----------------------------
+//     // Load logs efficiently with chunking
+//     // -----------------------------
+//     $logsQuery = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
+//         ->whereNotNull('new_user')
+//         ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
+//             $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+//                 $q->where('new_user', $userId)
+//                   ->orWhere('user_id', $userId)
+//                   ->orWhere('new_destination', $userDepartment)
+//                   ->orWhere('new_destination', $userFullName);
+//             });
+//         })
+//         ->orderByDesc('created_at');
+
+//     // Get unique route_ids first with a subquery
+//     $uniqueRouteIds = (clone $logsQuery)
+//         ->select('route_id')
+//         ->selectRaw('MIN(id) as min_id')
+//         ->groupBy('route_id')
+//         ->pluck('min_id');
+
+//     // Load all unique logs using chunking to avoid memory issues
+//     $logs = collect();
+//     Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
+//         ->whereIn('id', $uniqueRouteIds)
+//         ->orderByDesc('created_at')
+//         ->chunk(50, function ($chunk) use (&$logs) {
+//             $logs = $logs->merge($chunk);
+//         });
+
+//     // -----------------------------
+//     // Doctrack records
+//     // -----------------------------
+//     $documentTrack = Doctrack::with(['createdBy:id,fname,lname','doctrackFile'])
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->orderByDesc('created_at')
+//         ->get();
+
+//     // Preload views and comments
+//     $docslipIds = $documentTrack->pluck('docslip_id')->toArray();
+
+//     $views = LogsTracking::whereIn('docslip_id', $docslipIds)
+//         ->whereNotNull('viewed_status')
+//         ->whereNotNull('viewed_at')
+//         ->get()
+//         ->groupBy('docslip_id');
+
+//     $comments = LogsTracking::whereIn('docslip_id', $docslipIds)
+//         ->whereNotNull('comments')
+//         ->get()
+//         ->groupBy('docslip_id');
+
+//     $documentTrack->transform(function ($item) use ($views, $comments) {
+//         $item->views = $views[$item->docslip_id] ?? collect();
+//         $item->all_comments = $comments[$item->docslip_id] ?? collect();
+
+//         $start = \Carbon\Carbon::parse($item->created_at);
+//         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+//         $diffInMinutes = $end->diffInMinutes($start);
+
+//         $item->time_diff = [
+//             'days' => floor($diffInMinutes / 1440),
+//             'hours' => floor(($diffInMinutes % 1440) / 60),
+//             'minutes' => $diffInMinutes % 60,
+//         ];
+
+//         return $item;
+//     });
+
+//     // -----------------------------
+//     // Counts
+//     // -----------------------------
+//     $doctrackCount = Doctrack::where('doctrack_stat', 2)
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere(function ($q) use ($userFullName, $userId) {
+//                       $q->where('user_name', $userFullName)
+//                         ->where('user_id', $userId);
+//                   });
+//         })
+//         ->count();
+
+//     $recordsOfficerCount = $userRole === 'records_officer'
+//         ? RoutingSlip::where('route_status', 2)->count()
+//         : 0;
+
+//     $superUserCount = $userRole === 'super_user'
+//         ? RoutingSlip::where('route_status', 1)->count()
+//         : 0;
+
+//     return view('home.served', compact(
+//         'logs','offices','recordsOfficerCount','superUserCount',
+//         'doctrackCount','users','documentTrack'
+//     ));
+// }
+
+
 public function served()
 {
     $user = auth()->user();
@@ -807,37 +929,6 @@ public function served()
 
     $users = User::select('id','fname','lname')->get();
     $offices = Office::all();
-
-    // -----------------------------
-    // Load logs efficiently with chunking
-    // -----------------------------
-    $logsQuery = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
-        ->whereNotNull('new_user')
-        ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
-            $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
-                $q->where('new_user', $userId)
-                  ->orWhere('user_id', $userId)
-                  ->orWhere('new_destination', $userDepartment)
-                  ->orWhere('new_destination', $userFullName);
-            });
-        })
-        ->orderByDesc('created_at');
-
-    // Get unique route_ids first with a subquery
-    $uniqueRouteIds = (clone $logsQuery)
-        ->select('route_id')
-        ->selectRaw('MIN(id) as min_id')
-        ->groupBy('route_id')
-        ->pluck('min_id');
-
-    // Load all unique logs using chunking to avoid memory issues
-    $logs = collect();
-    Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
-        ->whereIn('id', $uniqueRouteIds)
-        ->orderByDesc('created_at')
-        ->chunk(50, function ($chunk) use (&$logs) {
-            $logs = $logs->merge($chunk);
-        });
 
     // -----------------------------
     // Doctrack records
@@ -851,7 +942,6 @@ public function served()
         ->orderByDesc('created_at')
         ->get();
 
-    // Preload views and comments
     $docslipIds = $documentTrack->pluck('docslip_id')->toArray();
 
     $views = LogsTracking::whereIn('docslip_id', $docslipIds)
@@ -905,10 +995,129 @@ public function served()
         : 0;
 
     return view('home.served', compact(
-        'logs','offices','recordsOfficerCount','superUserCount',
+        'offices','recordsOfficerCount','superUserCount',
         'doctrackCount','users','documentTrack'
     ));
 }
+
+/**
+ * Server-side data for Served DataTables AJAX
+ */
+public function getServedData(Request $request)
+{
+    $user = auth()->user();
+    $userId = $user->id;
+    $userDepartment = trim($user->department);
+    $userFullName = trim($user->fname . ' ' . $user->lname);
+    $userRole = $user->role;
+
+    // Build query - EXACT same as original served()
+    $logsQuery = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
+        ->whereNotNull('new_user')
+        ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
+            $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+                $q->where('new_user', $userId)
+                  ->orWhere('user_id', $userId)
+                  ->orWhere('new_destination', $userDepartment)
+                  ->orWhere('new_destination', $userFullName);
+            });
+        })
+        ->orderByDesc('created_at');
+
+    $uniqueRouteIds = (clone $logsQuery)
+        ->select('route_id')
+        ->selectRaw('MIN(id) as min_id')
+        ->groupBy('route_id')
+        ->pluck('min_id');
+
+    $allLogs = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
+        ->whereIn('id', $uniqueRouteIds)
+        ->orderByDesc('created_at')
+        ->get();
+
+    $users = User::select('id','fname','lname')->get();
+    $totalRecords = $allLogs->count();
+
+    // Pagination
+    $start = (int) $request->input('start', 0);
+    $length = (int) $request->input('length', 25);
+    $paginatedLogs = $allLogs->slice($start, $length)->values();
+
+    // Build data array
+    $data = [];
+    foreach ($paginatedLogs as $log) {
+        $document = $log->document;
+        $routingSlipId = RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
+        
+        // Action taken
+        $actionTaken = '<strong class="text-danger">' . ucwords(strtolower($document->for_to ?? '')) . '</strong>';
+        $destinationUser = $users->firstWhere('id', $document->routingSlip->r_destination ?? null);
+        $assignedUser = $users->firstWhere('id', $document->routingSlip->assigned_to ?? null);
+
+        if ($document->routingSlip && $destinationUser) {
+            $actionTaken .= ' <strong class="text-danger">' . ucwords(strtolower($destinationUser->fname)) . ' ' . ucwords(strtolower($destinationUser->lname)) . '</strong>';
+        } elseif ($document->routingSlip && $document->routingSlip->r_destination) {
+            $actionTaken .= ' <strong class="text-danger">' . ucwords(strtolower($document->routingSlip->r_destination)) . '</strong>';
+        }
+        if ($document->routingSlip && $assignedUser) {
+            $actionTaken .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($assignedUser->fname)) . ' ' . ucwords(strtolower($assignedUser->lname)) . '</strong>';
+        } elseif ($document->routingSlip && $document->routingSlip->assigned_to) {
+            $actionTaken .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($document->routingSlip->assigned_to)) . '</strong>';
+        }
+
+        // Remarks
+        $remarks = '';
+        if (!empty($document->routingSlip->trans_remarks)) {
+            $remarks .= '<span class="badge badge-success" style="font-size:10px; display: block;">' . $document->routingSlip->trans_remarks . '</span>';
+        }
+        if (!empty($document->routingSlip->other_remarks)) {
+            $remarks .= '<span class="badge badge-danger" style="font-size:10px; display: block;">' . $document->routingSlip->other_remarks . '</span>';
+        }
+        if (!empty($log->comments)) {
+            $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $log->comments);
+            $remarks .= '<span class="badge badge-warning" style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">' . $wrappedComment . '</span>';
+        }
+
+        // File name
+        $fileName = 'N/A';
+        if ($document) {
+            $fileName = '<a href="' . route('documents.viewPdf', $document->id) . '" style="color: #007bff;" target="_blank"><i class="fas fa-file-pdf text-danger"></i> ' . Str::limit($document->file_name, 22) . '</a>';
+            if ($log->viewed_status) {
+                $fileName .= '<p><small class="text-muted">Viewed on <br>' . Carbon::parse($log->viewed_at)->format('M j, Y h:i A') . '</small></p>';
+            }
+        }
+
+        // Duration
+        $created = optional($document)->created_at;
+        $updated = $log->updated_at;
+        $diff = $created && $updated ? $created->diff($updated) : null;
+        $duration = $diff ? "{$diff->days} days, {$diff->h} hours, {$diff->i} minutes" : 'N/A';
+
+        $data[] = [
+            'route_id' => $log->route_id ?? 0,
+            'route_display' => $log->route_id == 0 ? 'N/A' : '<a href="' . route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId . '" target="_blank" style="color: #007bff;">' . $log->route_id . '</a>',
+            'date_received' => optional($document->routingSlip)->date_received ? Carbon::parse($document->routingSlip->date_received)->format('F d, Y') : 'N/A',
+            'source' => optional($document->routingSlip)->source ?? 'N/A',
+            'subject' => optional($document->routingSlip)->subject ?? 'N/A',
+            'action_unit' => optional($document->routingSlip)->pres_dept ?? 'N/A',
+            'received_by_date' => optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A',
+            'action_taken' => $actionTaken,
+            'date_released' => optional($document)->created_at ? $document->created_at->format('m-d-Y h:i:s A') : 'N/A',
+            'remarks' => $remarks,
+            'file_name' => $fileName,
+            'updated_at' => $log->updated_at ? $log->updated_at->format('m-d-Y h:i:s A') : 'N/A',
+            'duration' => $duration,
+        ];
+    }
+
+    return response()->json([
+        'draw' => intval($request->input('draw', 1)),
+        'recordsTotal' => $totalRecords,
+        'recordsFiltered' => $totalRecords,
+        'data' => $data
+    ]);
+}
+
 public function viewLogs() 
 {
     $user = auth()->user();
