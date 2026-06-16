@@ -12,7 +12,6 @@
         margin-top: 0.31rem;
     }
     
-    /* Loading indicator */
     .dataTables_processing {
         background: rgba(255,255,255,0.9);
         border: 1px solid #ddd;
@@ -32,7 +31,6 @@
                         <div class="card">
                             <div class="card-header">
                                 <h3 class="card-title">DOCUMENT LOGBOOK</h3>
-                               
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -54,216 +52,6 @@
                                                 <th>TOTAL DURATION</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                            @php
-                                                $processedLogs = [];
-                                                $logsToShow = [];
-                                                $currentUserDepartment = auth()->user()->department;
-                                                $currentUserId = auth()->user()->id;
-                                            @endphp
-                                            
-                                            @foreach ($logs as $log)
-                                                @php
-                                                    $document = $log->document;
-                                                    $uniqueIdentifier =
-                                                        $log->route_id .
-                                                        '-' .
-                                                        $log->doc_id .
-                                                        '-' .
-                                                        $log->new_destination;
-                                                        
-                                                    // Skip logs if they have a new user already processed
-                                                    if (
-                                                        isset($processedLogs[$uniqueIdentifier]) &&
-                                                        $processedLogs[$uniqueIdentifier]['hasNewUser']
-                                                    ) {
-                                                        continue;
-                                                    }
-                                                    
-                                                    // Process the log based on whether it has a new user
-                                                    if (!is_null($log->new_user)) {
-                                                        $processedLogs[$uniqueIdentifier] = ['hasNewUser' => true];
-                                                        $logsToShow[$uniqueIdentifier] = $log;
-                                                    } else {
-                                                        if (!isset($processedLogs[$uniqueIdentifier])) {
-                                                            $processedLogs[$uniqueIdentifier] = ['hasNewUser' => false];
-                                                            $logsToShow[$uniqueIdentifier] = $log;
-                                                        }
-                                                    }
-                                                    
-                                                    // Ensure the current user department is included in the logs to show
-                                                    if ($currentUserDepartment === $log->new_destination) {
-                                                        $logsToShow[$uniqueIdentifier] = $log;
-                                                    }
-                                                @endphp
-                                            @endforeach
-                                            
-                                            @foreach ($logsToShow as $log)
-                                                @php
-                                                    $document = $log->document;
-                                                    $routingSlipId = \App\Models\RoutingSlip::where(
-                                                        'rslip_id',
-                                                        $log->route_id,
-                                                    )
-                                                        ->orderBy('id', 'desc')
-                                                        ->value('id');
-                                                @endphp
-                                                <tr>
-                                                    <td data-order="{{ $log->route_id == 0 ? 0 : $log->route_id }}">
-                                                        @if ($log->route_id == 0)
-                                                            N/A
-                                                        @else
-                                                            <a href="{{ route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId }}"
-                                                                target="_blank" style="color: #007bff;">
-                                                                {{ $log->route_id }}
-                                                            </a>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        {{ optional($document->routingSlip)->date_received
-                                                            ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('F d, Y')
-                                                            : ($document->created_at
-                                                                ? \Carbon\Carbon::parse($document->created_at)->format('F d, Y')
-                                                                : 'N/A') }}
-                                                    </td>
-                                                    <td>{{ optional($document->routingSlip)->source ?? ($document->department ?? 'N/A') }}</td>
-                                                    <td>{{ optional($document->routingSlip)->subject ?? ($document->subject ?? 'N/A') }}</td>
-                                                    <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
-                                                    <td>{{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A' }}</td>
-                                                    <td>
-                                                        @if ($log->routingSlip)
-                                                            <strong class="text-danger">
-                                                                {{ ucwords(strtolower($log->routingSlip->r_destination)) }}
-                                                            </strong>
-                                                        @endif
-
-                                                        @if ($log->assigned_to != null)
-                                                            , was re-assigned to
-                                                            <strong class="text-danger">
-                                                                {{ ucwords(strtolower($log->assigned_to)) }}
-                                                            </strong>
-                                                        @endif
-                                                    </td>
-                                                    <td>{{ optional($document)->created_at ? $document->created_at->format('m-d-Y h:i:s A') : 'N/A' }}</td>
-                                                    <td style="font-size:10px;">
-                                                        @if (!empty($document->routingSlip->trans_remarks))
-                                                            <span class="badge badge-success"
-                                                                style="font-size:10px; display: block;">
-                                                                {{ $document->routingSlip->trans_remarks }}
-                                                            </span>
-                                                        @endif
-
-                                                        @if (!empty($document->routingSlip->other_remarks))
-                                                            <span class="badge badge-danger"
-                                                                style="font-size:10px; display: block;">
-                                                                {{ $document->routingSlip->other_remarks }}
-                                                            </span>
-                                                        @endif
-
-                                                        @php
-                                                            $comment = $log->comments ?? '';
-                                                            $wrappedComment = preg_replace(
-                                                                '/((?:\S+\s+){4})/',
-                                                                '$1<br>',
-                                                                $comment,
-                                                            );
-                                                        @endphp
-
-                                                        @if (!empty($comment))
-                                                            <span class="badge badge-warning"
-                                                                style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
-                                                                {!! $wrappedComment !!}
-                                                            </span>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        @if($document)
-                                                            <a href="{{ route('documents.viewPdf', $document->id) }}"
-                                                                target="_blank" style="color: #007bff;">
-                                                                <i class="fas fa-file-pdf text-danger"></i>
-                                                                {{ \Illuminate\Support\Str::limit($document->file_name, 22) }}
-                                                            </a>
-                                                            <p>
-                                                                <small class="text-muted">
-                                                                    @if ($log->viewed_status)
-                                                                        Viewed on <br>
-                                                                        {{ \Carbon\Carbon::parse($log->viewed_at)->format('M j, Y h:i A') }}
-                                                                    @endif
-                                                                </small>
-                                                            </p>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge badge-secondary">{{ $log->new_destination }}</span>
-                                                        <br>
-                                                        {{ $log->updated_at->format('m-d-Y h:i:s A') }}
-                                                    </td>
-                                                    <td>
-                                                        @php
-                                                            $documentCreatedAt = \Carbon\Carbon::parse(
-                                                                optional($document)->created_at ?? now(),
-                                                            );
-                                                            $logUpdatedAt = $log->updated_at
-                                                                ? \Carbon\Carbon::parse($log->updated_at)
-                                                                : null;
-
-                                                            if ($logUpdatedAt) {
-                                                                $totalMinutes = $documentCreatedAt->diffInMinutes(
-                                                                    $logUpdatedAt,
-                                                                );
-
-                                                                $days = floor($totalMinutes / 1440);
-                                                                $hours = floor(($totalMinutes % 1440) / 60);
-                                                                $minutes = $totalMinutes % 60;
-
-                                                                if ($days === 0 && $hours === 0) {
-                                                                    $formattedDiff =
-                                                                        "{$minutes} " .
-                                                                        \Illuminate\Support\Str::plural(
-                                                                            'minute',
-                                                                            $minutes,
-                                                                        );
-                                                                } else {
-                                                                    $formattedDiff = '';
-
-                                                                    if ($days > 0) {
-                                                                        $formattedDiff .=
-                                                                            "{$days} " .
-                                                                            \Illuminate\Support\Str::plural(
-                                                                                'day',
-                                                                                $days,
-                                                                            );
-                                                                    }
-
-                                                                    if ($hours > 0) {
-                                                                        $formattedDiff .=
-                                                                            ($formattedDiff ? ', ' : '') .
-                                                                            "{$hours} " .
-                                                                            \Illuminate\Support\Str::plural(
-                                                                                'hr',
-                                                                                $hours,
-                                                                            );
-                                                                    }
-
-                                                                    if ($minutes > 0) {
-                                                                        $formattedDiff .=
-                                                                            ($formattedDiff ? ' and ' : '') .
-                                                                            "{$minutes} " .
-                                                                            \Illuminate\Support\Str::plural(
-                                                                                'minute',
-                                                                                $minutes,
-                                                                            );
-                                                                    }
-                                                                }
-                                                            } else {
-                                                                $formattedDiff = 'N/A';
-                                                            }
-                                                        @endphp
-                                                        {{ $formattedDiff }}
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -279,14 +67,11 @@
     @if (!$dpa)
         <script>
             document.addEventListener("DOMContentLoaded", function() {
-                console.log("DPA modal trigger running");
                 if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
                     $('#dpaPopupAuto').modal({
                         backdrop: 'static',
                         keyboard: false
                     });
-                } else {
-                    console.error("Modal cannot open because Bootstrap/jQuery is not loaded.");
                 }
             });
         </script>
@@ -294,32 +79,49 @@
 
     <script>
         $(document).ready(function() {
-            // Check if DataTable is already initialized
-            if ($.fn.DataTable.isDataTable('#dashboardTable')) {
-                $('#dashboardTable').DataTable().destroy();
-            }
-            
-            // Initialize DataTable with deferred rendering for performance
-            var t = $('#dashboardTable').DataTable({
+            $('#dashboardTable').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "{{ route('dashboard.data') }}",
+                    "type": "GET",
+                    "error": function(xhr, error, thrown) {
+                        console.error('DataTables error:', error);
+                        alert('Error loading data. Please try again.');
+                    }
+                },
+                "columns": [
+                    { "data": "route_display", "name": "route_id" },
+                    { "data": "date_received", "name": "date_received" },
+                    { "data": "source", "name": "source" },
+                    { "data": "subject", "name": "subject" },
+                    { "data": "action_unit", "name": "action_unit" },
+                    { "data": "received_by_date", "name": "received_by_date" },
+                    { "data": "action_taken", "name": "action_taken" },
+                    { "data": "date_released", "name": "date_released" },
+                    { "data": "remarks", "name": "remarks" },
+                    { "data": "file_name", "name": "file_name" },
+                    { "data": "updated_by", "name": "updated_by" },
+                    { "data": "duration", "name": "duration" }
+                ],
                 "order": [[0, "desc"]],
-                "pageLength": 20,
-                "deferRender": true,  // Only render visible rows
-                "processing": true,   // Show processing indicator
-                "columnDefs": [{
-                    "targets": 0,
-                    "type": "num",
-                    "orderable": true
-                }],
+                "pageLength": 25,
+                "deferRender": true,
+                "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
                 "language": {
                     "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
                     "search": "Search:",
                     "lengthMenu": "Show _MENU_ entries",
-                    "info": "Showing _START_ to _END_ of _TOTAL_ entries"
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                    "infoFiltered": "(filtered from _MAX_ total entries)",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    }
                 }
             });
-
-            // Re-apply sort
-            t.order([0, "desc"]).draw();
         });
     </script>
 

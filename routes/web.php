@@ -9,38 +9,24 @@ use App\Http\Controllers\RoutingSlipController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\DoctrackController;
 use App\Http\Controllers\PrintController;
-use Dompdf\FrameDecorator\Page;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
 Route::group(['middleware'=>['guest']],function(){
     Route::get('/', function () {
         return view('.login.login');
     });
 
-
-//login
-Route::get('/login', [LoginAuthController::class, 'getLogin'])->name('getLogin');
-Route::post('/login', [LoginAuthController::class, 'postLogin'])->name('postLogin');
-
-    
-
+    Route::get('/login', [LoginAuthController::class, 'getLogin'])->name('getLogin');
+    Route::post('/login', [LoginAuthController::class, 'postLogin'])->name('postLogin');
 });
-
-
 
 Route::group(['middleware'=>['login_auth']],function(){
 
-    //Main page
+    // Main page
     Route::get('/', [DocumentController::class, 'dashboard'])->name('dashboard');
+
+    // Dashboard DataTables AJAX endpoint
+    Route::get('/dashboard/data', [DocumentController::class, 'getDashboardData'])->name('dashboard.data');
+    
     //pages
     Route::get('/outgoing-document', [PagesController::class, 'outgoingDocs'])->name('outgoingDocs');
     Route::get('/pending', [PagesController::class, 'pending'])->name('pending');

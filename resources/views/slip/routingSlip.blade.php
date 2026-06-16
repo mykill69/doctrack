@@ -104,7 +104,7 @@
                                                     $tabs = [
                                                         'routed1' => 'Routed to President',
                                                         'routed2' => 'Routed back to Records',
-                                                        'enroute' => 'Pending',
+                                                        // 'enroute' => 'Pending',
                                                     ];
                                                 }
                                             @endphp
@@ -332,20 +332,20 @@
                                                                                         </button>
                                                                                     @endif
 
-                                                                                    <form
-                                                                                        action="{{ route('routingSlip.destroy', $slip->id) }}"
-                                                                                        method="POST"
-                                                                                        onsubmit="return confirm('Are you sure you want to delete this routing slip?');">
-                                                                                        @csrf
-                                                                                        @method('DELETE')
-                                                                                        <button type="submit"
-                                                                                            class="btn btn-danger no-left-radius"
-                                                                                            @if (
-                                                                                                ($isRecordsOfficer && !empty($slip->trans_remarks) && !empty($slip->r_destination)) ||
-                                                                                                    ($isSuperUser && !empty($slip->trans_remarks) && !empty($slip->r_destination))) disabled @endif>
-                                                                                            <i class="fas fa-trash"></i>
-                                                                                        </button>
-                                                                                    </form>
+                                                                                    @if(auth()->user()->role === 'records_officer')
+    <form action="{{ route('routingSlip.destroy', $slip->id) }}"
+          method="POST"
+          onsubmit="return confirm('Are you sure you want to delete this routing slip?');">
+        @csrf
+        @method('DELETE')
+        <button type="submit"
+                class="btn btn-danger no-left-radius"
+                @if (!empty($slip->trans_remarks) && !empty($slip->r_destination)) disabled 
+                title="Cannot delete routed slips" @endif>
+            <i class="fas fa-trash"></i>
+        </button>
+    </form>
+@endif
 
                                                                                     @if ($slip->route_status == 3 && ($isRecordsOfficer || auth()->user()->role === 'Administrator'))
                                                                                         @php
