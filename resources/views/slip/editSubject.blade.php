@@ -90,15 +90,18 @@
                                     </div>
                                 </div>
 
-                                {{-- Subject Matter (EDITABLE) --}}
+                                {{-- Subject Matter (EDITABLE - TEXTAREA) --}}
                                 <div class="form-group row">
                                     <label class="col-md-3 col-form-label font-weight-bold">
                                         Subject Matter: <span class="text-danger">*</span>
                                     </label>
                                     <div class="col-md-9">
-                                        <input type="text" class="form-control form-control-lg" name="subject"
-                                            value="{{ old('subject', $routingSlips->subject) }}" 
-                                            placeholder="Enter corrected subject matter" required autofocus>
+                                        <textarea class="form-control form-control-lg" name="subject" 
+                                            rows="4" 
+                                            placeholder="Enter corrected subject matter" 
+                                            required 
+                                            autofocus
+                                            style="resize: vertical; min-height: 100px;">{{ old('subject', $routingSlips->subject) }}</textarea>
                                         @error('subject')
                                             <span class="text-danger">{{ $message }}</span>
                                         @enderror
