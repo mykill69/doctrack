@@ -1,7 +1,6 @@
 @extends('layouts.main')
 
 <style>
-    /* Align Select2 to match Bootstrap form-control */
     .select2-container--default .select2-selection--multiple {
         border: 1px solid #ced4da;
         border-radius: 0.25rem;
@@ -18,7 +17,6 @@
         align-items: center;
     }
 
-    /* Fix dropdown to appear above loader */
     .select2-dropdown {
         z-index: 9999 !important;
     }
@@ -33,7 +31,7 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div class="col-md-10">
                                 <h4 class="text-bold mb-11">
-                                    CTRL #{{ $routingSlips->rslip_id }} - Edit Subject Only
+                                    CTRL #{{ $routingSlips->rslip_id }} - Edit
                                     <span class="badge badge-warning ml-2">Routed to President</span>
                                 </h4>
                             </div>
@@ -49,44 +47,58 @@
                                 @csrf
                                 @method('PUT')
 
-                                @php
-                                    $userDepartment = auth()->user()->department;
-                                @endphp
-
                                 {{-- Alert Info --}}
                                 <div class="form-group row">
                                     <div class="col-md-12">
-                                        <div class="alert alert-warning">
+                                        <div class="alert alert-info">
                                             <i class="fas fa-info-circle mr-2"></i>
-                                            <strong>Note:</strong> Only the Subject Matter can be edited. All other fields are locked.
+                                            <strong>Note:</strong> You can edit Control Number, Source, Date Received, and Subject Matter.
                                         </div>
                                     </div>
                                 </div>
 
-                                {{-- Control Number (Read-only) --}}
+                                {{-- Control Number (EDITABLE) --}}
                                 <div class="form-group row">
-                                    <label for="op_ctrl" class="col-md-3 col-form-label">Control Number:</label>
+                                    <label for="op_ctrl" class="col-md-3 col-form-label font-weight-bold">
+                                        Control Number: <span class="text-danger">*</span>
+                                    </label>
                                     <div class="col-md-9">
-                                        <input type="text" class="form-control" 
-                                            value="{{ $routingSlips->op_ctrl ?? $routingSlips->rslip_id }}" readonly>
+                                        <input type="number" class="form-control" name="op_ctrl" 
+                                            value="{{ old('op_ctrl', $routingSlips->op_ctrl ?? $routingSlips->rslip_id) }}" 
+                                            required>
+                                        @error('op_ctrl')
+                                            <span class="text-danger">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                 </div>
 
-                                {{-- Source (Read-only) --}}
+                                {{-- Source (EDITABLE) --}}
                                 <div class="form-group row">
-                                    <label for="source" class="col-md-3 col-form-label">Source:</label>
+                                    <label for="source" class="col-md-3 col-form-label font-weight-bold">
+                                        Source: <span class="text-danger">*</span>
+                                    </label>
                                     <div class="col-md-9">
-                                        <input type="text" class="form-control" 
-                                            value="{{ $routingSlips->source }}" readonly>
+                                        <input type="text" class="form-control" name="source" 
+                                            value="{{ old('source', $routingSlips->source) }}" 
+                                            required>
+                                        @error('source')
+                                            <span class="text-danger">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                 </div>
 
-                                {{-- Date Received (Read-only) --}}
+                                {{-- Date Received (EDITABLE) --}}
                                 <div class="form-group row">
-                                    <label class="col-md-3 col-form-label">Date Received:</label>
+                                    <label class="col-md-3 col-form-label font-weight-bold">
+                                        Date Received: <span class="text-danger">*</span>
+                                    </label>
                                     <div class="col-md-9">
-                                        <input type="text" class="form-control" 
-                                            value="{{ \Carbon\Carbon::parse($routingSlips->date_received)->format('F j, Y') }}" readonly>
+                                        <input type="date" class="form-control" name="date_received" 
+                                            value="{{ old('date_received', \Carbon\Carbon::parse($routingSlips->date_received)->format('Y-m-d')) }}" 
+                                            required>
+                                        @error('date_received')
+                                            <span class="text-danger">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                 </div>
 
@@ -156,7 +168,7 @@
                                     <div class="col-md-3"></div>
                                     <div class="col-md-9">
                                         <button type="submit" class="btn btn-success">
-                                            <i class="fas fa-save mr-1"></i> Update Subject
+                                            <i class="fas fa-save mr-1"></i> Update
                                         </button>
                                         <a href="{{ route('viewSlip') }}" class="btn btn-danger">
                                             <i class="fas fa-times mr-1"></i> Cancel

@@ -221,6 +221,8 @@ class DocumentController extends Controller
                 'file_name' => $this->formatFileName($document, $log),
                 'updated_by' => '<span class="badge badge-secondary">' . ($log->new_destination ?? 'N/A') . '</span><br>' . $log->updated_at->format('m-d-Y h:i:s A'),
                 'duration' => $this->formatDuration($document, $log),
+                 // ADD THIS for recall action
+                'action' => $this->formatRecallAction($log),
             ];
         }
 
@@ -332,6 +334,30 @@ class DocumentController extends Controller
         
         return $diff;
     }
+
+    private function formatRecallAction($log)
+{
+    $user = auth()->user();
+    
+    if (!in_array($user->role, ['records_officer', 'administrator'])) {
+        return '';
+    }
+    
+    // Get the routing_slip ID (primary key) from the log's route_id (rslip_id)
+    $routingSlipId = RoutingSlip::where('rslip_id', $log->route_id)
+        ->orderBy('id', 'desc')
+        ->value('id');
+    
+    if (!$routingSlipId) {
+        return '';
+    }
+    
+    return '<div class="buttons">
+        <a href="' . route('recallSlip', ['id' => $routingSlipId]) . '" class="btn btn-icon btn-info edit-slip-btn" target="_blank">
+            <span>Recall</span> <i class="fas fa-undo-alt"></i>
+        </a>
+    </div>';
+}
 
     // ============================================
     // Your existing methods below (keep all of them)

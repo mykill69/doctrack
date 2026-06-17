@@ -904,27 +904,30 @@ public function updateSubject(Request $request, $id)
 {
     $user = auth()->user();
     
-    // Only records_officer can update
     if ($user->role !== 'records_officer') {
         return redirect()->route('viewSlip')->with('error', 'Unauthorized access.');
     }
     
     $request->validate([
-        'subject' => 'required|string|max:255',
+        'op_ctrl'       => 'required|integer',
+        'source'        => 'required|string|max:255',
+        'date_received' => 'required|date',
+        'subject'       => 'required|string|max:255',
     ]);
 
     $routingSlip = RoutingSlip::findOrFail($id);
     
-    // Only allow updating if route_status is 1 (Routed to President)
     if ($routingSlip->route_status != 1) {
-        return redirect()->route('viewSlip')->with('error', 'Can only edit subject for slips routed to President.');
+        return redirect()->route('viewSlip')->with('error', 'Can only edit slips routed to President.');
     }
     
-    $oldSubject = $routingSlip->subject;
-    $routingSlip->subject = $request->input('subject');
+    $routingSlip->op_ctrl       = $request->input('op_ctrl');
+    $routingSlip->source        = $request->input('source');
+    $routingSlip->date_received = $request->input('date_received');
+    $routingSlip->subject       = $request->input('subject');
     $routingSlip->save();
 
-    return redirect()->route('viewSlip')->with('success', 'Subject for CTRL#' . $routingSlip->rslip_id . ' updated from "' . $oldSubject . '" to "' . $routingSlip->subject . '".');
+    return redirect()->route('viewSlip')->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
 }
 
 

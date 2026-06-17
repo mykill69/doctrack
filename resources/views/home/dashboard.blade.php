@@ -50,6 +50,9 @@
                                                 <th>FILE NAME</th>
                                                 <th>UPDATED DATE/BY</th>
                                                 <th>TOTAL DURATION</th>
+                                                @if (in_array(auth()->user()->role, ['records_officer', 'administrator']))
+                                                    <th>ACTION</th>
+                                                @endif
                                             </tr>
                                         </thead>
                                     </table>
@@ -79,6 +82,27 @@
 
     <script>
         $(document).ready(function() {
+            // Build columns array dynamically
+            var columns = [
+                { "data": "route_display", "name": "route_id" },
+                { "data": "date_received", "name": "date_received" },
+                { "data": "source", "name": "source" },
+                { "data": "subject", "name": "subject" },
+                { "data": "action_unit", "name": "action_unit" },
+                { "data": "received_by_date", "name": "received_by_date" },
+                { "data": "action_taken", "name": "action_taken" },
+                { "data": "date_released", "name": "date_released" },
+                { "data": "remarks", "name": "remarks" },
+                { "data": "file_name", "name": "file_name" },
+                { "data": "updated_by", "name": "updated_by" },
+                { "data": "duration", "name": "duration" }
+            ];
+
+            // Add action column for records_officer and administrator
+            @if (in_array(auth()->user()->role, ['records_officer', 'administrator']))
+                columns.push({ "data": "action", "name": "action", "orderable": false, "searchable": false });
+            @endif
+
             $('#dashboardTable').DataTable({
                 "processing": true,
                 "serverSide": true,
@@ -87,23 +111,9 @@
                     "type": "GET",
                     "error": function(xhr, error, thrown) {
                         console.error('DataTables error:', error);
-                        alert('Error loading data. Please try again.');
                     }
                 },
-                "columns": [
-                    { "data": "route_display", "name": "route_id" },
-                    { "data": "date_received", "name": "date_received" },
-                    { "data": "source", "name": "source" },
-                    { "data": "subject", "name": "subject" },
-                    { "data": "action_unit", "name": "action_unit" },
-                    { "data": "received_by_date", "name": "received_by_date" },
-                    { "data": "action_taken", "name": "action_taken" },
-                    { "data": "date_released", "name": "date_released" },
-                    { "data": "remarks", "name": "remarks" },
-                    { "data": "file_name", "name": "file_name" },
-                    { "data": "updated_by", "name": "updated_by" },
-                    { "data": "duration", "name": "duration" }
-                ],
+                "columns": columns,
                 "order": [[0, "desc"]],
                 "pageLength": 25,
                 "deferRender": true,

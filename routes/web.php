@@ -41,6 +41,7 @@ Route::group(['middleware'=>['login_auth']],function(){
     // update ctrl no in doctrack slip
     Route::put('/doctrack-slip/{doctrack}', [DoctrackController::class, 'update'])->name('doctrack.update');
 
+    
 
     // Routed Distribution list
     Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
