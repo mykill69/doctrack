@@ -363,78 +363,80 @@ class DocumentController extends Controller
     // Your existing methods below (keep all of them)
     // ============================================
 
-    public function tracking(Request $request)
-    {
-        $user = auth()->user();
-        $userId = $user->id;
-        $fullName = trim($user->fname . ' ' . $user->lname);
+ public function tracking(Request $request)
+{
+    $user = auth()->user();
+    $userId = $user->id;
+    $fullName = trim($user->fname . ' ' . $user->lname);
 
-        $routeId = $request->query('route_id');
-        $routingSlipId = $request->query('routing_slip_id');
+    $routeId = $request->query('route_id');
+    $routingSlipId = $request->query('routing_slip_id');
 
-        if ($routeId && !$routingSlipId) {
-            $routingSlipId = RoutingSlip::where('rslip_id', $routeId)
-                ->orderBy('id', 'desc')
-                ->value('id');
+    if ($routeId && !$routingSlipId) {
+        $routingSlipId = RoutingSlip::where('rslip_id', $routeId)
+            ->orderBy('id', 'desc')
+            ->value('id');
 
-            if ($routingSlipId) {
-                return redirect()->route('documents.tracking', [
-                    'route_id' => $routeId,
-                    'routing_slip_id' => $routingSlipId,
-                ]);
-            }
+        if ($routingSlipId) {
+            return redirect()->route('documents.tracking', [
+                'route_id' => $routeId,
+                'routing_slip_id' => $routingSlipId,
+            ]);
         }
-
-        $documents = Document::query()
-            ->leftJoin('routing_slip', 'documents.route_id', '=', 'routing_slip.rslip_id')
-            ->select(
-                'documents.*',
-                'routing_slip.id as routing_slip_id',
-                'routing_slip.user_id as routing_slip_user_id',
-                'routing_slip.routed_users',
-                'routing_slip.r_destination',
-                'routing_slip.trans_remarks',
-                'routing_slip.source'
-            )
-            ->where('documents.route_id', $routeId)
-            ->where('routing_slip.id', $routingSlipId)
-            ->get();
-
-        $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
-            $routedUsers = array_map('trim', explode(',', $document->routed_users ?? ''));
-
-            return in_array($fullName, $routedUsers)
-                || Log::where('doc_id', $document->id)
-                    ->whereRaw('LOWER(TRIM(new_destination)) = ?', [strtolower($fullName)])
-                    ->exists()
-                || $document->user_id == $userId
-                || $document->routing_slip_user_id == $userId;
-        });
-
-        $logs = Log::where('user_id', $userId)->get();
-
-        $routingSlipCount = $logs->every(fn ($log) => $log->status_update != 3)
-            ? RoutingSlip::where('route_status', 3)->count()
-            : 0;
-
-        $superUserCount = $user->role === 'super_user'
-            ? RoutingSlip::where('route_status', 1)->count()
-            : 0;
-
-        $recordsOfficerCount = $user->role === 'records_officer'
-            ? RoutingSlip::where('route_status', 2)->count()
-            : 0;
-
-        return view('track.tracktemp', [
-            'documents' => $filteredDocuments,
-            'offices' => Office::all(),
-            'docNumber' => $routeId,
-            'routingSlipCount' => $routingSlipCount,
-            'superUserCount' => $superUserCount,
-            'recordsOfficerCount' => $recordsOfficerCount,
-        ]);
     }
 
+    // Get ALL routing slips for this route_id
+    $allRoutingSlips = RoutingSlip::where('rslip_id', $routeId)->get();
+
+    // Get documents (without joining to avoid filtering)
+    $documents = Document::where('route_id', $routeId)->get();
+
+    // Attach matching routing slip to each document by file_name = document
+    foreach ($documents as $doc) {
+        $doc->matched_slip = $allRoutingSlips->where('document', $doc->file_name)->first();
+        $doc->routing_slip_user_id = $doc->matched_slip->user_id ?? null;
+        $doc->routed_users = $doc->matched_slip->routed_users ?? null;
+        $doc->r_destination = $doc->matched_slip->r_destination ?? null;
+        $doc->trans_remarks = $doc->matched_slip->trans_remarks ?? null;
+        $doc->source = $doc->matched_slip->source ?? null;
+    }
+
+    $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
+        $routedUsers = array_map('trim', explode(',', $document->routed_users ?? ''));
+
+        return in_array($fullName, $routedUsers)
+            || Log::where('doc_id', $document->id)
+                ->whereRaw('LOWER(TRIM(new_destination)) = ?', [strtolower($fullName)])
+                ->exists()
+            || $document->user_id == $userId
+            || $document->routing_slip_user_id == $userId;
+    });
+
+    $logs = Log::where('user_id', $userId)->get();
+    $users = User::all();
+
+    $routingSlipCount = $logs->every(fn ($log) => $log->status_update != 3)
+        ? RoutingSlip::where('route_status', 3)->count()
+        : 0;
+
+    $superUserCount = $user->role === 'super_user'
+        ? RoutingSlip::where('route_status', 1)->count()
+        : 0;
+
+    $recordsOfficerCount = $user->role === 'records_officer'
+        ? RoutingSlip::where('route_status', 2)->count()
+        : 0;
+
+    return view('track.tracktemp', [
+        'documents' => $filteredDocuments,
+        'users' => $users,
+        'offices' => Office::all(),
+        'docNumber' => $routeId,
+        'routingSlipCount' => $routingSlipCount,
+        'superUserCount' => $superUserCount,
+        'recordsOfficerCount' => $recordsOfficerCount,
+    ]);
+}
     public function storeDoc(Request $request)
     {
         $request->validate([

@@ -234,82 +234,51 @@
                                 </div>
 
                                 <!-- RIGHT COLUMN (Document Info Table) -->
-                                <div class="col-md-4">
-                                    <div class="card shadow-sm">
-                                        <div class="card-header bg-primary text-white">
-                                            <h5 class="mb-0">Document Information</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <p>
-                                                <strong>File Name:</strong>
-                                                {{ str_replace('_', ' ', $doc->file_name) }}
-                                                <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
-                                                    class="ml-2 btn btn-info btn-sm text-white">
-                                                    View PDF <i class="fas fa-file-pdf ml-1"></i>
-                                                </a>
-                                            </p>
-                                            <table class="table table-sm table-bordered text-sm">
-                                                <tr>
-                                                    <th>Control No.</th>
-                                                    <td>{{ $doc->route_id }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Subject</th>
-                                                    <td>{{ $doc->subject }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Source</th>
-                                                    <td>{{ $doc->source }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Action</th>
-                                                    <td>{{ $doc->trans_remarks }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Created By</th>
-                                                    <td>{{ $doc->full_name }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Recipient/s</th>
-                                                    <td>
-                                                        @php
-                                                            $destinationUser = $users->firstWhere(
-                                                                'id',
-                                                                $doc->r_destination ?? null,
-                                                            );
-                                                            $assignedUser = $users->firstWhere(
-                                                                'id',
-                                                                $doc->assigned_to ?? null,
-                                                            );
-                                                        @endphp
-
-                                                        @if ($destinationUser)
-                                                            <strong class="text-danger">
-                                                                {{ ucwords(strtolower($destinationUser->fname)) }}
-                                                                {{ ucwords(strtolower($destinationUser->lname)) }}
-                                                            </strong>
-                                                        @else
-                                                            <strong
-                                                                class="text-danger">{{ $doc->r_destination ?? 'N/A' }}</strong>
-                                                        @endif
-
-                                                        @if ($assignedUser)
-                                                            , was re-assigned to <strong class="text-danger">
-                                                                {{ ucwords(strtolower($assignedUser->fname)) }}
-                                                                {{ ucwords(strtolower($assignedUser->lname)) }}
-                                                            </strong>
-                                                        @endif
-                                                    </td>
-                                                </tr>
-
-                                                <tr>
-                                                    <th>Created At</th>
-                                                    <td>{{ $doc->created_at->format('F j, Y h:i A') }}</td>
-                                                </tr>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
+<div class="col-md-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Document Information</h5>
+        </div>
+        <div class="card-body">
+            @php
+                $slip = $doc->matched_slip ?? null;
+            @endphp
+            <p>
+                <strong>File Name:</strong>
+                {{ str_replace('_', ' ', $doc->file_name) }}
+                <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
+                    class="ml-2 btn btn-info btn-sm text-white">
+                    View PDF <i class="fas fa-file-pdf ml-1"></i>
+                </a>
+            </p>
+            <table class="table table-sm table-bordered text-sm">
+                <tr><th>Control No.</th><td>{{ $doc->route_id }}</td></tr>
+                <tr><th>Subject</th><td>{{ $slip->subject ?? $doc->subject ?? 'N/A' }}</td></tr>
+                <tr><th>Source</th><td>{{ $slip->source ?? 'N/A' }}</td></tr>
+                <tr><th>Action</th><td>{{ $slip->trans_remarks ?? 'N/A' }}</td></tr>
+                <tr><th>Created By</th><td>{{ $doc->full_name }}</td></tr>
+                <tr>
+                    <th>Recipient/s</th>
+                    <td>
+                        @foreach (explode(',', $slip->r_destination ?? '') as $dest)
+                            @if(trim($dest))<strong class="text-danger">{{ trim($dest) }}</strong>@if(!$loop->last), @endif @endif
+                        @endforeach
+                        @if ($slip && $slip->assigned_to)
+                            @php $au = $users->firstWhere('id', $slip->assigned_to); @endphp
+                            , was re-assigned to <strong class="text-danger">
+                                {{ $au ? ucwords(strtolower($au->fname)).' '.ucwords(strtolower($au->lname)) : $slip->assigned_to }}
+                            </strong>
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                    <th>Date Received</th>
+                    <td>{{ ($slip && $slip->date_received) ? \Carbon\Carbon::parse($slip->date_received)->format('F j, Y') : $doc->created_at->format('F j, Y h:i A') }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
 
                             </div>
                         </div>
