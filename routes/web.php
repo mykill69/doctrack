@@ -116,6 +116,7 @@ Route::group(['middleware'=>['login_auth']],function(){
 
     //re-assign
     Route::post('/update-assign/{routeId}', [RoutingSlipController::class, 'updateAssign'])->name('updateAssign');
+    
 
     //destination route
     Route::get('/routingSlip/editDest/{id}', [RoutingSlipController::class, 'editDest'])->name('editDest');
