@@ -913,12 +913,26 @@ public function updateSubject(Request $request, $id)
         'source'        => 'required|string|max:255',
         'date_received' => 'required|date',
         'subject'       => 'required|string|max:255',
+        'document'      => 'nullable|file|mimes:pdf|max:20480',
     ]);
 
     $routingSlip = RoutingSlip::findOrFail($id);
     
     if ($routingSlip->route_status != 1) {
         return redirect()->route('viewSlip')->with('error', 'Can only edit slips routed to President.');
+    }
+    
+    // Handle document replacement
+    if ($request->hasFile('document')) {
+        // Delete old document if exists
+        if ($routingSlip->document && Storage::exists('documents/' . $routingSlip->document)) {
+            Storage::delete('documents/' . $routingSlip->document);
+        }
+        
+        $pdfFile = $request->file('document');
+        $pdfName = $pdfFile->getClientOriginalName();
+        $pdfFile->storeAs('documents', $pdfName);
+        $routingSlip->document = $pdfName;
     }
     
     $routingSlip->op_ctrl       = $request->input('op_ctrl');
