@@ -122,118 +122,118 @@ class DocumentController extends Controller
      * Server-side data for DataTables AJAX
      */
     public function getDashboardData(Request $request)
-    {
-        $user = auth()->user();
-        $userId = $user->id;
-        $userFullName = $user->fname . ' ' . $user->lname;
-        $userRole = $user->role;
-        $isSuperUser = ($userRole === 'super_user');
+{
+    $user = auth()->user();
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
+    $isSuperUser = ($userRole === 'super_user');
+    $isAdminOrRecordsOfficer = in_array($userRole, ['records_officer', 'administrator']);
 
-        // Cache key for this user's data
-        $cacheKey = 'dashboard_data_' . $userId . '_' . ($isSuperUser ? 'super' : 'normal');
-        
-        // Get all logs from cache or database
-        $allLogs = Cache::remember($cacheKey, 60, function () use ($isSuperUser, $userId, $userFullName) {
-            $query = Log::with(['routingSlip', 'document']);
-            
-            if (!$isSuperUser) {
-                $query->where(function ($q) use ($userId) {
-                    $q->where('new_user', $userId)
-                      ->orWhere('user_id', $userId);
-                })
-                ->orWhereHas('routingSlip', function ($q) use ($userFullName) {
-                    $q->where('pres_dept', $userFullName);
-                });
-            }
-
-            return $query->orderBy('route_id', 'desc')->get();
+    $searchValue = $request->input('search.value');
+    $start = $request->input('start', 0);
+    $length = $request->input('length', 25);
+    
+    // Build base query
+    $baseQuery = Log::with(['routingSlip', 'document']);
+    
+    if (!$isSuperUser) {
+        $baseQuery->where(function ($q) use ($userId, $userFullName) {
+            $q->where('new_user', $userId)
+              ->orWhere('user_id', $userId)
+              ->orWhereRaw('LOWER(new_destination) = ?', [strtolower($userFullName)])
+              ->orWhereHas('routingSlip', function ($sq) use ($userFullName) {
+                  $sq->where('pres_dept', $userFullName);
+              });
         });
+    }
+    
+    // Apply search at database level
+    if ($searchValue) {
+        $baseQuery->where(function ($q) use ($searchValue) {
+            $q->where('route_id', 'LIKE', "%{$searchValue}%")
+              ->orWhere('new_destination', 'LIKE', "%{$searchValue}%")
+              ->orWhereHas('routingSlip', function ($sq) use ($searchValue) {
+                  $sq->where('source', 'LIKE', "%{$searchValue}%")
+                    ->orWhere('subject', 'LIKE', "%{$searchValue}%");
+              });
+        });
+    }
+    
+    // Get total count
+    $totalRecords = $baseQuery->count();
+    
+    // Get paginated results directly from database
+    $paginatedLogs = $baseQuery->orderBy('route_id', 'desc')
+        ->skip($start)
+        ->take($length)
+        ->get();
+    
+    // Preload routing slips and documents only for current page
+    $routeIds = $paginatedLogs->pluck('route_id')->unique();
+    $newFiles = $paginatedLogs->pluck('new_file')->unique();
+    
+    $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
+        ->whereIn('document', $newFiles)
+        ->get();
+    
+    $allDocuments = Document::whereIn('route_id', $routeIds)
+        ->whereIn('file_name', $newFiles)
+        ->get();
 
-        // Process logs to remove duplicates
-        $processedLogs = [];
-        $logsToShow = collect();
-        $currentUserDepartment = $user->department;
+    // Build response data
+    $data = [];
+    foreach ($paginatedLogs as $log) {
+        $exactSlip = $allRoutingSlips
+            ->where('rslip_id', $log->route_id)
+            ->where('document', $log->new_file)
+            ->first();
         
-        foreach ($allLogs as $log) {
-            $uniqueIdentifier = $log->route_id . '-' . $log->doc_id . '-' . $log->new_destination;
-            
-            if (isset($processedLogs[$uniqueIdentifier]) && $processedLogs[$uniqueIdentifier]['hasNewUser']) {
-                continue;
-            }
-            
-            if (!is_null($log->new_user)) {
-                $processedLogs[$uniqueIdentifier] = ['hasNewUser' => true];
-                $logsToShow->push($log);
-            } else {
-                if (!isset($processedLogs[$uniqueIdentifier])) {
-                    $processedLogs[$uniqueIdentifier] = ['hasNewUser' => false];
-                    $logsToShow->push($log);
-                }
-            }
-            
-            if ($currentUserDepartment === $log->new_destination) {
-                if (!$logsToShow->contains('id', $log->id)) {
-                    $logsToShow->push($log);
-                }
-            }
+        if (!$exactSlip) {
+            $exactSlip = $log->routingSlip;
         }
-
-        $totalRecords = $logsToShow->count();
         
-        // Apply search if provided
-        $searchValue = $request->input('search.value');
-        if ($searchValue) {
-            $logsToShow = $logsToShow->filter(function ($log) use ($searchValue) {
-                $document = $log->document;
-                return stripos($log->route_id, $searchValue) !== false ||
-                       stripos($document->routingSlip->source ?? '', $searchValue) !== false ||
-                       stripos($document->routingSlip->subject ?? '', $searchValue) !== false ||
-                       stripos($log->new_destination ?? '', $searchValue) !== false;
-            })->values();
-            $totalRecords = $logsToShow->count();
+        $exactDoc = $allDocuments
+            ->where('route_id', $log->route_id)
+            ->where('file_name', $log->new_file)
+            ->first();
+        
+        if (!$exactDoc) {
+            $exactDoc = $log->document;
         }
         
-        // Apply pagination
-        $start = $request->input('start', 0);
-        $length = $request->input('length', 25);
+        $routingSlipId = $exactSlip ? $exactSlip->id : RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
         
-        $paginatedLogs = $logsToShow->slice($start, $length)->values();
-
-        // Build response data
-        $data = [];
-        foreach ($paginatedLogs as $log) {
-            $document = $log->document;
-            $routingSlipId = RoutingSlip::where('rslip_id', $log->route_id)
-                ->orderBy('id', 'desc')
-                ->value('id');
-            
-            $data[] = [
-                'route_id' => $log->route_id,
-                'route_display' => $this->formatRouteLink($log, $routingSlipId),
-                'date_received' => $this->formatDateReceived($document),
-                'source' => optional($document->routingSlip)->source ?? ($document->department ?? 'N/A'),
-                'subject' => optional($document->routingSlip)->subject ?? ($document->subject ?? 'N/A'),
-                'action_unit' => optional($document->routingSlip)->pres_dept ?? 'N/A',
-                'received_by_date' => optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A',
-                'action_taken' => $this->formatActionTaken($log),
-                'date_released' => optional($document)->created_at ? $document->created_at->format('m-d-Y h:i:s A') : 'N/A',
-                'remarks' => $this->formatRemarks($document, $log),
-                'file_name' => $this->formatFileName($document, $log),
-                'updated_by' => '<span class="badge badge-secondary">' . ($log->new_destination ?? 'N/A') . '</span><br>' . $log->updated_at->format('m-d-Y h:i:s A'),
-                'duration' => $this->formatDuration($document, $log),
-                 // ADD THIS for recall action
-                'action' => $this->formatRecallAction($log),
-            ];
+        $row = [
+            'route_id' => $log->route_id,
+            'route_display' => $this->formatRouteLink($log, $routingSlipId),
+            'date_received' => $exactSlip ? Carbon::parse($exactSlip->date_received)->format('F d, Y') : 'N/A',
+            'source' => $exactSlip->source ?? 'N/A',
+            'subject' => $exactSlip->subject ?? ($exactDoc->subject ?? 'N/A'),
+            'action_unit' => $exactSlip->pres_dept ?? 'N/A',
+            'received_by_date' => ($exactSlip && $exactSlip->updated_at) ? $exactSlip->updated_at->format('F j, Y') : 'N/A',
+            'action_taken' => $this->formatActionTaken($log, $exactSlip),
+            'date_released' => optional($exactDoc)->created_at ? $exactDoc->created_at->format('m-d-Y h:i:s A') : 'N/A',
+            'remarks' => $this->formatRemarks($exactSlip, $log),
+            'file_name' => $this->formatFileName($exactDoc, $log),
+            'updated_by' => '<span class="badge badge-secondary">' . ($log->new_destination ?? 'N/A') . '</span><br>' . $log->updated_at->format('m-d-Y h:i:s A'),
+            'duration' => $this->formatDuration($exactDoc, $log),
+        ];
+        
+        if ($isAdminOrRecordsOfficer) {
+            $row['action'] = $this->formatRecallAction($log);
         }
-
-        return response()->json([
-            'draw' => intval($request->input('draw')),
-            'recordsTotal' => $totalRecords,
-            'recordsFiltered' => $totalRecords,
-            'data' => $data
-        ]);
+        
+        $data[] = $row;
     }
 
+    return response()->json([
+        'draw' => intval($request->input('draw')),
+        'recordsTotal' => $totalRecords,
+        'recordsFiltered' => $totalRecords,
+        'data' => $data
+    ]);
+}
     // ============================================
     // Helper Methods
     // ============================================
@@ -260,40 +260,42 @@ class DocumentController extends Controller
         return 'N/A';
     }
 
-    private function formatActionTaken($log)
-    {
-        $html = '';
-        
-        if ($log->routingSlip && $log->routingSlip->r_destination) {
-            $html .= '<strong class="text-danger">' . ucwords(strtolower($log->routingSlip->r_destination)) . '</strong>';
-        }
-        
-        if ($log->assigned_to != null) {
-            $html .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($log->assigned_to)) . '</strong>';
-        }
-        
-        return $html ?: 'N/A';
+    private function formatActionTaken($log, $exactSlip = null)
+{
+    $html = '';
+    $slip = $exactSlip ?? $log->routingSlip;
+    
+    if ($slip && $slip->r_destination) {
+        $html .= '<strong class="text-danger">' . ucwords(strtolower($slip->r_destination)) . '</strong>';
     }
+    
+    if ($log->assigned_to != null) {
+        $html .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($log->assigned_to)) . '</strong>';
+    }
+    
+    return $html ?: 'N/A';
+}
 
-    private function formatRemarks($document, $log)
-    {
-        $html = '';
-        
-        if (!empty($document->routingSlip->trans_remarks)) {
-            $html .= '<span class="badge badge-success" style="font-size:10px; display: block;">' . $document->routingSlip->trans_remarks . '</span>';
-        }
-        
-        if (!empty($document->routingSlip->other_remarks)) {
-            $html .= '<span class="badge badge-danger" style="font-size:10px; display: block;">' . $document->routingSlip->other_remarks . '</span>';
-        }
-        
-        if (!empty($log->comments)) {
-            $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $log->comments);
-            $html .= '<span class="badge badge-warning" style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">' . $wrappedComment . '</span>';
-        }
-        
-        return $html ?: '';
+    private function formatRemarks($exactSlip, $log)
+{
+    $html = '';
+    $slip = $exactSlip ?? $log->routingSlip;
+    
+    if ($slip && !empty($slip->trans_remarks)) {
+        $html .= '<span class="badge badge-success" style="font-size:10px; display: block;">' . $slip->trans_remarks . '</span>';
     }
+    
+    if ($slip && !empty($slip->other_remarks)) {
+        $html .= '<span class="badge badge-danger" style="font-size:10px; display: block;">' . $slip->other_remarks . '</span>';
+    }
+    
+    if (!empty($log->comments)) {
+        $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $log->comments);
+        $html .= '<span class="badge badge-warning" style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">' . $wrappedComment . '</span>';
+    }
+    
+    return $html ?: '';
+}
 
     private function formatFileName($document, $log)
     {

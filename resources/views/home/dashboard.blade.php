@@ -1,6 +1,7 @@
 @extends('layouts.main')
 @php
     use App\Models\Log;
+    $isAdminOrRecordsOfficer = in_array(auth()->user()->role, ['records_officer', 'administrator']);
 @endphp
 
 <style>
@@ -50,7 +51,7 @@
                                                 <th>FILE NAME</th>
                                                 <th>UPDATED DATE/BY</th>
                                                 <th>TOTAL DURATION</th>
-                                                @if (in_array(auth()->user()->role, ['records_officer', 'administrator']))
+                                                @if($isAdminOrRecordsOfficer)
                                                     <th>ACTION</th>
                                                 @endif
                                             </tr>
@@ -82,7 +83,6 @@
 
     <script>
         $(document).ready(function() {
-            // Build columns array dynamically
             var columns = [
                 { "data": "route_display", "name": "route_id" },
                 { "data": "date_received", "name": "date_received" },
@@ -98,8 +98,8 @@
                 { "data": "duration", "name": "duration" }
             ];
 
-            // Add action column for records_officer and administrator
-            @if (in_array(auth()->user()->role, ['records_officer', 'administrator']))
+            // Only add action column for admin/records_officer
+            @if($isAdminOrRecordsOfficer)
                 columns.push({ "data": "action", "name": "action", "orderable": false, "searchable": false });
             @endif
 
@@ -109,6 +109,10 @@
                 "ajax": {
                     "url": "{{ route('dashboard.data') }}",
                     "type": "GET",
+                    "data": function(d) {
+                        // DataTables sends search value in d.search.value automatically
+                        // No need to modify URL
+                    },
                     "error": function(xhr, error, thrown) {
                         console.error('DataTables error:', error);
                     }
@@ -118,9 +122,11 @@
                 "pageLength": 25,
                 "deferRender": true,
                 "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
+                "searching": true,
                 "language": {
                     "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
                     "search": "Search:",
+                    "searchPlaceholder": "Search records...",
                     "lengthMenu": "Show _MENU_ entries",
                     "info": "Showing _START_ to _END_ of _TOTAL_ entries",
                     "infoFiltered": "(filtered from _MAX_ total entries)",
