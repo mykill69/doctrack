@@ -1011,7 +1011,11 @@ public function getServedData(Request $request)
     $userFullName = trim($user->fname . ' ' . $user->lname);
     $userRole = $user->role;
 
-    // Build query - EXACT same as original served()
+    $searchValue = $request->input('search.value');
+    $start = (int) $request->input('start', 0);
+    $length = (int) $request->input('length', 25);
+
+    // Build query
     $logsQuery = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
         ->whereNotNull('new_user')
         ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
@@ -1021,74 +1025,117 @@ public function getServedData(Request $request)
                   ->orWhere('new_destination', $userDepartment)
                   ->orWhere('new_destination', $userFullName);
             });
-        })
-        ->orderByDesc('created_at');
+        });
 
+    // Apply search
+    if ($searchValue) {
+        $logsQuery->where(function ($q) use ($searchValue) {
+            $q->where('route_id', 'LIKE', "%{$searchValue}%")
+              ->orWhere('new_destination', 'LIKE', "%{$searchValue}%")
+              ->orWhereHas('routingSlip', function ($sq) use ($searchValue) {
+                  $sq->where('source', 'LIKE', "%{$searchValue}%")
+                    ->orWhere('subject', 'LIKE', "%{$searchValue}%");
+              });
+        });
+    }
+
+    // Get unique route_ids
     $uniqueRouteIds = (clone $logsQuery)
         ->select('route_id')
         ->selectRaw('MIN(id) as min_id')
         ->groupBy('route_id')
         ->pluck('min_id');
 
-    $allLogs = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
+    // Get total count
+    $totalRecords = $uniqueRouteIds->count();
+
+    // Get paginated logs
+    $paginatedLogs = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
         ->whereIn('id', $uniqueRouteIds)
         ->orderByDesc('created_at')
+        ->skip($start)
+        ->take($length)
+        ->get();
+
+    // Preload routing slips and documents for current page - match by new_file
+    $routeIds = $paginatedLogs->pluck('route_id')->unique();
+    $newFiles = $paginatedLogs->pluck('new_file')->unique();
+
+    $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
+        ->whereIn('document', $newFiles)
+        ->get();
+
+    $allDocuments = Document::whereIn('route_id', $routeIds)
+        ->whereIn('file_name', $newFiles)
         ->get();
 
     $users = User::select('id','fname','lname')->get();
-    $totalRecords = $allLogs->count();
-
-    // Pagination
-    $start = (int) $request->input('start', 0);
-    $length = (int) $request->input('length', 25);
-    $paginatedLogs = $allLogs->slice($start, $length)->values();
 
     // Build data array
     $data = [];
     foreach ($paginatedLogs as $log) {
-        $document = $log->document;
-        $routingSlipId = RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
-        
-        // Action taken
-        $actionTaken = '<strong class="text-danger">' . ucwords(strtolower($document->for_to ?? '')) . '</strong>';
-        $destinationUser = $users->firstWhere('id', $document->routingSlip->r_destination ?? null);
-        $assignedUser = $users->firstWhere('id', $document->routingSlip->assigned_to ?? null);
+        // ✅ Match EXACT routing slip by new_file = document
+        $exactSlip = $allRoutingSlips
+            ->where('rslip_id', $log->route_id)
+            ->where('document', $log->new_file)
+            ->first();
 
-        if ($document->routingSlip && $destinationUser) {
-            $actionTaken .= ' <strong class="text-danger">' . ucwords(strtolower($destinationUser->fname)) . ' ' . ucwords(strtolower($destinationUser->lname)) . '</strong>';
-        } elseif ($document->routingSlip && $document->routingSlip->r_destination) {
-            $actionTaken .= ' <strong class="text-danger">' . ucwords(strtolower($document->routingSlip->r_destination)) . '</strong>';
+        if (!$exactSlip) {
+            $exactSlip = $log->routingSlip;
         }
-        if ($document->routingSlip && $assignedUser) {
+
+        // ✅ Match EXACT document by file_name = new_file
+        $exactDoc = $allDocuments
+            ->where('route_id', $log->route_id)
+            ->where('file_name', $log->new_file)
+            ->first();
+
+        if (!$exactDoc) {
+            $exactDoc = $log->document;
+        }
+
+        $routingSlipId = $exactSlip ? $exactSlip->id : RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
+
+        // Action taken
+        $actionTaken = '<strong class="text-danger">' . ucwords(strtolower($exactDoc->for_to ?? '')) . '</strong>';
+        $destinationUser = $users->firstWhere('id', $exactSlip->r_destination ?? null);
+        $assignedUser = $users->firstWhere('id', $exactSlip->assigned_to ?? null);
+
+        if ($exactSlip && $destinationUser) {
+            $actionTaken .= ' <strong class="text-danger">' . ucwords(strtolower($destinationUser->fname)) . ' ' . ucwords(strtolower($destinationUser->lname)) . '</strong>';
+        } elseif ($exactSlip && $exactSlip->r_destination) {
+            $actionTaken .= ' <strong class="text-danger">' . ucwords(strtolower($exactSlip->r_destination)) . '</strong>';
+        }
+        if ($exactSlip && $assignedUser) {
             $actionTaken .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($assignedUser->fname)) . ' ' . ucwords(strtolower($assignedUser->lname)) . '</strong>';
-        } elseif ($document->routingSlip && $document->routingSlip->assigned_to) {
-            $actionTaken .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($document->routingSlip->assigned_to)) . '</strong>';
+        } elseif ($exactSlip && $exactSlip->assigned_to) {
+            $actionTaken .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($exactSlip->assigned_to)) . '</strong>';
         }
 
         // Remarks
         $remarks = '';
-        if (!empty($document->routingSlip->trans_remarks)) {
-            $remarks .= '<span class="badge badge-success" style="font-size:10px; display: block;">' . $document->routingSlip->trans_remarks . '</span>';
+        if ($exactSlip && !empty($exactSlip->trans_remarks)) {
+            $remarks .= '<span class="badge badge-success" style="font-size:10px; display: block;">' . $exactSlip->trans_remarks . '</span>';
         }
-        if (!empty($document->routingSlip->other_remarks)) {
-            $remarks .= '<span class="badge badge-danger" style="font-size:10px; display: block;">' . $document->routingSlip->other_remarks . '</span>';
+        if ($exactSlip && !empty($exactSlip->other_remarks)) {
+            $remarks .= '<span class="badge badge-danger" style="font-size:10px; display: block;">' . $exactSlip->other_remarks . '</span>';
         }
         if (!empty($log->comments)) {
             $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $log->comments);
             $remarks .= '<span class="badge badge-warning" style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">' . $wrappedComment . '</span>';
         }
 
-        // File name
+        // File name - using exact document
         $fileName = 'N/A';
-        if ($document) {
-            $fileName = '<a href="' . route('documents.viewPdf', $document->id) . '" style="color: #007bff;" target="_blank"><i class="fas fa-file-pdf text-danger"></i> ' . Str::limit($document->file_name, 22) . '</a>';
+        if ($exactDoc) {
+            $fileName = '<a href="' . route('documents.viewPdf', $exactDoc->id) . '" style="color: #007bff;" target="_blank"><i class="fas fa-file-pdf text-danger"></i> ' . Str::limit($exactDoc->file_name, 22) . '</a>';
             if ($log->viewed_status) {
                 $fileName .= '<p><small class="text-muted">Viewed on <br>' . Carbon::parse($log->viewed_at)->format('M j, Y h:i A') . '</small></p>';
             }
         }
 
-        // Duration
-        $created = optional($document)->created_at;
+        // Duration - using exact document
+        $created = optional($exactDoc)->created_at;
         $updated = $log->updated_at;
         $diff = $created && $updated ? $created->diff($updated) : null;
         $duration = $diff ? "{$diff->days} days, {$diff->h} hours, {$diff->i} minutes" : 'N/A';
@@ -1096,13 +1143,13 @@ public function getServedData(Request $request)
         $data[] = [
             'route_id' => $log->route_id ?? 0,
             'route_display' => $log->route_id == 0 ? 'N/A' : '<a href="' . route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId . '" target="_blank" style="color: #007bff;">' . $log->route_id . '</a>',
-            'date_received' => optional($document->routingSlip)->date_received ? Carbon::parse($document->routingSlip->date_received)->format('F d, Y') : 'N/A',
-            'source' => optional($document->routingSlip)->source ?? 'N/A',
-            'subject' => optional($document->routingSlip)->subject ?? 'N/A',
-            'action_unit' => optional($document->routingSlip)->pres_dept ?? 'N/A',
-            'received_by_date' => optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('F j, Y') : 'N/A',
+            'date_received' => $exactSlip ? Carbon::parse($exactSlip->date_received)->format('F d, Y') : 'N/A',
+            'source' => $exactSlip->source ?? 'N/A',
+            'subject' => $exactSlip->subject ?? ($exactDoc->subject ?? 'N/A'),
+            'action_unit' => $exactSlip->pres_dept ?? 'N/A',
+            'received_by_date' => ($exactSlip && $exactSlip->updated_at) ? $exactSlip->updated_at->format('F j, Y') : 'N/A',
             'action_taken' => $actionTaken,
-            'date_released' => optional($document)->created_at ? $document->created_at->format('m-d-Y h:i:s A') : 'N/A',
+            'date_released' => optional($exactDoc)->created_at ? $exactDoc->created_at->format('m-d-Y h:i:s A') : 'N/A',
             'remarks' => $remarks,
             'file_name' => $fileName,
             'updated_at' => $log->updated_at ? $log->updated_at->format('m-d-Y h:i:s A') : 'N/A',

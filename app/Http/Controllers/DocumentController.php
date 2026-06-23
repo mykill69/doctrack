@@ -121,33 +121,36 @@ class DocumentController extends Controller
     /**
      * Server-side data for DataTables AJAX
      */
-    public function getServedData(Request $request)
+    public function getDashboardData(Request $request)
 {
     $user = auth()->user();
     $userId = $user->id;
-    $userDepartment = trim($user->department);
-    $userFullName = trim($user->fname . ' ' . $user->lname);
+    $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
+    $isSuperUser = ($userRole === 'super_user');
+    $isAdminOrRecordsOfficer = in_array($userRole, ['records_officer', 'administrator']);
 
     $searchValue = $request->input('search.value');
-    $start = (int) $request->input('start', 0);
-    $length = (int) $request->input('length', 25);
-
-    // Build query
-    $logsQuery = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
-        ->whereNotNull('new_user')
-        ->when($userRole !== 'records_officer', function ($query) use ($userId, $userDepartment, $userFullName) {
-            $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
-                $q->where('new_user', $userId)
-                  ->orWhere('user_id', $userId)
-                  ->orWhere('new_destination', $userDepartment)
-                  ->orWhere('new_destination', $userFullName);
-            });
+    $start = $request->input('start', 0);
+    $length = $request->input('length', 25);
+    
+    // Build base query
+    $baseQuery = Log::with(['routingSlip', 'document']);
+    
+    if (!$isSuperUser) {
+        $baseQuery->where(function ($q) use ($userId, $userFullName) {
+            $q->where('new_user', $userId)
+              ->orWhere('user_id', $userId)
+              ->orWhereRaw('LOWER(new_destination) = ?', [strtolower($userFullName)])
+              ->orWhereHas('routingSlip', function ($sq) use ($userFullName) {
+                  $sq->where('pres_dept', $userFullName);
+              });
         });
-
-    // Apply search
+    }
+    
+    // Apply search at database level
     if ($searchValue) {
-        $logsQuery->where(function ($q) use ($searchValue) {
+        $baseQuery->where(function ($q) use ($searchValue) {
             $q->where('route_id', 'LIKE', "%{$searchValue}%")
               ->orWhere('new_destination', 'LIKE', "%{$searchValue}%")
               ->orWhereHas('routingSlip', function ($sq) use ($searchValue) {
@@ -156,133 +159,81 @@ class DocumentController extends Controller
               });
         });
     }
-
-    // Get unique route_ids
-    $uniqueRouteIds = (clone $logsQuery)
-        ->select('route_id')
-        ->selectRaw('MIN(id) as min_id')
-        ->groupBy('route_id')
-        ->pluck('min_id');
-
+    
     // Get total count
-    $totalRecords = $uniqueRouteIds->count();
-
-    // Get paginated logs
-    $paginatedLogs = Log::with(['user:id,fname,lname','newUser:id,fname,lname','document.routingSlip','routingSlip'])
-        ->whereIn('id', $uniqueRouteIds)
-        ->orderByDesc('created_at')
+    $totalRecords = $baseQuery->count();
+    
+    // Get paginated results directly from database
+    $paginatedLogs = $baseQuery->orderBy('route_id', 'desc')
         ->skip($start)
         ->take($length)
         ->get();
-
-    // Preload routing slips and documents for current page - match by new_file
+    
+    // Preload routing slips and documents only for current page
     $routeIds = $paginatedLogs->pluck('route_id')->unique();
     $newFiles = $paginatedLogs->pluck('new_file')->unique();
-
+    
     $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
         ->whereIn('document', $newFiles)
         ->get();
-
+    
     $allDocuments = Document::whereIn('route_id', $routeIds)
         ->whereIn('file_name', $newFiles)
         ->get();
 
-    $users = User::select('id','fname','lname')->get();
-
-    // Build data array
+    // Build response data
     $data = [];
     foreach ($paginatedLogs as $log) {
-        // ✅ Match EXACT routing slip by new_file = document
         $exactSlip = $allRoutingSlips
             ->where('rslip_id', $log->route_id)
             ->where('document', $log->new_file)
             ->first();
-
+        
         if (!$exactSlip) {
             $exactSlip = $log->routingSlip;
         }
-
-        // ✅ Match EXACT document by file_name = new_file
+        
         $exactDoc = $allDocuments
             ->where('route_id', $log->route_id)
             ->where('file_name', $log->new_file)
             ->first();
-
+        
         if (!$exactDoc) {
             $exactDoc = $log->document;
         }
-
+        
         $routingSlipId = $exactSlip ? $exactSlip->id : RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
-
-        // Action taken
-        $actionTaken = '<strong class="text-danger">' . ucwords(strtolower($exactDoc->for_to ?? '')) . '</strong>';
-        $destinationUser = $users->firstWhere('id', $exactSlip->r_destination ?? null);
-        $assignedUser = $users->firstWhere('id', $exactSlip->assigned_to ?? null);
-
-        if ($exactSlip && $destinationUser) {
-            $actionTaken .= ' <strong class="text-danger">' . ucwords(strtolower($destinationUser->fname)) . ' ' . ucwords(strtolower($destinationUser->lname)) . '</strong>';
-        } elseif ($exactSlip && $exactSlip->r_destination) {
-            $actionTaken .= ' <strong class="text-danger">' . ucwords(strtolower($exactSlip->r_destination)) . '</strong>';
-        }
-        if ($exactSlip && $assignedUser) {
-            $actionTaken .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($assignedUser->fname)) . ' ' . ucwords(strtolower($assignedUser->lname)) . '</strong>';
-        } elseif ($exactSlip && $exactSlip->assigned_to) {
-            $actionTaken .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($exactSlip->assigned_to)) . '</strong>';
-        }
-
-        // Remarks
-        $remarks = '';
-        if ($exactSlip && !empty($exactSlip->trans_remarks)) {
-            $remarks .= '<span class="badge badge-success" style="font-size:10px; display: block;">' . $exactSlip->trans_remarks . '</span>';
-        }
-        if ($exactSlip && !empty($exactSlip->other_remarks)) {
-            $remarks .= '<span class="badge badge-danger" style="font-size:10px; display: block;">' . $exactSlip->other_remarks . '</span>';
-        }
-        if (!empty($log->comments)) {
-            $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $log->comments);
-            $remarks .= '<span class="badge badge-warning" style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">' . $wrappedComment . '</span>';
-        }
-
-        // File name - using exact document
-        $fileName = 'N/A';
-        if ($exactDoc) {
-            $fileName = '<a href="' . route('documents.viewPdf', $exactDoc->id) . '" style="color: #007bff;" target="_blank"><i class="fas fa-file-pdf text-danger"></i> ' . Str::limit($exactDoc->file_name, 22) . '</a>';
-            if ($log->viewed_status) {
-                $fileName .= '<p><small class="text-muted">Viewed on <br>' . Carbon::parse($log->viewed_at)->format('M j, Y h:i A') . '</small></p>';
-            }
-        }
-
-        // Duration - using exact document
-        $created = optional($exactDoc)->created_at;
-        $updated = $log->updated_at;
-        $diff = $created && $updated ? $created->diff($updated) : null;
-        $duration = $diff ? "{$diff->days} days, {$diff->h} hours, {$diff->i} minutes" : 'N/A';
-
-        $data[] = [
-            'route_id' => $log->route_id ?? 0,
-            'route_display' => $log->route_id == 0 ? 'N/A' : '<a href="' . route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId . '" target="_blank" style="color: #007bff;">' . $log->route_id . '</a>',
+        
+        $row = [
+            'route_id' => $log->route_id,
+            'route_display' => $this->formatRouteLink($log, $routingSlipId),
             'date_received' => $exactSlip ? Carbon::parse($exactSlip->date_received)->format('F d, Y') : 'N/A',
             'source' => $exactSlip->source ?? 'N/A',
             'subject' => $exactSlip->subject ?? ($exactDoc->subject ?? 'N/A'),
             'action_unit' => $exactSlip->pres_dept ?? 'N/A',
             'received_by_date' => ($exactSlip && $exactSlip->updated_at) ? $exactSlip->updated_at->format('F j, Y') : 'N/A',
-            'action_taken' => $actionTaken,
+            'action_taken' => $this->formatActionTaken($log, $exactSlip),
             'date_released' => optional($exactDoc)->created_at ? $exactDoc->created_at->format('m-d-Y h:i:s A') : 'N/A',
-            'remarks' => $remarks,
-            'file_name' => $fileName,
-            'updated_at' => $log->updated_at ? $log->updated_at->format('m-d-Y h:i:s A') : 'N/A',
-            'duration' => $duration,
+            'remarks' => $this->formatRemarks($exactSlip, $log),
+            'file_name' => $this->formatFileName($exactDoc, $log),
+            'updated_by' => '<span class="badge badge-secondary">' . ($log->new_destination ?? 'N/A') . '</span><br>' . $log->updated_at->format('m-d-Y h:i:s A'),
+            'duration' => $this->formatDuration($exactDoc, $log),
         ];
+        
+        if ($isAdminOrRecordsOfficer) {
+            $row['action'] = $this->formatRecallAction($log);
+        }
+        
+        $data[] = $row;
     }
 
     return response()->json([
-        'draw' => intval($request->input('draw', 1)),
+        'draw' => intval($request->input('draw')),
         'recordsTotal' => $totalRecords,
         'recordsFiltered' => $totalRecords,
         'data' => $data
     ]);
 }
-
     // ============================================
     // Helper Methods
     // ============================================
