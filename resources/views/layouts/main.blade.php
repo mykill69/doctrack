@@ -56,8 +56,7 @@
     }
 
     .select2-container {
-        z-index: 999999 !important;
-        /* ensures dropdown appears inside SweetAlert */
+        z-index: 1000 !important;
     }
 
     /* Active menu item */
@@ -129,7 +128,15 @@
 
     /* Fix dropdown to appear above loader */
     .select2-dropdown {
-        z-index: 9999 !important;
+        z-index: 1000 !important;
+    }
+
+    .swal2-container {
+        z-index: 99999 !important;
+    }
+
+    .swal2-overlay {
+        z-index: 99998 !important;
     }
 
     #page-loader {
@@ -544,28 +551,28 @@
         @endif
     </script>
     <script>
-    $(function() {
-        // Only initialize if #example1 exists AND isn't already a DataTable
-        if ($('#example1').length && !$.fn.DataTable.isDataTable('#example1')) {
-            $("#example1").DataTable({
-                "responsive": false,
-                "lengthChange": true,
-                "autoWidth": true,
-            }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-        }
-        if ($('#example2').length && !$.fn.DataTable.isDataTable('#example2')) {
-            $('#example2').DataTable({
-                "paging": true,
-                "lengthChange": false,
-                "searching": false,
-                "ordering": true,
-                "info": true,
-                "autoWidth": false,
-                "responsive": true,
-            });
-        }
-    });
-</script>
+        $(function() {
+            // Only initialize if #example1 exists AND isn't already a DataTable
+            if ($('#example1').length && !$.fn.DataTable.isDataTable('#example1')) {
+                $("#example1").DataTable({
+                    "responsive": false,
+                    "lengthChange": true,
+                    "autoWidth": true,
+                }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+            }
+            if ($('#example2').length && !$.fn.DataTable.isDataTable('#example2')) {
+                $('#example2').DataTable({
+                    "paging": true,
+                    "lengthChange": false,
+                    "searching": false,
+                    "ordering": true,
+                    "info": true,
+                    "autoWidth": false,
+                    "responsive": true,
+                });
+            }
+        });
+    </script>
 
     {{-- <script>
         // validate search bar entry

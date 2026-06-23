@@ -236,7 +236,9 @@
                                                                             </td>
 
                                                                             <td>{{ $slip->trans_remarks }}</td>
-                                                                            <td>{{ $slip->other_remarks }}</td>
+                                                                            <td style="max-width: 150px; word-wrap: break-word; white-space: normal;">
+                                                                                {{ $slip->other_remarks }}
+                                                                            </td>
 
                                                                             <td>
                                                                             <strong class="text-danger">{{ $slip->r_destination }}</strong>
@@ -276,186 +278,186 @@
                                                                             </td>
 
                                                                             <td>
-    <div class="btn-group btn-group-sm">
-        @php
-            $isRecordsOfficer = auth()->user()->role === 'records_officer';
-            $isSuperUser = auth()->user()->role === 'super_user';
-        @endphp
+                                                                        <div class="btn-group btn-group-sm">
+                                                                            @php
+                                                                                $isRecordsOfficer = auth()->user()->role === 'records_officer';
+                                                                                $isSuperUser = auth()->user()->role === 'super_user';
+                                                                            @endphp
 
-        {{-- Records Officer: Routed back to Records (route_status == 2) --}}
-        @if ($isRecordsOfficer && $slip->route_status == 2)
-            @if ($slip->assigned_to != null)
-                <a href="{{ route('editAssign', $slip->id) }}"
-                    class="btn btn-info"
-                    style="text-decoration: none; color: white;">
-                    <i class="fas fa-plus"></i>
-                </a>
-            @else
-                <a href="{{ route('editDest', $slip->id) }}"
-                    class="btn btn-info"
-                    style="text-decoration: none; color: white;">
-                    <i class="fas fa-plus"></i>
-                </a>
-            @endif
+                                                                            {{-- Records Officer: Routed back to Records (route_status == 2) --}}
+                                                                            @if ($isRecordsOfficer && $slip->route_status == 2)
+                                                                                @if ($slip->assigned_to != null)
+                                                                                    <a href="{{ route('editAssign', $slip->id) }}"
+                                                                                        class="btn btn-info"
+                                                                                        style="text-decoration: none; color: white;">
+                                                                                        <i class="fas fa-plus"></i>
+                                                                                    </a>
+                                                                                @else
+                                                                                    <a href="{{ route('editDest', $slip->id) }}"
+                                                                                        class="btn btn-info"
+                                                                                        style="text-decoration: none; color: white;">
+                                                                                        <i class="fas fa-plus"></i>
+                                                                                    </a>
+                                                                                @endif
 
-        {{-- Routed to President (route_status == 1) --}}
-        @elseif ($slip->route_status == 1)
-            @if ($isSuperUser)
-                {{-- Super user: Full edit --}}
-                <a href="{{ route('editSlip', $slip->id) }}"
-                    class="btn btn-info"
-                    style="text-decoration: none; color: white;"
-                    title="Edit Routing Slip">
-                    <i class="fas fa-pen"></i>
-                </a>
-            @elseif ($isRecordsOfficer)
-                {{-- Records officer: Edit subject only --}}
-                <a href="{{ route('editSubject', $slip->id) }}"
-                    class="btn btn-warning"
-                    style="text-decoration: none; color: white;"
-                    title="Edit Subject Only">
-                    <i class="fas fa-edit"></i>
-                </a>
-            @else
-                <button class="btn btn-secondary" disabled>
-                    <i class="fas fa-pen"></i>
-                </button>
-            @endif
+                                                                            {{-- Routed to President (route_status == 1) --}}
+                                                                            @elseif ($slip->route_status == 1)
+                                                                                @if ($isSuperUser)
+                                                                                    {{-- Super user: Full edit --}}
+                                                                                    <a href="{{ route('editSlip', $slip->id) }}"
+                                                                                        class="btn btn-info"
+                                                                                        style="text-decoration: none; color: white;"
+                                                                                        title="Edit Routing Slip">
+                                                                                        <i class="fas fa-pen"></i>
+                                                                                    </a>
+                                                                                @elseif ($isRecordsOfficer)
+                                                                                    {{-- Records officer: Edit subject only --}}
+                                                                                    <a href="{{ route('editSubject', $slip->id) }}"
+                                                                                        class="btn btn-warning"
+                                                                                        style="text-decoration: none; color: white;"
+                                                                                        title="Edit Subject Only">
+                                                                                        <i class="fas fa-edit"></i>
+                                                                                    </a>
+                                                                                @else
+                                                                                    <button class="btn btn-secondary" disabled>
+                                                                                        <i class="fas fa-pen"></i>
+                                                                                    </button>
+                                                                                @endif
 
-        {{-- Served (route_status == 3) - Super user --}}
-        @elseif ($isSuperUser && $slip->route_status == 3)
-            <button class="btn btn-secondary" disabled>
-                <i class="fas fa-pen"></i>
-            </button>
+                                                                            {{-- Served (route_status == 3) - Super user --}}
+                                                                            @elseif ($isSuperUser && $slip->route_status == 3)
+                                                                                <button class="btn btn-secondary" disabled>
+                                                                                    <i class="fas fa-pen"></i>
+                                                                                </button>
 
-        {{-- Served (route_status == 3) - Others --}}
-        @elseif ($slip->route_status == 3)
-            @if ($existsInDocuments)
-                <button class="btn btn-secondary" disabled>
-                    <i class="fas fa-plus"></i>
-                </button>
-            @else
-                <a href="{{ route('editDest', $slip->id) }}"
-                    class="btn btn-info"
-                    style="text-decoration: none; color: white;">
-                    <i class="fas fa-plus"></i>
-                </a>
-            @endif
+                                                                            {{-- Served (route_status == 3) - Others --}}
+                                                                            @elseif ($slip->route_status == 3)
+                                                                                @if ($existsInDocuments)
+                                                                                    <button class="btn btn-secondary" disabled>
+                                                                                        <i class="fas fa-plus"></i>
+                                                                                    </button>
+                                                                                @else
+                                                                                    <a href="{{ route('editDest', $slip->id) }}"
+                                                                                        class="btn btn-info"
+                                                                                        style="text-decoration: none; color: white;">
+                                                                                        <i class="fas fa-plus"></i>
+                                                                                    </a>
+                                                                                @endif
 
-        {{-- Routed back to Records but log status matches --}}
-        @elseif ($slip->route_status == 2 && $logStatusMatches)
-            <button class="btn btn-secondary" disabled>
-                <i class="fas fa-plus"></i>
-            </button>
+                                                                            {{-- Routed back to Records but log status matches --}}
+                                                                            @elseif ($slip->route_status == 2 && $logStatusMatches)
+                                                                                <button class="btn btn-secondary" disabled>
+                                                                                    <i class="fas fa-plus"></i>
+                                                                                </button>
 
-        {{-- Default: Disabled --}}
-        @else
-            <button class="btn btn-secondary" disabled>
-                <i class="fas fa-pen"></i>
-            </button>
-        @endif
+                                                                            {{-- Default: Disabled --}}
+                                                                            @else
+                                                                                <button class="btn btn-secondary" disabled>
+                                                                                    <i class="fas fa-pen"></i>
+                                                                                </button>
+                                                                            @endif
 
-        {{-- Delete button: Records officer only --}}
-        @if(auth()->user()->role === 'records_officer')
-            <form action="{{ route('routingSlip.destroy', $slip->id) }}"
-                  method="POST"
-                  onsubmit="return confirm('Are you sure you want to delete this routing slip?');">
-                @csrf
-                @method('DELETE')
-                <button type="submit"
-                        class="btn btn-danger no-left-radius"
-                        title="Delete Routing Slip">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </form>
-        @endif
+                                                                            {{-- Delete button: Records officer only --}}
+                                                                            @if(auth()->user()->role === 'records_officer')
+                                                                                <form action="{{ route('routingSlip.destroy', $slip->id) }}"
+                                                                                    method="POST"
+                                                                                    onsubmit="return confirm('Are you sure you want to delete this routing slip?');">
+                                                                                    @csrf
+                                                                                    @method('DELETE')
+                                                                                    <button type="submit"
+                                                                                            class="btn btn-danger no-left-radius"
+                                                                                            title="Delete Routing Slip">
+                                                                                        <i class="fas fa-trash"></i>
+                                                                                    </button>
+                                                                                </form>
+                                                                            @endif
 
-        {{-- Recall button: Served slips with status 2 log --}}
-        @if ($slip->route_status == 3 && ($isRecordsOfficer || auth()->user()->role === 'Administrator'))
-            @php
-                $hasStatus2Log = \App\Models\Log::where('route_id', $slip->rslip_id)
-                    ->where('status_update', 2)
-                    ->exists();
-            @endphp
+                                                                            {{-- Recall button: Served slips with status 2 log --}}
+                                                                            @if ($slip->route_status == 3 && ($isRecordsOfficer || auth()->user()->role === 'Administrator'))
+                                                                                @php
+                                                                                    $hasStatus2Log = \App\Models\Log::where('route_id', $slip->rslip_id)
+                                                                                        ->where('status_update', 2)
+                                                                                        ->exists();
+                                                                                @endphp
 
-            @if ($hasStatus2Log)
-                <a href="{{ route('recallSlip', $slip->id) }}"
-                    class="btn btn-primary no-left-radius"
-                    title="Recall">
-                    <i class="fas fa-undo"></i>
-                </a>
-            @endif
-        @endif
-    </div>
-</td>
-                                                                        </tr>
-                                                                    @endif
-                                                                @endforeach
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        @endif
+                                                                                @if ($hasStatus2Log)
+                                                                                    <a href="{{ route('recallSlip', $slip->id) }}"
+                                                                                        class="btn btn-primary no-left-radius"
+                                                                                        title="Recall">
+                                                                                        <i class="fas fa-undo"></i>
+                                                                                    </a>
+                                                                                @endif
+                                                                            @endif
+                                                                        </div>
+                                                                    </td>
+                                                                                                                                            </tr>
+                                                                                                                                        @endif
+                                                                                                                                    @endforeach
+                                                                                                                                </tbody>
+                                                                                                                            </table>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                @endforeach
+                                                                                                            @endif
 
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
 
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    
-    <script>
-        $(document).ready(function() {
-            // Initialize DataTables for each tab
-            @if ($role !== 'staff')
-                @foreach ($tabs as $tabId => $label)
-                    $('#table-{{ $tabId }}').DataTable({
-                        "paging": true,
-                        "pageLength": 10,
-                        "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                        "searching": true,
-                        "ordering": true,
-                        "info": true,
-                        "responsive": true,
-                        "autoWidth": false,
-                        "language": {
-                            "search": "Search:",
-                            "lengthMenu": "Show _MENU_ entries",
-                            "info": "Showing _START_ to _END_ of _TOTAL_ entries",
-                            "infoEmpty": "Showing 0 to 0 of 0 entries",
-                            "infoFiltered": "(filtered from _MAX_ total entries)",
-                            "zeroRecords": "No matching records found",
-                            "paginate": {
-                                "first": "First",
-                                "last": "Last",
-                                "next": "→",
-                                "previous": "←"
-                            }
-                        },
-                        "order": [[1, 'desc']] // Sort by date received by default (column index 1)
-                    });
-                @endforeach
-            @endif
-            
-            // Reinitialize DataTables when tab is shown (fixes responsiveness issues)
-            $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
-                var target = $(e.target).attr("href");
-                var tableId = target.replace('#', '');
-                var table = $('#table-' + tableId).DataTable();
-                if (table) {
-                    table.columns.adjust().responsive.recalc();
-                }
-            });
-        });
-    </script>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        
+                                                                        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+                                                                        
+                                                                        <script>
+                                                                            $(document).ready(function() {
+                                                                                // Initialize DataTables for each tab
+                                                                                @if ($role !== 'staff')
+                                                                                    @foreach ($tabs as $tabId => $label)
+                                                                                        $('#table-{{ $tabId }}').DataTable({
+                                                                                            "paging": true,
+                                                                                            "pageLength": 10,
+                                                                                            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                                                                                            "searching": true,
+                                                                                            "ordering": true,
+                                                                                            "info": true,
+                                                                                            "responsive": true,
+                                                                                            "autoWidth": false,
+                                                                                            "language": {
+                                                                                                "search": "Search:",
+                                                                                                "lengthMenu": "Show _MENU_ entries",
+                                                                                                "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                                                                                                "infoEmpty": "Showing 0 to 0 of 0 entries",
+                                                                                                "infoFiltered": "(filtered from _MAX_ total entries)",
+                                                                                                "zeroRecords": "No matching records found",
+                                                                                                "paginate": {
+                                                                                                    "first": "First",
+                                                                                                    "last": "Last",
+                                                                                                    "next": "→",
+                                                                                                    "previous": "←"
+                                                                                                }
+                                                                                            },
+                                                                                            "order": [[1, 'desc']] // Sort by date received by default (column index 1)
+                                                                                        });
+                                                                                    @endforeach
+                                                                                @endif
+                                                                                
+                                                                                // Reinitialize DataTables when tab is shown (fixes responsiveness issues)
+                                                                                $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+                                                                                    var target = $(e.target).attr("href");
+                                                                                    var tableId = target.replace('#', '');
+                                                                                    var table = $('#table-' + tableId).DataTable();
+                                                                                    if (table) {
+                                                                                        table.columns.adjust().responsive.recalc();
+                                                                                    }
+                                                                                });
+                                                                            });
+                                                                        </script>
 
-    @include('modal.addRoutslip')
-    @include('modal.addDestination')
-@endsection
+                                                                        @include('modal.addRoutslip')
+                                                                        @include('modal.addDestination')
+                                                                    @endsection
