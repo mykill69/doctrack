@@ -119,52 +119,52 @@
                 </thead>
                 <tbody>
                     @foreach ($chunk as $log)
-                        @php $document = $log->document; @endphp
+                        @php
+                            $exactSlip = $log->exactSlip ?? $log->routingSlip;
+                            $exactDoc = $log->exactDoc ?? $log->document;
+                        @endphp
                         <tr>
                             <td>{{ $log->route_id == 0 ? 'N/A' : $log->route_id }}</td>
                             <td>
-                                {{ optional($document->routingSlip)->date_received
-                                    ? \Carbon\Carbon::parse($document->routingSlip->date_received)->format('M d, Y')
-                                    : ($document->created_at
-                                        ? \Carbon\Carbon::parse($document->created_at)->format('M d, Y')
+                                {{ $exactSlip && $exactSlip->date_received
+                                    ? \Carbon\Carbon::parse($exactSlip->date_received)->format('M d, Y')
+                                    : ($exactDoc && $exactDoc->created_at
+                                        ? \Carbon\Carbon::parse($exactDoc->created_at)->format('M d, Y')
                                         : 'N/A') }}
                             </td>
-                            <td>{{ optional($document->routingSlip)->source ?? ($document->department ?? 'N/A') }}</td>
+                            <td>{{ $exactSlip->source ?? 'N/A' }}</td>
                             @php
-                                $subject = optional($document->routingSlip)->subject ?? ($document->subject ?? 'N/A');
-
-                                // Limit to 50 words
+                                $subject = $exactSlip->subject ?? ($exactDoc->subject ?? 'N/A');
                                 $words = explode(' ', $subject);
                                 if (count($words) > 80) {
                                     $subject = implode(' ', array_slice($words, 0, 80)) . '...';
                                 }
                             @endphp
-
                             <td style="max-width: 300px;font-size:6; overflow: hidden; text-overflow: ellipsis;"
                                 title="{{ $subject }}">
                                 {{ $subject }}
                             </td>
-                            <td>{{ optional($document->routingSlip)->pres_dept ?? 'N/A' }}</td>
-                            <td>
-                                {{ optional($document->routingSlip)->updated_at ? $document->routingSlip->updated_at->format('M d, Y') : 'N/A' }}
+                            <td>{{ $exactSlip->pres_dept ?? 'N/A' }}</td>
+                            <td>{{ $exactSlip && $exactSlip->updated_at ? $exactSlip->updated_at->format('M d, Y') : 'N/A' }}
                             </td>
                             <td>
-                                @if ($log->routingSlip)
+                                @if ($exactSlip && $exactSlip->r_destination)
                                     <strong
-                                        class="text-danger">{{ ucwords(strtolower($log->routingSlip->r_destination)) }}</strong>
+                                        class="text-danger">{{ ucwords(strtolower($exactSlip->r_destination)) }}</strong>
                                 @endif
                                 @if ($log->assigned_to)
-                                    , re-assigned to
-                                    <strong class="text-danger">{{ ucwords(strtolower($log->assigned_to)) }}</strong>
+                                    , re-assigned to <strong
+                                        class="text-danger">{{ ucwords(strtolower($log->assigned_to)) }}</strong>
                                 @endif
                             </td>
-                            <td>{{ $document->created_at->format('m-d-Y h:i:s A') }}</td>
+                            <td>{{ $exactDoc && $exactDoc->created_at ? $exactDoc->created_at->format('m-d-Y h:i:s A') : 'N/A' }}
+                            </td>
                             <td style="font-size:10px;">
-                                @if (!empty($document->routingSlip->trans_remarks))
-                                    <span>{{ $document->routingSlip->trans_remarks }}</span>
+                                @if ($exactSlip && !empty($exactSlip->trans_remarks))
+                                    <span>{{ $exactSlip->trans_remarks }}</span>
                                 @endif
-                                @if (!empty($document->routingSlip->other_remarks))
-                                    <span>{{ $document->routingSlip->other_remarks }}</span>
+                                @if ($exactSlip && !empty($exactSlip->other_remarks))
+                                    <span>{{ $exactSlip->other_remarks }}</span>
                                 @endif
                                 @php
                                     $comment = $log->comments ?? '';
