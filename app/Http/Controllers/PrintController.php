@@ -300,36 +300,32 @@ public function logbookPdf(Request $request)
     $ctrl_to   = $request->input('ctrl_to');
     $status    = $request->input('status');
 
-    // Get unique route_ids from logs that match user access
-    $logsQuery = Log::query()
-        ->select('route_id')
-        ->selectRaw('MAX(id) as max_id')
-        ->whereNotNull('new_user')
-        ->groupBy('route_id');
+    // Build query directly on Log model
+    $query = Log::query()
+        ->whereNotNull('new_user');
 
     // CTRL # range filter
     if ($ctrl_from && $ctrl_to) {
-        $logsQuery->whereBetween('route_id', [$ctrl_from, $ctrl_to]);
+        $query->whereBetween('route_id', [$ctrl_from, $ctrl_to]);
     }
 
     // Status filter
     if ($status) {
-        $logsQuery->where('status_update', $status);
+        $query->where('status_update', $status);
     }
 
     // Access control
     if (!$isPresident) {
         if ($userRole === 'records_officer') {
-            // Records officer: ONLY their own created logs + routing slips they created
-            $logsQuery->where(function ($q) use ($userId) {
-                $q->where('user_id', $userId)
-                  ->orWhereHas('routingSlip', function ($sq) use ($userId) {
-                      $sq->where('user_id', $userId);
+            // Records officer: ONLY logs where they are the creator
+            // AND routing slip must also belong to them
+            $query->where('user_id', $userId)
+                  ->whereHas('routingSlip', function ($q) use ($userId) {
+                      $q->where('user_id', $userId);
                   });
-            });
         } else {
             // Regular users / staff
-            $logsQuery->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+            $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
                 $q->where('new_user', $userId)
                   ->orWhere('user_id', $userId)
                   ->orWhere('new_destination', $userDepartment)
@@ -338,15 +334,11 @@ public function logbookPdf(Request $request)
         }
     }
 
-    $uniqueLogIds = $logsQuery->pluck('max_id');
-
-    // Get the actual logs with their data
-    $logs = Log::with(['routingSlip', 'document'])
-        ->whereIn('id', $uniqueLogIds)
+    $logs = $query->with(['routingSlip', 'document'])
         ->orderBy('route_id', 'asc')
         ->get();
 
-    // Preload exact routing slips and documents
+    // Preload exact routing slips and documents by matching new_file
     $routeIds = $logs->pluck('route_id')->unique();
     $newFiles = $logs->pluck('new_file')->unique();
 
@@ -358,21 +350,18 @@ public function logbookPdf(Request $request)
         ->whereIn('file_name', $newFiles)
         ->get();
 
-    // Attach exact data to each log
+    // Attach exact data
     foreach ($logs as $log) {
         $log->exactSlip = $allRoutingSlips
             ->where('rslip_id', $log->route_id)
             ->where('document', $log->new_file)
-            ->first();
+            ->first() ?? $log->routingSlip;
         
         $log->exactDoc = $allDocuments
             ->where('route_id', $log->route_id)
             ->where('file_name', $log->new_file)
-            ->first();
+            ->first() ?? $log->document;
     }
-
-    // Remove duplicates by route_id (keep first)
-    $logs = $logs->unique('route_id')->values();
 
     // Counts
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
