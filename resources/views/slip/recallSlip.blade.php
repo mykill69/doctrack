@@ -8,7 +8,6 @@
         border-bottom-left-radius: 0;
     }
 
-    /* Align Select2 to match Bootstrap form-control */
     .select2-container--default .select2-selection--multiple {
         border: 1px solid #ced4da;
         border-radius: 0.25rem;
@@ -25,7 +24,6 @@
         align-items: center;
     }
 
-    /* Fix dropdown to appear above loader */
     .select2-dropdown {
         z-index: 9999 !important;
     }
@@ -39,7 +37,6 @@
         width: 100%;
         height: 100%;
         background: rgba(255, 255, 255, 0.95);
-        display: flex;
         justify-content: center;
         align-items: center;
         flex-direction: column;
@@ -82,24 +79,18 @@
     }
 </style>
 
-
-
 @section('body')
     <div id="page-loader"
         class="position-fixed top-0 start-0 w-100 h-100 flex-column justify-content-center align-items-center"
         style="z-index:1055; display:none; background:linear-gradient(135deg,#f8f9fa,#e9ecef); font-family:'Segoe UI',Tahoma,sans-serif">
-
         <img src="{{ asset('template/img/cpsu_logo.png') }}" alt="MIS logo" style="width:110px;height:auto;margin-bottom:28px">
-
         <div class="progress-loader" style="width:220px;height:12px;background:#dee2e6;border-radius:6px;overflow:hidden">
             <div id="progress-bar" style="width:0;height:100%;background:#0d6efd;transition:width .4s ease"></div>
         </div>
-
         <p style="margin-top:1.3rem;font-size:1.15rem;font-weight:500;color:#343a40">
             Sending notification, please wait...
         </p>
     </div>
-
 
     <div class="content-wrapper">
         <div class="content" style="padding-top: 1%;">
@@ -109,7 +100,7 @@
                         <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
                             <div class="d-flex flex-column flex-md-row align-items-md-center col-md-8 col-12 mb-2 mb-md-0">
                                 <h3 class="card-title text-bold mb-0">
-                                    CONTROL NUMBER:
+                                    Recall - CTRL #
                                     <a class="text-md badge badge-primary"
                                         href="{{ route('viewPdfslip', $routingSlips->id) }}" target="_blank">
                                         {{ $routingSlips->rslip_id }}
@@ -118,47 +109,46 @@
                             </div>
                             <div
                                 class="d-flex align-items-center col-md-4 col-12 justify-content-md-end justify-content-start gap-2">
-
                                 <span class="badge bg-danger">
                                     {{ $routingSlips->created_at->format('M j, Y H:i:s') }}
                                 </span>
                             </div>
                         </div>
                         <div class="card-body">
-                            <form id="route-form" action="{{ route('updateRouteDocRecall', $routingSlips->rslip_id) }}"
+                            <form id="recall-form" action="{{ route('updateRouteDocRecall', $routingSlips->rslip_id) }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
 
-                                <div class="form-group row" hidden>
-                                    <label for="trans_remarks" class="col-md-3 col-form-label">Documents Type:</label>
-                                    <div class="col-md-9">
+                                <input type="hidden" name="full_name"
+                                    value="{{ auth()->user()->fname }} {{ auth()->user()->lname }}">
+                                <input type="hidden" name="department" value="{{ auth()->user()->department }}">
+                                <input type="hidden" name="route_id" value="{{ $routingSlips->rslip_id }}">
+                                <input type="hidden" name="doc_stat" value="2">
+                                <input type="hidden" name="user_id" value="{{ $routingSlips->user_id }}">
 
-                                        <input type="text" class="form-control" name="doc_type"
-                                            value="External Documents">
-                                    </div>
-                                </div>
-                                <input type="hidden" class="form-control" id="fullName" name="full_name"
-                                    value="{{ auth()->user()->fname }} {{ auth()->user()->lname }}" readonly required>
-                                <input type="hidden" class="form-control" id="department" name="department"
-                                    value="{{ auth()->user()->department }}" readonly required>
+                                {{-- Source --}}
                                 <div class="form-group row">
+                                    <label class="col-md-3 col-form-label font-weight-bold">Source: <span
+                                            class="text-danger">*</span></label>
                                     <div class="col-md-9">
-                                        <input type="hidden" class="form-control" name="source"
-                                            value="{{ $routingSlips->source }}" readonly>
+                                        <input type="text" class="form-control" name="source"
+                                            value="{{ old('source', $routingSlips->source) }}" required>
                                     </div>
                                 </div>
-                                <div class="form-group row">
 
+                                {{-- Subject Matter --}}
+                                <div class="form-group row">
+                                    <label class="col-md-3 col-form-label font-weight-bold">Subject Matter: <span
+                                            class="text-danger">*</span></label>
                                     <div class="col-md-9">
-                                        <input type="hidden" class="form-control" name="subject"
-                                            value="{{ $routingSlips->subject }}" readonly>
+                                        <textarea class="form-control" name="subject" rows="4" required style="resize: vertical; min-height: 80px;">{{ old('subject', $routingSlips->subject) }}</textarea>
                                     </div>
                                 </div>
-                                <input type="hidden" class="form-control" name="route_id"
-                                    value="{{ $routingSlips->rslip_id }}" readonly required>
+
+                                {{-- File --}}
                                 <div class="form-group row">
-                                    <label for="file_name" class="col-md-3 col-form-label">File Name:</label>
+                                    <label class="col-md-3 col-form-label">File Name:</label>
                                     <div class="col-md-9">
                                         <div class="input-group mb-2">
                                             <input type="file" class="form-control" name="file_name" accept=".pdf">
@@ -170,7 +160,6 @@
                                                     </a>
                                                 </span>
                                             @endif
-
                                         </div>
                                         @if (!empty($routingSlips->document))
                                             <small class="text-danger">Leave blank if you do not want to change the
@@ -178,29 +167,22 @@
                                         @endif
                                     </div>
                                 </div>
-                                <div class="form-group row" hidden>
-                                    <label for="subject" class="col-md-3 col-form-label">Purpose:</label>
-                                    <div class="col-md-9">
-                                        <textarea class="form-control" id="purpose" name="purpose" rows="2" placeholder="Type your purpose here..."></textarea>
-                                    </div>
-                                </div>
 
+                                {{-- For/To --}}
                                 <div class="form-group row">
-                                    <label for="subject" class="col-md-3 col-form-label">This Document is
-                                        For/To:</label>
+                                    <label class="col-md-3 col-form-label">This Document is For/To:</label>
                                     <div class="col-md-9">
-                                        <input type="text" class="form-control" id="subject" name="for_to"
+                                        <input type="text" class="form-control"
                                             value="{{ $routingSlips->r_destination }}" readonly>
                                     </div>
-
                                 </div>
-                                <div id="user-select-container" class="form-group row align-items-center">
-                                    <label for="routed_to" class="col-md-3 col-form-label">Name of Personnel and Group
-                                        Name:</label>
+
+                                {{-- Personnel --}}
+                                <div class="form-group row">
+                                    <label class="col-md-3 col-form-label">Name of Personnel and Group Name:</label>
                                     <div class="col-md-9">
                                         <select class="form-control select2" name="routed_users[]" id="routed_users"
-                                            data-placeholder="Select users..." multiple required>
-
+                                            data-placeholder="Select users..." multiple>
                                             <option disabled>— Select by Group —</option>
                                             @foreach ($groups as $group)
                                                 <option value="group:{{ $group->group_name }}"
@@ -208,10 +190,8 @@
                                                     {{ $group->group_name }}
                                                 </option>
                                             @endforeach
-
                                             <option disabled>──────────</option>
                                             <option disabled>— Select by Individual User —</option>
-
                                             @foreach ($users as $user)
                                                 <option value="{{ $user->fname }} {{ $user->lname }}"
                                                     {{ in_array($user->fname . ' ' . $user->lname, $selectedUsers) ? 'selected' : '' }}>
@@ -219,96 +199,62 @@
                                                 </option>
                                             @endforeach
                                         </select>
-
-
-
-                                    </div>
-                                    <div id="additional-destinations"></div>
-                                    <div class="form-group row">
-                                        <div class="col-md-9">
-                                            <input type="hidden" class="form-control" name="doc_stat" value="2"
-                                                readonly>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row">
-                                        <div class="col-md-9">
-                                            <input type="hidden" class="form-control" id="user_id" name="user_id"
-                                                value="{{ $routingSlips->user_id }}" readonly>
-                                        </div>
                                     </div>
                                 </div>
-
                             </form>
 
-                            {{-- BUTTON GROUP (all inside same row for alignment) --}}
-                            <div class="form-group row">
+                            {{-- Buttons --}}
+                            <div class="form-group row mt-4">
                                 <div class="col-md-3"></div>
                                 <div class="col-md-9">
-
-                                    {{-- Submit main Routing Slip form --}}
-                                    <button type="submit" form="route-form" class="btn btn-primary">
-                                        <i class="fas fa-check mr-1"></i> Submit Routing Slip
+                                    <button type="submit" form="recall-form" class="btn btn-primary">
+                                        <i class="fas fa-save mr-1"></i> Submit Recall
                                     </button>
-
-                                    {{-- Independent Form: Route Back to President --}}
-                                    {{-- <form action="{{ route('routeBackToPresident', $routingSlips->id) }}" method="POST"
-                                        class="d-inline me-2">
-                                        @csrf
-                                        @method('PUT')
-                                        <button type="submit" class="btn btn-warning"
-                                            onclick="return confirm('Are you sure you want to route this back to the President?')">
-                                            <i class="fas fa-undo-alt mr-1"></i> Route back to President
-                                        </button>
-                                    </form> --}}
-
-                                    {{-- Cancel --}}
                                     <a href="{{ route('viewSlip') }}" class="btn btn-danger">
-                                        <i class="fas fa-times"></i> Cancel
+                                        <i class="fas fa-times mr-1"></i> Cancel
                                     </a>
-
                                 </div>
                             </div>
+
+                            {{-- Validation Errors --}}
+                            @if ($errors->any())
+                                <div class="alert alert-danger mt-3">
+                                    <ul class="mb-0">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 
-
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('route-form');
+            const form = document.getElementById('recall-form');
             const loader = document.getElementById('page-loader');
             const bar = document.getElementById('progress-bar');
-            const card = document.querySelector('.card'); // Target the card container to hide
+            const card = document.querySelector('.card');
 
-            // Initialize Select2 properly
             $('#routed_users').select2({
                 placeholder: "Select users...",
-                width: '100%',
-                dropdownParent: $('#user-select-container')
+                width: '100%'
             });
 
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    // Optional: hide form/card so only loader is shown
-                    if (card) {
-                        card.style.display = 'none';
-                    }
-
-                    // Delay to let select2 dropdown close properly before showing loader
+                    if (card) card.style.display = 'none';
                     setTimeout(() => {
                         loader.style.display = 'flex';
                     }, 100);
-
-                    // Start progress animation
                     animateBarTo(90, 8000);
                 });
             }
@@ -323,18 +269,6 @@
                     if (pct < 1) requestAnimationFrame(step);
                 });
             }
-        });
-    </script>
-
-
-
-
-
-    <script>
-        $(document).ready(function() {
-            $('#destination_1').select2({
-                placeholder: "Select users..."
-            });
         });
     </script>
 @endsection
