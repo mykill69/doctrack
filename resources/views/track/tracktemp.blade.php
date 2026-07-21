@@ -253,17 +253,13 @@
                                                 $slip = $doc->matched_slip ?? null;
                                             @endphp
                                             <p>
-    <strong>File Name:</strong>
-    {{ str_replace('_', ' ', $doc->file_name) }}
-    <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
-        class="ml-2 btn btn-info btn-sm text-white">
-        View PDF <i class="fas fa-file-pdf ml-1"></i>
-    </a>
-    <a href="{{ route('documents.download', $doc->id) }}" 
-        class="ml-2 btn btn-success btn-sm text-white">
-        Download <i class="fas fa-download ml-1"></i>
-    </a>
-</p>
+                                                <strong>File Name:</strong>
+                                                {{ str_replace('_', ' ', $doc->file_name) }}
+                                                <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
+                                                    class="ml-2 btn btn-info btn-sm text-white">
+                                                    View PDF <i class="fas fa-file-pdf ml-1"></i>
+                                                </a>
+                                            </p>
                                             <table class="table table-sm table-bordered text-sm">
                                                 <tr>
                                                     <th>Control No.</th>
@@ -385,23 +381,24 @@
                     });
                 });
 
-               // Re-route Button
-$('.swalReRoute').click(function() {
-    const routeId = $(this).data('route-id');
-    const routingSlipId = $(this).data('routing-slip-id');
-    const userId = $(this).data('user-id');
+                // Re-route Button
+                $('.swalReRoute').click(function() {
+                    const routeId = $(this).data('route-id');
+                    const routingSlipId = $(this).data('routing-slip-id');
+                    const userId = $(this).data('user-id');
 
-    if (!routeId || !userId) {
-        console.error('Missing required data attributes.');
-        return;
-    }
+                    if (!routeId || !userId) {
+                        console.error('Missing required data attributes.');
+                        return;
+                    }
 
-    const reRouteUrl = "{{ route('updateAssign', ['routeId' => '__ID__']) }}".replace('__ID__', routeId);
+                    const reRouteUrl = "{{ route('updateAssign', ['routeId' => '__ID__']) }}".replace('__ID__',
+                        routeId);
 
-    Swal.fire({
-        title: 'Re-route Slip Form',
-        icon: 'info',
-        html: `
+                    Swal.fire({
+                        title: 'Re-route Slip Form',
+                        icon: 'info',
+                        html: `
             <form id="swal-reroute-form" method="POST" action="${reRouteUrl}" enctype="multipart/form-data">
                 <input type="hidden" name="_token" value="${csrfToken}">
                 <input type="hidden" name="route_id" value="${routeId}">
@@ -426,11 +423,11 @@ $('.swalReRoute').click(function() {
                 </div>
             </form>
         `,
-        showConfirmButton: false,
-        width: 650,
-        padding: '2em'
-    });
-});
+                        showConfirmButton: false,
+                        width: 650,
+                        padding: '2em'
+                    });
+                });
 
                 // Re-open Button (ONLY USER 56)
                 $('.btnReopen').click(function() {
