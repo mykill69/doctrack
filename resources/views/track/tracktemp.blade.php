@@ -253,13 +253,17 @@
                                                 $slip = $doc->matched_slip ?? null;
                                             @endphp
                                             <p>
-                                                <strong>File Name:</strong>
-                                                {{ str_replace('_', ' ', $doc->file_name) }}r
-                                                <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
-                                                    class="ml-2 btn btn-info btn-sm text-white">
-                                                    View PDF <i class="fas fa-file-pdf ml-1"></i>
-                                                </a>
-                                            </p>
+    <strong>File Name:</strong>
+    {{ str_replace('_', ' ', $doc->file_name) }}
+    <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
+        class="ml-2 btn btn-info btn-sm text-white">
+        View PDF <i class="fas fa-file-pdf ml-1"></i>
+    </a>
+    <a href="{{ route('documents.download', $doc->id) }}" 
+        class="ml-2 btn btn-success btn-sm text-white">
+        Download <i class="fas fa-download ml-1"></i>
+    </a>
+</p>
                                             <table class="table table-sm table-bordered text-sm">
                                                 <tr>
                                                     <th>Control No.</th>
