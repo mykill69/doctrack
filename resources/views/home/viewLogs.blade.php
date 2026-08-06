@@ -1,12 +1,5 @@
 @extends('layouts.main')
 
-@php
-    $user = auth()->user();
-    $userFullName = $user->fname . ' ' . $user->lname;
-    $userDepartment = $user->department;
-    $userRole = $user->role;
-@endphp
-
 <style>
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
         background-color: #007bff !important;
@@ -14,6 +7,14 @@
         color: #fff;
         padding: 0 10px;
         margin-top: 0.31rem;
+    }
+    .dataTables_processing {
+        background: rgba(255,255,255,0.9);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        font-weight: bold;
+        z-index: 1000;
     }
 </style>
 
@@ -29,77 +30,14 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="logsTable" class="table dataTable no-footer" style="font-size:11px;">
+                                    <table id="logsTable" class="table table-bordered" style="font-size:11px; width:100%;">
                                         <thead>
                                             <tr>
                                                 <th>Logs</th>
                                                 <th>Date</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                            @foreach ($logsAll as $log)
-                                                @php
-                                                    $isAssignLog = $log->status_update == 2 && $log->assign_to;
-
-                                                    $displayName = $isAssignLog
-                                                        ? trim($log->assign_fname . ' ' . $log->assign_lname)
-                                                        : ($log->status_update == 2
-                                                            ? trim($log->original_fname . ' ' . $log->original_lname)
-                                                            : trim($log->new_fname . ' ' . $log->new_lname));
-
-                                                    $badgeClass = match ($log->status_update) {
-                                                        2 => 'badge-warning',
-                                                        3 => 'badge-success',
-                                                        4 => 'badge-danger',
-                                                        default => 'badge-secondary',
-                                                    };
-
-                                                    $badgeLabel = match ($log->status_update) {
-                                                        2 => 'uploaded',
-                                                        3 => 'acknowledged',
-                                                        4 => 'returned to the OP with correction',
-                                                        default => 'action',
-                                                    };
-
-                                                    $routedTo = $isAssignLog ? $log->assign_to : $log->new_destination;
-                                                @endphp
-
-                                                <tr>
-                                                    <td>
-                                                        <span style="font-weight:bold;">{{ $displayName ?: ' ' }}</span>
-
-                                                        @if ($isAssignLog)
-                                                            <span class="badge bg-info text-dark">re-assigned</span>
-                                                        @else
-                                                            <span class="badge {{ $badgeClass }}"
-                                                                style="font-weight:bold;">
-                                                                {{ $badgeLabel }}
-                                                            </span>
-                                                        @endif
-
-                                                        the file
-                                                        <span class="text-primary" style="font-weight:bold;">
-                                                            {{ $log->new_file ?? 'N/A' }}
-                                                        </span>
-
-                                                        @if ($routedTo)
-                                                            and routed it to <span
-                                                                style="font-weight:bold;">{{ $routedTo }}</span>
-                                                        @endif
-                                                    </td>
-                                                    <td
-                                                        data-order="{{ \Carbon\Carbon::parse($log->created_at)->timestamp }}">
-                                                        <span style="font-weight:bold;">
-                                                            {{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i:s A') }}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
                                     </table>
-
-
-
                                 </div>
                             </div>
                         </div>
@@ -109,25 +47,31 @@
         </div>
     </div>
 
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
     <script>
         $(document).ready(function() {
-            var t = $('#logsTable').DataTable({
-                "order": [
-                    [1, "desc"]
-                ], // sort by Date (latest first)
+            $('#logsTable').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "{{ route('viewLogs.data') }}",
+                    "type": "GET"
+                },
+                "columns": [
+                    { "data": "log_entry", "name": "log_entry", "orderable": false },
+                    { "data": "date", "name": "created_at" }
+                ],
+                "order": [[1, "desc"]],
                 "pageLength": 50,
-                "columnDefs": [{
-                        "targets": 1,
-                        "type": "num"
-                    } // ensure numeric timestamp sorting
-                ]
+                "deferRender": true,
+                "language": {
+                    "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
+                    "search": "Search:",
+                    "lengthMenu": "Show _MENU_ entries",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries"
+                }
             });
-
-            // Re-apply sort if AdminLTE interferes
-            t.order([1, "desc"]).draw();
         });
     </script>
 @endsection

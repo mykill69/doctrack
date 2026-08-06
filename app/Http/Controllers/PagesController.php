@@ -1343,151 +1343,377 @@ public function getServedData(Request $request)
     ]);
 }
 
+
+
+// Updated to optimized the loading of each page 08/06/2026
+
+
+// public function viewLogs() 
+// {
+//     $user = auth()->user();
+//     $userFullName = $user->fname . ' ' . $user->lname;
+//     $userId = $user->id;
+//     $userRole = $user->role;
+
+//     $logsAll = DB::table('logs_history')
+//     ->leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
+//     ->leftJoin('assign_logs', 'assign_logs.new_user', '=', 'logs.new_user')
+//     ->leftJoin('routing_slip', 'routing_slip.id', '=', 'logs_history.doc_id') // ✅ Added
+//     ->leftJoin('users as original_users', function ($join) {
+//         $join->on('logs.user_id', '=', 'original_users.id')
+//              ->where('logs_history.status_update', '=', 2);
+//     })
+//     ->leftJoin('users as new_users', function ($join) {
+//         $join->on('logs.new_user', '=', 'new_users.id')
+//              ->where('logs_history.status_update', '=', 3);
+//     })
+//     ->leftJoin('users as assign_users', 'assign_logs.new_user', '=', 'assign_users.id')
+//     ->select(
+//         'logs_history.*',
+//         'logs.new_destination',
+//         'logs.new_file',
+
+//         'assign_logs.assigned_to as assign_to',
+//         'assign_users.fname as assign_fname',
+//         'assign_users.lname as assign_lname',
+
+//         'original_users.fname as original_fname',
+//         'original_users.lname as original_lname',
+//         'original_users.department as original_user_department',
+
+//         'new_users.fname as new_fname',
+//         'new_users.lname as new_lname',
+//         'new_users.department as new_user_department',
+
+//         'routing_slip.rslip_id' // ✅ Add this to retrieve the slip ID
+//     )
+//     ->where(function ($query) use ($userId, $userFullName) {
+//         $query->where('logs.user_id', $userId)
+//               ->orWhere('logs.new_user', $userId)
+//               ->orWhere('logs.new_destination', $userFullName);
+//     })
+//     ->orWhereNull('logs.id')
+//     ->distinct()
+//     ->orderBy('logs_history.created_at', 'desc')
+//     ->get();
+
+
+//     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
+//     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+//     $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+
+//      // Get all Doctrack records (no grouping)
+//     $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->orderByDesc('created_at')
+//         ->get();
+
+//     // Calculate time_diff for each record here
+//     $documentTrack->transform(function ($item) {
+//         $start = \Carbon\Carbon::parse($item->created_at);
+//         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+//         $diffInMinutes = $end->diffInMinutes($start);
+
+//         $item->time_diff = [
+//             'days' => floor($diffInMinutes / 1440),
+//             'hours' => floor(($diffInMinutes % 1440) / 60),
+//             'minutes' => $diffInMinutes % 60,
+//         ];
+
+//         return $item;
+//     });
+
+//     // Count only records with doctrack_stat == 2
+//     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+
+//     return view('home.viewLogs', compact(
+//         'logsAll', 'userId', 'userFullName',
+//         'routingSlipCount', 'superUserCount', 'recordsOfficerCount','doctrackCount'
+//     ));
+// }
+
+
+// public function viewLogsTracking() 
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userDepartment = $user->department;
+//     $userFullName = $user->fname . ' ' . $user->lname;
+//     $userRole = $user->role;
+
+//     // First, get all docslip_ids where the user is involved (either creator or recipient)
+//     $relatedDocslipIds = LogsTracking::where('user_id', $userId)
+//         ->orWhere('update_by', $userId)
+//         ->pluck('docslip_id');
+
+//     // Then, fetch all logs for those docslip_ids
+//     $logsAll = LogsTracking::with(['createdBy', 'updatedBy', 'doctrackFile'])
+//         ->whereIn('docslip_id', $relatedDocslipIds)
+//         ->orderByDesc('created_at')
+//         ->get();
+//  // Get all Doctrack records (no grouping)
+//     $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->orderByDesc('created_at')
+//         ->get();
+
+//     // Calculate time_diff for each record here
+//     $documentTrack->transform(function ($item) {
+//         $start = \Carbon\Carbon::parse($item->created_at);
+//         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+//         $diffInMinutes = $end->diffInMinutes($start);
+
+//         $item->time_diff = [
+//             'days' => floor($diffInMinutes / 1440),
+//             'hours' => floor(($diffInMinutes % 1440) / 60),
+//             'minutes' => $diffInMinutes % 60,
+//         ];
+
+//         return $item;
+//     });
+
+//     // Count only records with doctrack_stat == 2
+//     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+
+//     // Count logic
+//     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
+//     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+//     $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+
+//     return view('home.viewLogsTracking', compact(
+//         'logsAll', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount','doctrackCount'
+//     ));
+// }
+
 public function viewLogs() 
 {
     $user = auth()->user();
-    $userFullName = $user->fname . ' ' . $user->lname;
-    $userId = $user->id;
     $userRole = $user->role;
-
-    $logsAll = DB::table('logs_history')
-    ->leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
-    ->leftJoin('assign_logs', 'assign_logs.new_user', '=', 'logs.new_user')
-    ->leftJoin('routing_slip', 'routing_slip.id', '=', 'logs_history.doc_id') // ✅ Added
-    ->leftJoin('users as original_users', function ($join) {
-        $join->on('logs.user_id', '=', 'original_users.id')
-             ->where('logs_history.status_update', '=', 2);
-    })
-    ->leftJoin('users as new_users', function ($join) {
-        $join->on('logs.new_user', '=', 'new_users.id')
-             ->where('logs_history.status_update', '=', 3);
-    })
-    ->leftJoin('users as assign_users', 'assign_logs.new_user', '=', 'assign_users.id')
-    ->select(
-        'logs_history.*',
-        'logs.new_destination',
-        'logs.new_file',
-
-        'assign_logs.assigned_to as assign_to',
-        'assign_users.fname as assign_fname',
-        'assign_users.lname as assign_lname',
-
-        'original_users.fname as original_fname',
-        'original_users.lname as original_lname',
-        'original_users.department as original_user_department',
-
-        'new_users.fname as new_fname',
-        'new_users.lname as new_lname',
-        'new_users.department as new_user_department',
-
-        'routing_slip.rslip_id' // ✅ Add this to retrieve the slip ID
-    )
-    ->where(function ($query) use ($userId, $userFullName) {
-        $query->where('logs.user_id', $userId)
-              ->orWhere('logs.new_user', $userId)
-              ->orWhere('logs.new_destination', $userFullName);
-    })
-    ->orWhereNull('logs.id')
-    ->distinct()
-    ->orderBy('logs_history.created_at', 'desc')
-    ->get();
-
 
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
     $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
-
-     // Get all Doctrack records (no grouping)
-    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
-        ->where(function ($query) use ($userId, $userFullName) {
-            $query->where('user_id', $userId)
-                  ->orWhere('update_by', $userId)
-                  ->orWhere('user_name', $userFullName);
-        })
-        ->orderByDesc('created_at')
-        ->get();
-
-    // Calculate time_diff for each record here
-    $documentTrack->transform(function ($item) {
-        $start = \Carbon\Carbon::parse($item->created_at);
-        $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
-        $diffInMinutes = $end->diffInMinutes($start);
-
-        $item->time_diff = [
-            'days' => floor($diffInMinutes / 1440),
-            'hours' => floor(($diffInMinutes % 1440) / 60),
-            'minutes' => $diffInMinutes % 60,
-        ];
-
-        return $item;
-    });
-
-    // Count only records with doctrack_stat == 2
-    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+    $doctrackCount = Doctrack::where('doctrack_stat', 2)->count();
 
     return view('home.viewLogs', compact(
-        'logsAll', 'userId', 'userFullName',
-        'routingSlipCount', 'superUserCount', 'recordsOfficerCount','doctrackCount'
+        'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'doctrackCount'
     ));
 }
 
+public function getViewLogsData(Request $request)
+{
+    $user = auth()->user();
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userId = $user->id;
+
+    $searchValue = $request->input('search.value');
+    $start = $request->input('start', 0);
+    $length = $request->input('length', 50);
+
+    // Step 1: Simple query to get IDs
+    $idQuery = DB::table('logs_history')
+        ->leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
+        ->where(function ($q) use ($userId, $userFullName) {
+            $q->where('logs.user_id', $userId)
+              ->orWhere('logs.new_user', $userId)
+              ->orWhere('logs.new_destination', $userFullName);
+        });
+
+    if ($searchValue) {
+        $idQuery->where(function ($q) use ($searchValue) {
+            $q->where('logs.new_file', 'LIKE', "%{$searchValue}%")
+              ->orWhere('logs.new_destination', 'LIKE', "%{$searchValue}%");
+        });
+    }
+
+    $totalRecords = $idQuery->count();
+
+    $pageIds = (clone $idQuery)
+        ->select('logs_history.id')
+        ->orderBy('logs_history.created_at', 'desc')
+        ->skip($start)
+        ->take($length)
+        ->pluck('id');
+
+    if ($pageIds->isEmpty()) {
+        return response()->json([
+            'draw' => intval($request->input('draw')),
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $totalRecords,
+            'data' => []
+        ]);
+    }
+
+    // Step 2: Full joins only for the 50 IDs
+    $logsAll = DB::table('logs_history')
+        ->leftJoin('logs', 'logs.doc_id', '=', 'logs_history.doc_id')
+        ->leftJoin('assign_logs', 'assign_logs.new_user', '=', 'logs.new_user')
+        ->leftJoin('routing_slip', 'routing_slip.id', '=', 'logs_history.doc_id')
+        ->leftJoin('users as original_users', function ($join) {
+            $join->on('logs.user_id', '=', 'original_users.id')
+                 ->where('logs_history.status_update', '=', 2);
+        })
+        ->leftJoin('users as new_users', function ($join) {
+            $join->on('logs.new_user', '=', 'new_users.id')
+                 ->where('logs_history.status_update', '=', 3);
+        })
+        ->leftJoin('users as assign_users', 'assign_logs.new_user', '=', 'assign_users.id')
+        ->select(
+            'logs_history.id',
+            'logs_history.status_update',
+            'logs_history.created_at',
+            'logs.new_destination',
+            'logs.new_file',
+            'assign_logs.assigned_to as assign_to',
+            'assign_users.fname as assign_fname',
+            'assign_users.lname as assign_lname',
+            'original_users.fname as original_fname',
+            'original_users.lname as original_lname',
+            'new_users.fname as new_fname',
+            'new_users.lname as new_lname',
+            'routing_slip.rslip_id'
+        )
+        ->whereIn('logs_history.id', $pageIds)
+        ->orderBy('logs_history.created_at', 'desc')
+        ->get();
+
+    $data = [];
+    foreach ($logsAll as $log) {
+        $isAssignLog = $log->status_update == 2 && $log->assign_to;
+        $displayName = $isAssignLog
+            ? trim(($log->assign_fname ?? '') . ' ' . ($log->assign_lname ?? ''))
+            : ($log->status_update == 2
+                ? trim(($log->original_fname ?? '') . ' ' . ($log->original_lname ?? ''))
+                : trim(($log->new_fname ?? '') . ' ' . ($log->new_lname ?? '')));
+
+        $badgeClass = match ((int)$log->status_update) {
+            2 => 'badge-warning', 3 => 'badge-success', 4 => 'badge-danger',
+            default => 'badge-secondary',
+        };
+        $badgeLabel = match ((int)$log->status_update) {
+            2 => 'uploaded', 3 => 'acknowledged', 4 => 'returned to the OP with correction',
+            default => 'action',
+        };
+        $routedTo = $isAssignLog ? $log->assign_to : $log->new_destination;
+
+        $logEntry = '<span style="font-weight:bold;">' . ($displayName ?: ' ') . '</span> ';
+        $logEntry .= $isAssignLog 
+            ? '<span class="badge bg-info text-dark">re-assigned</span> ' 
+            : '<span class="badge ' . $badgeClass . '">' . $badgeLabel . '</span> ';
+        $logEntry .= 'the file <span class="text-primary" style="font-weight:bold;">' . ($log->new_file ?? 'N/A') . '</span>';
+        if ($routedTo) {
+            $logEntry .= ' and routed it to <span style="font-weight:bold;">' . $routedTo . '</span>';
+        }
+
+        $data[] = [
+            'log_entry' => $logEntry,
+            'date' => \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i:s A'),
+        ];
+    }
+
+    return response()->json([
+        'draw' => intval($request->input('draw')),
+        'recordsTotal' => $totalRecords,
+        'recordsFiltered' => $totalRecords,
+        'data' => $data
+    ]);
+}
 
 public function viewLogsTracking() 
 {
     $user = auth()->user();
-    $userId = $user->id;
-    $userDepartment = $user->department;
-    $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
 
-    // First, get all docslip_ids where the user is involved (either creator or recipient)
-    $relatedDocslipIds = LogsTracking::where('user_id', $userId)
-        ->orWhere('update_by', $userId)
-        ->pluck('docslip_id');
-
-    // Then, fetch all logs for those docslip_ids
-    $logsAll = LogsTracking::with(['createdBy', 'updatedBy', 'doctrackFile'])
-        ->whereIn('docslip_id', $relatedDocslipIds)
-        ->orderByDesc('created_at')
-        ->get();
- // Get all Doctrack records (no grouping)
-    $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
-        ->where(function ($query) use ($userId, $userFullName) {
-            $query->where('user_id', $userId)
-                  ->orWhere('update_by', $userId)
-                  ->orWhere('user_name', $userFullName);
-        })
-        ->orderByDesc('created_at')
-        ->get();
-
-    // Calculate time_diff for each record here
-    $documentTrack->transform(function ($item) {
-        $start = \Carbon\Carbon::parse($item->created_at);
-        $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
-        $diffInMinutes = $end->diffInMinutes($start);
-
-        $item->time_diff = [
-            'days' => floor($diffInMinutes / 1440),
-            'hours' => floor(($diffInMinutes % 1440) / 60),
-            'minutes' => $diffInMinutes % 60,
-        ];
-
-        return $item;
-    });
-
-    // Count only records with doctrack_stat == 2
-    $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
-
-    // Count logic
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
     $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $doctrackCount = Doctrack::where('doctrack_stat', 2)->count();
 
     return view('home.viewLogsTracking', compact(
-        'logsAll', 'routingSlipCount', 'superUserCount', 'recordsOfficerCount','doctrackCount'
+        'routingSlipCount', 'superUserCount', 'recordsOfficerCount', 'doctrackCount'
     ));
 }
 
+public function getViewLogsTrackingData(Request $request)
+{
+    $user = auth()->user();
+    $userId = $user->id;
+
+    $searchValue = $request->input('search.value');
+    $start = $request->input('start', 0);
+    $length = $request->input('length', 50);
+
+    $query = LogsTracking::where(function ($q) use ($userId) {
+            $q->where('user_id', $userId)
+              ->orWhere('update_by', $userId);
+        });
+
+    if ($searchValue) {
+        $query->where(function ($q) use ($searchValue) {
+            $q->where('docslip_id', 'LIKE', "%{$searchValue}%")
+              ->orWhere('comments', 'LIKE', "%{$searchValue}%")
+              ->orWhere('file_logs', 'LIKE', "%{$searchValue}%");
+        });
+    }
+
+    $totalRecords = $query->count();
+
+    $logsAll = $query->with(['createdBy', 'updatedBy', 'doctrackFile'])
+        ->orderByDesc('created_at')
+        ->skip($start)
+        ->take($length)
+        ->get();
+
+    $data = [];
+    foreach ($logsAll as $log) {
+        $actor = in_array($log->logs_status, [3, 5, 6]) ? $log->updatedBy : $log->createdBy;
+        $target = in_array($log->logs_status, [1, 2]) ? $log->updatedBy : null;
+        $fileName = $log->file_logs ?? 'N/A';
+
+        $statusBadge = match ((int)$log->logs_status) {
+            1 => ['label' => 'Created', 'class' => 'badge-primary'],
+            2 => ['label' => 'Forwarded', 'class' => 'badge-warning'],
+            3 => ['label' => 'Signed', 'class' => 'badge-success'],
+            4 => ['label' => 'Returned', 'class' => 'badge-danger'],
+            5 => ['label' => 'Checked', 'class' => 'badge-info'],
+            6 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
+            7 => ['label' => 'Deleted', 'class' => 'badge-dark'],
+            default => ['label' => 'Updated', 'class' => 'badge-secondary'],
+        };
+
+        $entry = $log->docslip_id . ' - <strong>' . ($actor->fname ?? 'N/A') . ' ' . ($actor->lname ?? '') . '</strong> ';
+        $entry .= '<span class="badge ' . $statusBadge['class'] . '">' . $statusBadge['label'] . '</span> ';
+        if ($log->logs_status != 7) {
+            $entry .= 'file: <span class="text-primary font-weight-bold">' . $fileName . '</span> ';
+        }
+        if ($target && !in_array($log->logs_status, [3, 4, 5, 6, 7])) {
+            $entry .= '→ Routed to <strong>' . ($target->fname ?? '') . ' ' . ($target->lname ?? '') . '</strong>';
+        }
+        if ($log->comments) {
+            $entry .= '<br><em class="text-muted">Comment: "' . $log->comments . '"</em>';
+        }
+
+        $data[] = [
+            'log_entry' => $entry,
+            'date' => \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i A'),
+        ];
+    }
+
+    return response()->json([
+        'draw' => intval($request->input('draw')),
+        'recordsTotal' => $totalRecords,
+        'recordsFiltered' => $totalRecords,
+        'data' => $data
+    ]);
+}
 
 public function userPassword($id)
 {

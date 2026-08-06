@@ -1,12 +1,5 @@
 @extends('layouts.main')
 
-@php
-    $user = auth()->user();
-    $userFullName = $user->fname . ' ' . $user->lname;
-    $userDepartment = $user->department;
-    $userRole = $user->role;
-@endphp
-
 <style>
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
         background-color: #007bff !important;
@@ -14,6 +7,14 @@
         color: #fff;
         padding: 0 10px;
         margin-top: 0.31rem;
+    }
+    .dataTables_processing {
+        background: rgba(255,255,255,0.9);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        font-weight: bold;
+        z-index: 1000;
     }
 </style>
 
@@ -29,170 +30,48 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table id="example1" class="table dataTable no-footer" style="font-size: 11px;">
+                                    <table id="example1" class="table table-bordered" style="font-size: 11px; width:100%;">
                                         <thead>
                                             <tr>
                                                 <th>Log Entry</th>
                                                 <th>Date</th>
                                             </tr>
                                         </thead>
-                                        {{-- <tbody>
-                                            @forelse ($logsAll as $log)
-                                                @php
-                                                    // Determine actor and target
-                                                    $actor = match ($log->logs_status) {
-                                                        3 => $log->updatedBy, // Acknowledged by recipient
-                                                        default => $log->createdBy,
-                                                    };
-
-                                                    $target = match ($log->logs_status) {
-                                                        1 => $log->updatedBy, // For "Created", show routed-to (if any)
-                                                        2 => $log->updatedBy, // Routed to
-                                                        default => null,
-                                                    };
-
-                                                    $fileName = $log->file_logs ?? 'N/A';
-
-                                                    $statusBadge = match ($log->logs_status) {
-                                                        1 => ['label' => 'Created', 'class' => 'badge-primary'],
-                                                        2 => ['label' => 'Forwarded', 'class' => 'badge-warning'],
-                                                        3 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
-                                                        4 => ['label' => 'Returned', 'class' => 'badge-danger'],
-                                                        5 => ['label' => 'Checked', 'class' => 'badge-info'],
-                                                        default => [
-                                                            'label' => 'Updated',
-                                                            'class' => 'badge-secondary',
-                                                        ],
-                                                    };
-
-                                                @endphp
-
-                                                <tr>
-                                              
-                                                    <td>
-                                                        {{ $log->docslip_id }} -
-                                                        <strong>{{ $actor->fname ?? 'N/A' }}
-                                                            {{ $actor->lname ?? '' }}</strong>
-                                                        <span
-                                                            class="badge {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>
-
-                                                        file:
-                                                        <span
-                                                            class="text-primary font-weight-bold">{{ $fileName }}</span>
-
-                                                        @if ($target)
-                                                            → Routed to <strong>{{ $target->fname }}
-                                                                {{ $target->lname }} </strong>and status is
-
-                                                            @if ($log->logs_status == 2)
-                                                                <span class="badge badge-warning">Pending</span>
-                                                            @elseif ($log->logs_status == 5)
-                                                                <span class="badge badge-info">Checked</span>
-                                                            @endif
-                                                        @endif
-
-                                                        @if ($log->comments)
-                                                            <br><em class="text-muted">Comment: "{{ $log->comments }}"</em>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <strong>{{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i A') }}</strong>
-                                                    </td>
-                                                </tr>
-
-
-                                            @empty
-                                                <tr>
-                                                    <td colspan="2" class="text-center text-muted">No logs found.</td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody> --}}
-                                        <tbody>
-                                            @forelse ($logsAll as $log)
-                                                @php
-                                                    // Determine actor and target
-                                                    $actor = match ($log->logs_status) {
-                                                        3,
-                                                        5,
-                                                        6
-                                                            => $log->updatedBy, // Signed, Checked, Acknowledged → updatedBy
-                                                        default => $log->createdBy, // Otherwise → createdBy
-                                                    };
-
-                                                    $target = match ($log->logs_status) {
-                                                        1 => $log->updatedBy, // For "Created", show routed-to (if any)
-                                                        2 => $log->updatedBy, // Routed to
-                                                        default => null,
-                                                    };
-
-                                                    $fileName = $log->file_logs ?? 'N/A';
-
-                                                    $statusBadge = match ($log->logs_status) {
-                                                        1 => ['label' => 'Created', 'class' => 'badge-primary'],
-                                                        2 => ['label' => 'Forwarded', 'class' => 'badge-warning'],
-                                                        3 => ['label' => 'Signed', 'class' => 'badge-success'],
-                                                        4 => ['label' => 'Returned', 'class' => 'badge-danger'],
-                                                        5 => ['label' => 'Checked', 'class' => 'badge-info'],
-                                                        6 => ['label' => 'Acknowledged', 'class' => 'badge-success'],
-                                                        7 => [
-                                                            'label' => 'Deleted',
-                                                            'class' => 'badge-dark',
-                                                        ], // ✅ Added for deleted status
-                                                        default => [
-                                                            'label' => 'Updated',
-                                                            'class' => 'badge-secondary',
-                                                        ],
-                                                    };
-                                                @endphp
-
-                                                <tr>
-
-                                                    <td>
-                                                        {{ $log->docslip_id }} -
-                                                        <strong>{{ $actor->fname ?? 'N/A' }}
-                                                            {{ $actor->lname ?? '' }}</strong>
-                                                        <span
-                                                            class="badge {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>
-
-                                                        @if ($log->logs_status != 7)
-                                                            file: <span
-                                                                class="text-primary font-weight-bold">{{ $fileName }}</span>
-                                                        @endif
-
-                                                        @if ($target && !in_array($log->logs_status, [3, 4, 5, 6, 7]))
-                                                            → Routed to <strong>{{ $target->fname }}
-                                                                {{ $target->lname }}</strong> and status is
-
-                                                            @if ($log->logs_status == 2)
-                                                                <span class="badge badge-warning">Pending</span>
-                                                            @elseif ($log->logs_status == 5)
-                                                                <span class="badge badge-info">Checked</span>
-                                                            @endif
-                                                        @endif
-
-                                                        @if ($log->comments)
-                                                            <br><em class="text-muted">Comment: "{{ $log->comments }}"</em>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <strong>{{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y h:i A') }}</strong>
-                                                    </td>
-                                                </tr>
-
-
-                                            @empty
-                                                <tr>
-                                                    <td colspan="2" class="text-center text-muted">No logs found.</td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
                                     </table>
                                 </div>
-                            </div> <!-- /.card-body -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#example1').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "{{ route('viewLogsTracking.data') }}",
+                    "type": "GET"
+                },
+                "columns": [
+                    { "data": "log_entry", "name": "log_entry", "orderable": false },
+                    { "data": "date", "name": "created_at" }
+                ],
+                "order": [[1, "desc"]],
+                "pageLength": 50,
+                "deferRender": true,
+                "language": {
+                    "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
+                    "search": "Search:",
+                    "lengthMenu": "Show _MENU_ entries",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries"
+                }
+            });
+        });
+    </script>
 @endsection

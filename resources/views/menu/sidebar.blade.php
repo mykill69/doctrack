@@ -382,7 +382,7 @@
         @endif
 
         <li
-            class="nav-item {{ request()->routeIs('viewLogs', 'viewLogsTracking') ? 'menu-is-opening menu-open' : '' }}">
+            class="nav-item {{ request()->routeIs('viewLogs', 'viewLogs-Tracking') ? 'menu-is-opening menu-open' : '' }}">
             <a href="#" class="nav-link">
                 <i class="fa fa-history nav-icon"></i>
                 <p>
@@ -391,10 +391,10 @@
                 </p>
             </a>
             <ul class="nav nav-treeview"
-                style="{{ request()->routeIs('viewLogs', 'viewLogsTracking') ? 'display: block;' : 'display: none;' }}">
+                style="{{ request()->routeIs('viewLogs', 'viewLogs-Tracking') ? 'display: block;' : 'display: none;' }}">
                 <li class="nav-item">
-                    <a href="{{ route('viewLogsTracking') }}"
-                        class="nav-link {{ request()->routeIs('viewLogsTracking') ? 'active' : '' }}">
+                    <a href="{{ route('viewLogs-Tracking') }}"
+                        class="nav-link {{ request()->routeIs('viewLogs-Tracking') ? 'active' : '' }}">
                         <i class="fas fa-file-alt nav-icon text-primary"></i>
                         <p>Tracking Logs</p>
                     </a>

@@ -32,7 +32,9 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/pending', [PagesController::class, 'pending'])->name('pending');
     Route::get('/served', [PagesController::class, 'served'])->name('served');
     Route::get('/viewLogs', [PagesController::class, 'viewLogs'])->name('viewLogs');
-    Route::get('/viewLogs-Tracking', [PagesController::class, 'viewLogsTracking'])->name('viewLogsTracking');
+    Route::get('/viewLogs/data', [PagesController::class, 'getViewLogsData'])->name('viewLogs.data');
+    Route::get('/viewLogs-Tracking', [PagesController::class, 'viewLogsTracking'])->name('viewLogs-Tracking');
+    Route::get('/viewLogs-Tracking/data', [PagesController::class, 'getViewLogsTrackingData'])->name('viewLogsTracking.data');
     Route::get('/viewPdfRoute', [PagesController::class, 'viewPdfRoute'])->name('viewPdfRoute');
     Route::get('/doctrackslip-list', [PagesController::class, 'doctrackSlip'])->name('doctrackSlip');
     Route::get('/doctrackslip-list/data', [PagesController::class, 'getDoctrackData'])->name('doctrackSlip.data');

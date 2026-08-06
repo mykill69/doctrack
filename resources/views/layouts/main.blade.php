@@ -550,7 +550,8 @@
             toastr.error(errorMessage);
         @endif
     </script>
-    <script>
+    
+    {{-- 08/06/2026 remove for optimization of logs page  <script>
         $(function() {
             // Only initialize if #example1 exists AND isn't already a DataTable
             if ($('#example1').length && !$.fn.DataTable.isDataTable('#example1')) {
@@ -572,7 +573,7 @@
                 });
             }
         });
-    </script>
+    </script> --}}
 
     {{-- <script>
         // validate search bar entry
