@@ -11,9 +11,9 @@ use App\Http\Controllers\DoctrackController;
 use App\Http\Controllers\PrintController;
 
 Route::group(['middleware'=>['guest']],function(){
-    // Route::get('/', function () {
-    //     return view('.login.login');
-    // });
+    Route::get('/', function () {
+        return view('.login.login');
+    });
 
     Route::get('/login', [LoginAuthController::class, 'getLogin'])->name('getLogin');
     Route::post('/login', [LoginAuthController::class, 'postLogin'])->name('postLogin');
