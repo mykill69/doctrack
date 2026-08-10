@@ -383,7 +383,7 @@
     </div>
 
     <!-- ./wrapper -->
-      <script src="{{ asset('template/plugins/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('template/plugins/jquery/jquery.min.js') }}"></script>
 
 
     <!-- AdminLTE App -->
@@ -413,8 +413,9 @@
     <script src="{{ asset('template/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="template/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
 
-    <!-- Add this line for page-specific scripts -->
-    @stack('page_scripts')
+    <!-- jQuery (required by Select2) -->
+
+
 
 
 

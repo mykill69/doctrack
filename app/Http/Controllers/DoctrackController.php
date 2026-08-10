@@ -399,16 +399,55 @@ public function storeDoctrackUpdate(Request $request)
         ->with('success', 'New entry with tracking # ' . $documentTrack->docslip_id . ' was added successfully!');
 }
 
-public function update(Request $request, Doctrack $doctrack)
-{
-    $request->validate([
-        'ctrl_no' => 'nullable|string|max:255',
-    ]);
+// public function update(Request $request, Doctrack $doctrack)
+// {
+//     $request->validate([
+//         'ctrl_no' => 'nullable|string|max:255',
+//     ]);
 
-    $doctrack->update($request->only(['ctrl_no']));
+//     $doctrack->update($request->only(['ctrl_no']));
 
-    return response()->json(['success' => true, 'message' => 'CTRL # updated successfully.']);
-}
+//     return response()->json(['success' => true, 'message' => 'CTRL # updated successfully.']);
+// }
+
+ public function update(Request $request, Doctrack $doctrack)
+    {
+        try {
+            $validated = $request->validate([
+                'ctrl_no' => 'nullable|string|max:255',
+            ]);
+
+            $doctrack->update($request->only(['ctrl_no']));
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'CTRL # updated successfully.',
+                'data' => [
+                    'id' => $doctrack->id,
+                    'ctrl_no' => $doctrack->ctrl_no
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Doctrack update failed: ' . $e->getMessage(), [
+                'doctrack_id' => $doctrack->id ?? null,
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating the record.'
+            ], 500);
+        }
+    }
 
 // public function storeDoctrackUpdate(Request $request)
 // {

@@ -16,6 +16,13 @@
         font-weight: bold;
         z-index: 1000;
     }
+    .doctrack-input {
+        transition: all 0.3s ease;
+    }
+    .doctrack-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
 </style>
 
 @section('body')
@@ -61,88 +68,156 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-
-    <script>
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
-        });
-
-        $(document).ready(function() {
-            var columns = [
-                { "data": "date_received", "name": "created_at" },
-                { "data": "source", "name": "user_name" },
-                { "data": "subject", "name": "doc_title" },
-                { "data": "action_unit" },
-                { "data": "received_by_date" },
-                { "data": "action_taken" },
-                { "data": "date_released", "name": "updated_at" },
-                { "data": "remarks", "orderable": false },
-                { "data": "status", "name": "doctrack_stat" },
-                { "data": "tracking_code", "orderable": false },
-                { "data": "duration" },
-                { "data": "action", "orderable": false, "searchable": false }
-            ];
-
-            @if (auth()->user()->id == 1235)
-                columns.unshift({ "data": "ctrl_input", "name": "ctrl_no", "orderable": true });
-            @endif
-
-            $('#example1').DataTable({
-                "processing": true,
-                "serverSide": true,
-                "ajax": {
-                    "url": "{{ route('doctrackSlip.data') }}",
-                    "type": "GET"
-                },
-                "columns": columns,
-                "order": [[1, "desc"]],
-                "pageLength": 50,
-                "deferRender": true,
-                "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
-                "language": {
-                    "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
-                    "search": "Search:",
-                    "lengthMenu": "Show _MENU_ entries",
-                    "info": "Showing _START_ to _END_ of _TOTAL_ entries",
-                    "infoFiltered": "(filtered from _MAX_ total entries)"
-                },
-                "drawCallback": function() {
-                    // Re-attach inline edit handlers
-                    $('.doctrack-input').off('focus').on('focus', function() {
-                        $(this).data('original-value', $(this).val());
-                    });
-                    $('.doctrack-input').off('blur').on('blur', function() {
-                        let doctrackId = $(this).data('id');
-                        let field = $(this).data('field');
-                        let value = $(this).val();
-                        let originalValue = $(this).data('original-value');
-                        if (value === originalValue) return;
-
-                        $.ajax({
-                            url: "{{ url('doctrack-slip') }}/" + doctrackId,
-                            type: 'POST',
-                            data: {
-                                _method: 'PUT',
-                                [field]: value
-                            },
-                            success: function(response) {
-                                console.log('Updated:', response);
-                            },
-                            error: function(xhr) {
-                                console.error(xhr.responseText);
-                            }
-                        });
-                    });
-                }
-            });
-        });
-    </script>
-
     @include('modal.docAdd')
     @include('modal.docEdit')
     @include('modal.addTrans')
     @include('modal.addRoutslip')
 @endsection
+
+{{-- This script will be pushed to the stack after jQuery loads --}}
+@push('page_scripts')
+<script>
+    $(document).ready(function() {
+        var columns = [
+            { "data": "date_received", "name": "created_at" },
+            { "data": "source", "name": "user_name" },
+            { "data": "subject", "name": "doc_title" },
+            { "data": "action_unit" },
+            { "data": "received_by_date" },
+            { "data": "action_taken" },
+            { "data": "date_released", "name": "updated_at" },
+            { "data": "remarks", "orderable": false },
+            { "data": "status", "name": "doctrack_stat" },
+            { "data": "tracking_code", "orderable": false },
+            { "data": "duration" },
+            { "data": "action", "orderable": false, "searchable": false }
+        ];
+
+        @if (auth()->user()->id == 1235)
+            columns.unshift({ "data": "ctrl_input", "name": "ctrl_no", "orderable": true });
+        @endif
+
+        var table = $('#example1').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ajax": {
+                "url": "{{ route('doctrackSlip.data') }}",
+                "type": "GET"
+            },
+            "columns": columns,
+            "order": [[1, "desc"]],
+            "pageLength": 50,
+            "deferRender": true,
+            "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
+            "language": {
+                "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
+                "search": "Search:",
+                "lengthMenu": "Show _MENU_ entries",
+                "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                "infoFiltered": "(filtered from _MAX_ total entries)"
+            },
+            "drawCallback": function() {
+                attachInlineEditHandlers();
+            }
+        });
+
+        // Initial attachment
+        attachInlineEditHandlers();
+
+        function attachInlineEditHandlers() {
+            // Remove existing handlers to prevent duplicates
+            $('.doctrack-input').off('focus blur keypress');
+            
+            // Store original value on focus
+            $('.doctrack-input').on('focus', function() {
+                $(this).data('original-value', $(this).val());
+            });
+            
+            // Handle blur event (save on losing focus)
+            $('.doctrack-input').on('blur', function() {
+                saveInputValue($(this));
+            });
+            
+            // Handle Enter key press
+            $('.doctrack-input').on('keypress', function(e) {
+                if (e.which === 13) { // Enter key
+                    e.preventDefault();
+                    $(this).blur(); // Trigger blur to save
+                }
+            });
+        }
+
+        function saveInputValue($input) {
+            var doctrackId = $input.data('id');
+            var field = $input.data('field');
+            var value = $input.val().trim();
+            var originalValue = $input.data('original-value');
+            
+            // Don't submit if value hasn't changed
+            if (value === originalValue) {
+                return;
+            }
+            
+            // Get CSRF token from meta tag
+            var token = $('meta[name="csrf-token"]').attr('content');
+            
+            // Show loading state
+            $input.prop('disabled', true);
+            $input.css('opacity', '0.6');
+            
+            // Make AJAX request with proper CSRF
+            $.ajax({
+                // url: "/doctrack-slip/" + doctrackId,
+                url: "{{ url('/doctrack-slip') }}/" + doctrackId,
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token
+                },
+                data: {
+                    _method: 'PUT',
+                    [field]: value
+                },
+                success: function(response) {
+                    console.log('Update successful:', response);
+                    
+                    // Update stored original value
+                    $input.data('original-value', value);
+                    
+                    // Show success indicator
+                    $input.css('border', '2px solid #28a745');
+                    
+                    // Show toast notification
+                    toastr.success('Updated successfully');
+                    
+                    // Remove success indicator after delay
+                    setTimeout(function() {
+                        $input.css('border', '');
+                    }, 2000);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Update failed:', xhr.responseText);
+                    
+                    // Revert to original value
+                    $input.val(originalValue);
+                    
+                    // Show error indicator
+                    $input.css('border', '2px solid #dc3545');
+                    
+                    // Show error toast
+                    toastr.error('Failed to update. Please try again.');
+                    
+                    // Remove error indicator after delay
+                    setTimeout(function() {
+                        $input.css('border', '');
+                    }, 3000);
+                },
+                complete: function() {
+                    // Re-enable input
+                    $input.prop('disabled', false);
+                    $input.css('opacity', '1');
+                }
+            });
+        }
+    });
+</script>
+@endpush
