@@ -279,4 +279,27 @@ Route::group(['middleware'=>['login_auth']],function(){
     // Print
     Route::get('/print-logbook', [PrintController::class, 'printLogbook'])->name('printLogbook');
     Route::get('/print-logbook/pdf', [PrintController::class, 'logbookPdf'])->name('logbookPdf');
+
+
+
+    Route::get('/test-signature/{userId}', function ($userId) {
+    $esig = \App\Models\Esig::where('user_id', $userId)->first();
+    
+    if (!$esig) {
+        return "No signature found for user ID: " . $userId;
+    }
+    
+    $esigPath = storage_path('app/esignature/' . $esig->esig_file);
+    
+    if (!file_exists($esigPath)) {
+        return "File not found at: " . $esigPath;
+    }
+    
+    $mimeType = mime_content_type($esigPath);
+    $imageData = file_get_contents($esigPath);
+    
+    return response($imageData)
+        ->header('Content-Type', $mimeType)
+        ->header('Content-Disposition', 'inline; filename="' . $esig->esig_file . '"');
+})->name('testSignature');
 });
