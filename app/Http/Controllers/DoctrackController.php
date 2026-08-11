@@ -574,8 +574,6 @@ public function storeDoctrackUpdate(Request $request)
 //     }
 // }
 
-// updated the view file 08/11/2026 
-
 public function uploadFile(Request $request)
 {
     $request->validate([
@@ -920,17 +918,41 @@ public function updateSlipStatus(Request $request, $id)
 
 public function viewFile($filename)
 {
-    $path = storage_path('app/doc_track/' . $filename);
+    // Remove any path traversal attempts
+    $filename = basename($filename);
     
-    if (!File::exists($path)) {
-        abort(404, 'File not found');
+    // Define possible file locations
+    $possiblePaths = [
+        storage_path('app/doc_track/' . $filename),
+        storage_path('app/public/doc_track/' . $filename),
+        public_path('storage/doc_track/' . $filename),
+    ];
+    
+    $foundPath = null;
+    
+    foreach ($possiblePaths as $path) {
+        if (File::exists($path)) {
+            $foundPath = $path;
+            break;
+        }
     }
     
-    $file = File::get($path);
-    $type = File::mimeType($path);
+    if (!$foundPath) {
+        abort(404, 'File not found: ' . $filename);
+    }
+    
+    $file = File::get($foundPath);
+    $type = File::mimeType($foundPath);
     
     $response = Response::make($file, 200);
     $response->header("Content-Type", $type);
+    
+    // Set content disposition based on file type
+    if (in_array($type, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'])) {
+        $response->header('Content-Disposition', 'inline; filename="' . $filename . '"');
+    } else {
+        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
     
     return $response;
 }
