@@ -323,6 +323,28 @@ class DocumentController extends Controller
         return 'N/A';
     }
     
+    // Check if the file actually exists
+    $fileExists = false;
+    $possiblePaths = [
+        storage_path('app/public/documents/' . $document->file_name),
+        storage_path('app/documents/' . $document->file_name),
+        storage_path('app/doc_track/' . $document->file_name),
+        public_path('storage/documents/' . $document->file_name),
+        public_path('documents/' . $document->file_name),
+    ];
+    
+    foreach ($possiblePaths as $path) {
+        if (File::exists($path)) {
+            $fileExists = true;
+            break;
+        }
+    }
+    
+    if (!$fileExists) {
+        return '<span class="text-muted"><i class="fas fa-file-pdf text-danger"></i> ' . 
+               Str::limit($document->file_name, 22) . '</span><br><small class="text-warning">File not found</small>';
+    }
+    
     $html = '<a href="' . route('documents.viewPdf', $document->id) . '" target="_blank" style="color: #007bff;">';
     $html .= '<i class="fas fa-file-pdf text-danger"></i> ';
     $html .= Str::limit($document->file_name, 22) . '</a>';
@@ -673,50 +695,49 @@ class DocumentController extends Controller
 //     }
 // }
 
-public function viewPdf($id)
+public function viewFile($filename)
 {
-    $document = Document::findOrFail($id);
-
-    $log = Log::where('doc_id', $id)
-        ->where('new_destination', auth()->user()->fname . ' ' . auth()->user()->lname)
-        ->latest()
-        ->first();
-
-    if ($log && !$log->viewed_status) {
-        $log->timestamps = false;
-        $log->update([
-            'viewed_status' => 1,
-            'viewed_at' => now(),
-        ]);
-    }
-
-    // Check multiple locations for the file
+    // Remove any path traversal attempts
+    $filename = basename($filename);
+    
+    // Define possible file locations
     $possiblePaths = [
-        storage_path('app/documents/' . $document->file_name),
-        storage_path('app/public/documents/' . $document->file_name),
-        storage_path('app/doc_track/' . $document->file_name),
+        storage_path('app/public/documents/' . $filename),
+        storage_path('app/documents/' . $filename),
+        storage_path('app/doc_track/' . $filename),
+        public_path('storage/documents/' . $filename),
+        public_path('documents/' . $filename),
     ];
     
-    $filePath = null;
+    $foundPath = null;
     
     foreach ($possiblePaths as $path) {
-        if (file_exists($path)) {
-            $filePath = $path;
+        if (File::exists($path)) {
+            $foundPath = $path;
             break;
         }
     }
-
-    if ($filePath) {
-        // Determine MIME type dynamically instead of hardcoding PDF
-        $mimeType = mime_content_type($filePath);
-        
-        return response()->file($filePath, [
-            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
-            'Content-Type' => $mimeType,
-        ]);
-    } else {
-        return redirect()->back()->with('error', 'File not found.');
+    
+    if (!$foundPath) {
+        // Log the error for debugging
+        Log::error('File not found: ' . $filename . '. Checked paths: ' . json_encode($possiblePaths));
+        abort(404, 'File not found');
     }
+    
+    $file = File::get($foundPath);
+    $type = File::mimeType($foundPath);
+    
+    $response = Response::make($file, 200);
+    $response->header("Content-Type", $type);
+    
+    // Set content disposition based on file type
+    if (in_array($type, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'])) {
+        $response->header('Content-Disposition', 'inline; filename="' . $filename . '"');
+    } else {
+        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+    
+    return $response;
 }
 
     // public function viewPdf($id)
