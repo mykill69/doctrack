@@ -194,12 +194,36 @@
                                         <div class="card-body">
                                             <div class="row">
                                                 <!-- Attached File Section -->
+                                                {{-- <div
+                                                    class="col-md-12 d-flex justify-content-between align-items-center flex-wrap mb-3">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-paperclip text-muted mr-2"></i>
+                                                        @if ($documentTrack->doctrackFile)
+                                                            <a href="{{ asset('storage/doc_track/' . $documentTrack->doctrackFile->file) }}"
+                                                                target="_blank">
+                                                                <i class="fas fa-file-pdf text-danger"></i>
+                                                                <span>{{ $documentTrack->doctrackFile->file }}</span>
+                                                            </a>
+                                                        @else
+                                                            <span class="text-muted">No file attached</span>
+                                                        @endif
+                                                    </div>
+
+                                                    <!-- Upload Button -->
+                                                    <button
+                                                        onclick="openFileUpload('{{ $documentTrack->docslip_id }}')"
+                                                        class="btn btn-sm btn-outline-primary ml-auto"
+                                                        {{ !$isEnabled ? 'disabled' : '' }}>
+                                                        <i class="fas fa-upload mr-1"></i>Upload File
+                                                    </button>
+                                                </div> --}}
+
                                                 <div
                                                     class="col-md-12 d-flex justify-content-between align-items-center flex-wrap mb-3">
                                                     <div class="d-flex align-items-center">
                                                         <i class="fas fa-paperclip text-muted mr-2"></i>
                                                         @if ($documentTrack->doctrackFile)
-                                                            <a href="{{ asset('app/doc_track/' . $documentTrack->doctrackFile->file) }}"
+                                                            <a href="{{ route('viewFile', $documentTrack->doctrackFile->file) }}"
                                                                 target="_blank">
                                                                 <i class="fas fa-file-pdf text-danger"></i>
                                                                 <span>{{ $documentTrack->doctrackFile->file }}</span>

@@ -20,6 +20,8 @@ use App\Mail\DoctrackNotification;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Group;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
 
 class DoctrackController extends Controller
 {
@@ -520,60 +522,107 @@ public function storeDoctrackUpdate(Request $request)
 
 
 
+// public function uploadFile(Request $request)
+// {
+//     try {
+//         // Corrected table name from 'doctracks' to 'doctrack_slip'
+//         $request->validate([
+//             'docslip_id' => 'required|string|exists:doctrack_slip,docslip_id',
+//             'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+//         ]);
+
+//         $docslip_id = $request->docslip_id;
+//         $file = $request->file('file');
+//         $storagePath = storage_path('app/doc_track');
+
+//         // Make sure the folder exists
+//         if (!file_exists($storagePath)) {
+//             mkdir($storagePath, 0755, true);
+//         }
+
+//         $originalName = $file->getClientOriginalName();
+//         $filePath = $storagePath . '/' . $originalName;
+
+//         // Delete old file from DB and disk
+//         $existingFile = DoctrackFile::where('docslip_id', $docslip_id)->first();
+//         if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
+//             unlink($storagePath . '/' . $existingFile->file);
+//         }
+
+//         // Save new file
+//         $file->storeAs('doc_track', $originalName);
+
+//         // Insert or update file info in DB
+//         DoctrackFile::updateOrCreate(
+//             ['docslip_id' => $docslip_id],
+//             ['file' => $originalName]
+//         );
+
+//         return response()->json(['success' => true]);
+
+//     } catch (\Illuminate\Validation\ValidationException $e) {
+//         return response()->json([
+//             'success' => false,
+//             'message' => $e->validator->errors()->first()
+//         ], 422);
+//     } catch (\Exception $e) {
+//         Log::error('Upload error: ' . $e->getMessage());
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'Server error: ' . $e->getMessage()
+//         ], 500);
+//     }
+// }
+
+// updated the view file 08/11/2026 
+
 public function uploadFile(Request $request)
 {
+    $request->validate([
+        'file' => 'required|file|max:10240',
+        'docslip_id' => 'required'
+    ]);
+
     try {
-        // Corrected table name from 'doctracks' to 'doctrack_slip'
-        $request->validate([
-            'docslip_id' => 'required|string|exists:doctrack_slip,docslip_id',
-            'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            
+            // Ensure the directory exists
+            $directory = storage_path('app/doc_track');
+            if (!File::exists($directory)) {
+                File::makeDirectory($directory, 0755, true);
+            }
+            
+            // Move the file to storage/app/doc_track
+            $file->move($directory, $fileName);
+            
+            // Save to database
+            DoctrackFile::create([
+                'docslip_id' => $request->docslip_id,
+                'file' => $fileName,
+                // Add any other fields you need
+            ]);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'File uploaded successfully'
+            ]);
+        }
+        
+        return response()->json([
+            'success' => false, 
+            'message' => 'No file uploaded'
         ]);
-
-        $docslip_id = $request->docslip_id;
-        $file = $request->file('file');
-        $storagePath = storage_path('app/doc_track');
-
-        // Make sure the folder exists
-        if (!file_exists($storagePath)) {
-            mkdir($storagePath, 0755, true);
-        }
-
-        $originalName = $file->getClientOriginalName();
-        $filePath = $storagePath . '/' . $originalName;
-
-        // Delete old file from DB and disk
-        $existingFile = DoctrackFile::where('docslip_id', $docslip_id)->first();
-        if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
-            unlink($storagePath . '/' . $existingFile->file);
-        }
-
-        // Save new file
-        $file->storeAs('doc_track', $originalName);
-
-        // Insert or update file info in DB
-        DoctrackFile::updateOrCreate(
-            ['docslip_id' => $docslip_id],
-            ['file' => $originalName]
-        );
-
-        return response()->json(['success' => true]);
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->validator->errors()->first()
-        ], 422);
+        
     } catch (\Exception $e) {
-        Log::error('Upload error: ' . $e->getMessage());
         return response()->json([
-            'success' => false,
-            'message' => 'Server error: ' . $e->getMessage()
+            'success' => false, 
+            'message' => 'Error uploading file: ' . $e->getMessage()
         ], 500);
     }
+
 }
-
-
-
 
 public function docslipForm($id)
 {
@@ -869,6 +918,21 @@ public function updateSlipStatus(Request $request, $id)
 // }
 
 
-
+public function viewFile($filename)
+{
+    $path = storage_path('app/doc_track/' . $filename);
+    
+    if (!File::exists($path)) {
+        abort(404, 'File not found');
+    }
+    
+    $file = File::get($path);
+    $type = File::mimeType($path);
+    
+    $response = Response::make($file, 200);
+    $response->header("Content-Type", $type);
+    
+    return $response;
+}
 
 }

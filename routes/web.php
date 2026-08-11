@@ -273,6 +273,8 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/search', [DoctrackController::class, 'search'])->name('search');
     Route::delete('/doc-slip/{docslip_id}', [PagesController::class, 'deleteSlip'])->name('deleteSlip');
     Route::put('/update-slip-status/{id}', [DoctrackController::class, 'updateSlipStatus'])->name('updateSlipStatus');
+    // Add this with your other doctrack routes
+    Route::get('/doc-track-file/{filename}', [DoctrackController::class, 'viewFile'])->name('viewFile');
     Route::post('/upload-doc-file', [DoctrackController::class, 'uploadFile'])->name('uploadDoctrackFile');
 
     // Print
