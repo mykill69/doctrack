@@ -1103,17 +1103,6 @@ public function pending()
 
 public function served()
 {
-    // $user = auth()->user();
-    // $userId = $user->id;
-    // $userDepartment = trim($user->department);
-    // $userFullName = trim($user->fname . ' ' . $user->lname);
-    // $userRole = $user->role;
-
-    // Block user ID 1235 from accessing this page
-    if (auth()->user()->id == 1235) {
-        abort(403, 'Access denied');
-    }
-    
     $user = auth()->user();
     $userId = $user->id;
     $userDepartment = trim($user->department);
@@ -1198,15 +1187,6 @@ public function served()
  */
 public function getServedData(Request $request)
 {
-    // $user = auth()->user();
-    // $userId = $user->id;
-    // $userDepartment = trim($user->department);
-    // $userFullName = trim($user->fname . ' ' . $user->lname);
-    // $userRole = $user->role;
-    if (auth()->user()->id == 1235) {
-        return response()->json(['error' => 'Access denied'], 403);
-    }
-    
     $user = auth()->user();
     $userId = $user->id;
     $userDepartment = trim($user->department);
@@ -1276,7 +1256,7 @@ public function getServedData(Request $request)
     // Build data array
     $data = [];
     foreach ($paginatedLogs as $log) {
-        // ✅ Match EXACT routing slip by new_file = document
+        // Match EXACT routing slip by new_file = document
         $exactSlip = $allRoutingSlips
             ->where('rslip_id', $log->route_id)
             ->where('document', $log->new_file)
@@ -1286,7 +1266,7 @@ public function getServedData(Request $request)
             $exactSlip = $log->routingSlip;
         }
 
-        // ✅ Match EXACT document by file_name = new_file
+        // Match EXACT document by file_name = new_file
         $exactDoc = $allDocuments
             ->where('route_id', $log->route_id)
             ->where('file_name', $log->new_file)
