@@ -2,642 +2,937 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Document;
-use App\Models\Office;
-use App\Models\Log;
-use App\Models\User;
-use App\Models\Doctrack;
-use App\Models\LogsHistory;
-use App\Models\RoutingSlip;
-use App\Models\RouteDocument;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\Office;
+use App\Models\Document;
+use App\Models\RoutingSlip;
+use App\Models\Log;
+use App\Models\LogsHistory;
+use App\Models\AssignLogs;
+use App\Models\LogsTracking;
+use App\Models\Doctrack;
+use App\Models\DoctrackFile;
+use App\Models\User;
+use App\Mail\DoctrackNotification;
+use Illuminate\Support\Facades\Mail;
+use App\Models\Group;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Storage;
 
 class DoctrackController extends Controller
 {
-    public function dashboard()
-    {
-        $user = auth()->user();
-        $userId = $user->id;
-        $userFullName = $user->fname . ' ' . $user->lname;
-        $userRole = $user->role;
-        $isSuperUser = ($userRole === 'super_user');
+//     public function storeDoctrack(Request $request)
+// {
+//     // ✅ Validate the request
+//     $request->validate([
+//         'user_id'     => 'required|integer',
+//         'doc_type'    => 'required|string',
+//         'doc_title'   => 'required|string',
+//         'update_by'   => 'required|array',
+//         'update_by.*' => 'integer|exists:users,id',
+//         'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls',
+//     ]);
 
-        // Only load counts and metadata (not table data - that loads via AJAX)
-        
-        $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
+//     // ✅ Generate docslip ID
+//     $docslip_id = 'CPSU' . mt_rand(10000000, 99999999);
 
-        // COUNTS
-        if ($isSuperUser) {
-            $superUserCount = RoutingSlip::where('route_status', 1)->count();
-            $recordsOfficerCount = RoutingSlip::where('route_status', 2)->count();
-        } else {
-            $superUserCount = $userRole === 'super_user'
-                ? RoutingSlip::where('route_status', 1)->count()
-                : 0;
+//     // ✅ Handle optional file upload
+//     $fileName = null;
+//     if ($request->hasFile('file')) {
+//         $file = $request->file('file');
+//         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+//         $extension = $file->getClientOriginalExtension();
+//         $fileName = $originalName . '.' . $extension;
 
-            $recordsOfficerCount = $userRole === 'records_officer'
-                ? RoutingSlip::where('route_status', 2)->count()
-                : 0;
+//         $i = 1;
+//         $storagePath = storage_path('app/doc_track');
+
+//         while (file_exists($storagePath . '/' . $fileName)) {
+//             $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+//             $i++;
+//         }
+
+//         $file->storeAs('doc_track', $fileName);
+//     }
+
+//     // ✅ Create a record for the creator (doctrack_stat = 1)
+//     $creator = User::find($request->user_id);
+//     $creatorFullName = $creator->fname . ' ' . $creator->lname;
+
+//     $documentTrack = Doctrack::create([
+//         'user_id'       => $request->user_id,
+//         'update_by'     => null,
+//         'docslip_id'    => $docslip_id,
+//         'doc_type'      => $request->doc_type,
+//         'doc_title'     => $request->doc_title,
+//         'user_name'     => $creatorFullName,
+//         'doctrack_stat' => 1,
+//     ]);
+
+//      // 🔹 Add to logs_tracking for creator
+//     LogsTracking::create([
+//         'docslip_id' => $docslip_id,
+//         'user_id'    => $request->user_id,
+//         'update_by'  => null,
+//         'doc_title'  => $request->doc_title,
+//         'file_logs'  => $fileName,
+//         'logs_status'=> 1,
+//         'comments'   => null,
+//     ]);
+
+//     // ✅ Prepare email data
+//     $docInfo = (object)[
+//         'docslip_id' => $docslip_id,
+//         'doc_title'  => $request->doc_title,
+//         'doc_type'   => $request->doc_type,
+//         'user_name'  => $creatorFullName,
+//     ];
+
+//     // ✅ Send email to the creator
+//     if (!empty($creator) && !empty($creator->email)) {
+//         try {
+//             Mail::to($creator->email)->send(
+//                 new DoctrackNotification($docInfo, $creatorFullName)
+//             );
+//         } catch (\Exception $e) {
+//             Log::error("Email to creator failed: " . $e->getMessage());
+//         }
+//     }
+
+//     // ✅ Create records and send emails to each recipient (doctrack_stat = 2)
+//     foreach ($request->update_by as $userId) {
+//         $recipient = User::find($userId);
+//         if ($recipient) {
+//             $recipientFullName = $recipient->fname . ' ' . $recipient->lname;
+
+//             Doctrack::create([
+//                 'user_id'       => $request->user_id,
+//                 'update_by'     => $userId,
+//                 'docslip_id'    => $docslip_id,
+//                 'doc_type'      => $request->doc_type,
+//                 'doc_title'     => $request->doc_title,
+//                 'user_name'     => $creatorFullName,
+//                 'doctrack_stat' => 2,
+//             ]);
+
+//               LogsTracking::create([
+//                 'docslip_id' => $docslip_id,
+//                 'user_id'    => $request->user_id,
+//                 'update_by'  => $userId,
+//                 'doc_title'  => $request->doc_title,
+//                 'file_logs'  => $fileName,
+//                 'logs_status'=> 2,
+//                 'comments'   => null,
+//             ]);
+
+//             if (!empty($recipient->email)) {
+//                 try {
+//                     Mail::to($recipient->email)->send(
+//                         new DoctrackNotification($docInfo, $recipientFullName)
+//                     );
+//                 } catch (\Exception $e) {
+//                     Log::error("Email to recipient ID {$userId} failed: " . $e->getMessage());
+//                 }
+//             }
+//         }
+//     }
+
+//     // ✅ Save file (linked only to the creator's row)
+//     if ($fileName) {
+//         DoctrackFile::create([
+//             'doctrack_id' => $documentTrack->id,
+//             'docslip_id'  => $docslip_id,
+//             'file'        => $fileName,
+//         ]);
+//     }
+
+//     // ✅ Final JSON response
+//     return response()->json([
+//         'success' => true,
+//         'id'      => $documentTrack->id,
+//         'message' => 'Document successfully submitted!',
+//     ]);
+// }
+
+
+public function storeDoctrack(Request $request)
+{
+    $request->validate([
+        'user_id'     => 'required|integer',
+        'doc_type'    => 'required|string',
+        'doc_title'   => 'required|string',
+        'update_by'   => 'required|array',
+        'update_by.*' => 'required|string',
+        'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xls,xlsx,xlsm',
+    ]);
+
+    $docslip_id = 'CPSU' . mt_rand(10000000, 99999999);
+    $fileName = null;
+
+    if ($request->hasFile('file')) {
+        $file = $request->file('file');
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
+        $fileName = $originalName . '.' . $extension;
+
+        $i = 1;
+        $storagePath = storage_path('app/doc_track');
+
+        while (file_exists($storagePath . '/' . $fileName)) {
+            $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+            $i++;
         }
 
-        $groups = User::select('id', 'fname', 'lname', 'department')
-            ->orderBy('department')
-            ->orderBy('lname')
-            ->get()
-            ->groupBy('department');
-
-        $offices = Office::all();
-        $dpa = $user->dpa;
-        $users = User::all();
-
-        // DOCUMENT TRACK
-        $documentTrack = collect();
-        
-        if ($isSuperUser) {
-            Doctrack::with(['createdBy', 'doctrackFile'])
-                ->orderByDesc('created_at')
-                ->chunk(200, function ($chunk) use (&$documentTrack) {
-                    $documentTrack = $documentTrack->merge($chunk);
-                });
-        } else {
-            Doctrack::with(['createdBy', 'doctrackFile'])
-                ->where(function ($query) use ($userId, $userFullName) {
-                    $query->where('user_id', $userId)
-                          ->orWhere('update_by', $userId)
-                          ->orWhere('user_name', $userFullName);
-                })
-                ->orderByDesc('created_at')
-                ->chunk(200, function ($chunk) use (&$documentTrack) {
-                    $documentTrack = $documentTrack->merge($chunk);
-                });
-        }
-
-        $documentTrack->transform(function ($item) {
-            $start = Carbon::parse($item->created_at);
-            $end = Carbon::parse($item->updated_at ?? $item->created_at);
-            $diffInMinutes = $end->diffInMinutes($start);
-
-            $item->time_diff = [
-                'days' => floor($diffInMinutes / 1440),
-                'hours' => floor(($diffInMinutes % 1440) / 60),
-                'minutes' => $diffInMinutes % 60,
-            ];
-
-            return $item;
-        });
-
-        // DOCTRACK COUNT
-        if ($isSuperUser) {
-            $doctrackCount = Doctrack::where('doctrack_stat', 2)->count();
-        } else {
-            $doctrackCount = Doctrack::where('doctrack_stat', 2)
-                ->where(function ($query) use ($userId, $userFullName) {
-                    $query->where('user_id', $userId)
-                          ->orWhere('update_by', $userId)
-                          ->orWhere(function ($q) use ($userFullName, $userId) {
-                              $q->where('user_name', $userFullName)
-                                ->where('user_id', $userId);
-                          });
-                })
-                ->count();
-        }
-
-        return view('home.dashboard', compact(
-            'offices',
-            'routingSlipCount',
-            'superUserCount',
-            'recordsOfficerCount',
-            'dpa',
-            'users',
-            'doctrackCount',
-            'groups'
-        ));
+        $file->storeAs('doc_track', $fileName);
     }
 
-    /**
-     * Server-side data for DataTables AJAX
-     */
-    public function getDashboardData(Request $request)
-    {
-        $user = auth()->user();
-        $userId = $user->id;
-        $userFullName = $user->fname . ' ' . $user->lname;
-        $userRole = $user->role;
-        $isSuperUser = ($userRole === 'super_user');
-        $isAdminOrRecordsOfficer = in_array($userRole, ['records_officer', 'administrator']);
+    $creator = User::findOrFail($request->user_id);
+    $creatorFullName = $creator->fname . ' ' . $creator->lname;
 
-        $searchValue = $request->input('search.value');
-        $start = $request->input('start', 0);
-        $length = $request->input('length', 25);
-        
-        // Build base query
-        $baseQuery = Log::with(['routingSlip', 'document']);
-        
-        if (!$isSuperUser) {
-            $baseQuery->where(function ($q) use ($userId, $userFullName) {
-                $q->where('new_user', $userId)
-                  ->orWhere('user_id', $userId)
-                  ->orWhereRaw('LOWER(new_destination) = ?', [strtolower($userFullName)])
-                  ->orWhereHas('routingSlip', function ($sq) use ($userFullName) {
-                      $sq->where('pres_dept', $userFullName);
-                  });
-            });
-        }
-        
-        // Apply search at database level
-        if ($searchValue) {
-            $baseQuery->where(function ($q) use ($searchValue) {
-                $q->where('route_id', 'LIKE', "%{$searchValue}%")
-                  ->orWhere('new_destination', 'LIKE', "%{$searchValue}%")
-                  ->orWhereHas('routingSlip', function ($sq) use ($searchValue) {
-                      $sq->where('source', 'LIKE', "%{$searchValue}%")
-                        ->orWhere('subject', 'LIKE', "%{$searchValue}%");
-                  });
-            });
-        }
-        
-        // Get total count
-        $totalRecords = $baseQuery->count();
-        
-        // Get paginated results directly from database
-        $paginatedLogs = $baseQuery->orderBy('route_id', 'desc')
-            ->skip($start)
-            ->take($length)
-            ->get();
-        
-        // Preload routing slips and documents only for current page
-        $routeIds = $paginatedLogs->pluck('route_id')->unique();
-        $newFiles = $paginatedLogs->pluck('new_file')->unique();
-        
-        $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
-            ->whereIn('document', $newFiles)
-            ->get();
-        
-        $allDocuments = Document::whereIn('route_id', $routeIds)
-            ->whereIn('file_name', $newFiles)
-            ->get();
+    $documentTrack = Doctrack::create([
+        'user_id'       => $creator->id,
+        'update_by'     => null,
+        'docslip_id'    => $docslip_id,
+        'doc_type'      => $request->doc_type,
+        'doc_title'     => $request->doc_title,
+        'user_name'     => $creatorFullName,
+        'doctrack_stat' => 1,
+    ]);
 
-        // Build response data
-        $data = [];
-        foreach ($paginatedLogs as $log) {
-            $exactSlip = $allRoutingSlips
-                ->where('rslip_id', $log->route_id)
-                ->where('document', $log->new_file)
-                ->first();
-            
-            if (!$exactSlip) {
-                $exactSlip = $log->routingSlip;
+    LogsTracking::create([
+        'docslip_id' => $docslip_id,
+        'user_id'    => $creator->id,
+        'update_by'  => null,
+        'doc_title'  => $request->doc_title,
+        'file_logs'  => $fileName,
+        'logs_status'=> 1,
+        'comments'   => null,
+    ]);
+
+    $docInfo = (object)[
+        'docslip_id' => $docslip_id,
+        'doc_title'  => $request->doc_title,
+        'doc_type'   => $request->doc_type,
+        'user_name'  => $creatorFullName,
+    ];
+
+    // Send email to creator
+    if ($creator->email) {
+        try {
+            Mail::to($creator->email)->send(new DoctrackNotification($docInfo, $creatorFullName));
+        } catch (\Exception $e) {
+            Log::error("Failed to email creator: " . $e->getMessage());
+        }
+    }
+
+    // Handle update_by recipients
+    $finalRecipients = [];
+
+    foreach ($request->update_by as $entry) {
+        $users = collect();
+
+        if (Str::startsWith($entry, 'group:')) {
+            $groupName = Str::after($entry, 'group:');
+            $group = Group::where('group_name', $groupName)->first();
+            if ($group) {
+                $users = $group->users;
             }
-            
-            $exactDoc = $allDocuments
-                ->where('route_id', $log->route_id)
-                ->where('file_name', $log->new_file)
-                ->first();
-            
-            if (!$exactDoc) {
-                $exactDoc = $log->document;
-            }
-            
-            $routingSlipId = $exactSlip ? $exactSlip->id : RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
-            
-            $row = [
-                'route_id' => $log->route_id,
-                'route_display' => $this->formatRouteLink($log, $routingSlipId),
-                'date_received' => $exactSlip ? Carbon::parse($exactSlip->date_received)->format('F d, Y') : 'N/A',
-                'source' => $exactSlip->source ?? 'N/A',
-                'subject' => $exactSlip->subject ?? ($exactDoc->subject ?? 'N/A'),
-                'action_unit' => $exactSlip->pres_dept ?? 'N/A',
-                'received_by_date' => ($exactSlip && $exactSlip->updated_at) ? $exactSlip->updated_at->format('F j, Y') : 'N/A',
-                'action_taken' => $this->formatActionTaken($log, $exactSlip),
-                'date_released' => optional($exactDoc)->created_at ? $exactDoc->created_at->format('m-d-Y h:i:s A') : 'N/A',
-                'remarks' => $this->formatRemarks($exactSlip, $log),
-                'file_name' => $this->formatFileName($exactDoc, $log),
-                'updated_by' => '<span class="badge badge-secondary">' . ($log->new_destination ?? 'N/A') . '</span><br>' . $log->updated_at->format('m-d-Y h:i:s A'),
-                'duration' => $this->formatDuration($exactDoc, $log),
-            ];
-            
-            if ($isAdminOrRecordsOfficer) {
-                $row['action'] = $this->formatRecallAction($log);
-            }
-            
-            $data[] = $row;
+
+        } elseif (Str::startsWith($entry, 'position:')) {
+            $positionId = (int) Str::after($entry, 'position:');
+            $users = User::where('position', $positionId)->get();
+
+        } elseif (is_numeric($entry)) {
+            $user = User::find((int) $entry);
+            if ($user) $users = collect([$user]);
         }
 
-        return response()->json([
-            'draw' => intval($request->input('draw')),
-            'recordsTotal' => $totalRecords,
-            'recordsFiltered' => $totalRecords,
-            'data' => $data
+        foreach ($users as $user) {
+            if (!$user || isset($finalRecipients[$user->id])) continue;
+
+            $finalRecipients[$user->id] = $user;
+        }
+    }
+
+    foreach ($finalRecipients as $recipient) {
+        $recipientFullName = $recipient->fname . ' ' . $recipient->lname;
+
+        Doctrack::create([
+            'user_id'       => $creator->id,
+            'update_by'     => $recipient->id,
+            'docslip_id'    => $docslip_id,
+            'doc_type'      => $request->doc_type,
+            'doc_title'     => $request->doc_title,
+            'user_name'     => $creatorFullName,
+            'doctrack_stat' => 2,
+        ]);
+
+        LogsTracking::create([
+            'docslip_id' => $docslip_id,
+            'user_id'    => $creator->id,
+            'update_by'  => $recipient->id,
+            'doc_title'  => $request->doc_title,
+            'file_logs'  => $fileName,
+            'logs_status'=> 2,
+            'comments'   => null,
+        ]);
+
+        if ($recipient->email) {
+            try {
+                Mail::to($recipient->email)->send(new DoctrackNotification($docInfo, $recipientFullName));
+            } catch (\Exception $e) {
+                Log::error("Failed to email recipient ({$recipient->id}): " . $e->getMessage());
+            }
+        }
+    }
+
+    if ($fileName) {
+        DoctrackFile::create([
+            'doctrack_id' => $documentTrack->id,
+            'docslip_id'  => $docslip_id,
+            'file'        => $fileName,
         ]);
     }
 
-    // ============================================
-    // Helper Methods
-    // ============================================
+    return response()->json([
+        'success' => true,
+        'id'      => $documentTrack->id,
+        'message' => 'Document successfully submitted!',
+    ]);
+    return redirect()->route('doctrackSlip')
+    ->with('success', 'Document successfully submitted with tracking # ' . $docslip_id . '!');
 
-    private function formatRouteLink($log, $routingSlipId)
-    {
-        if ($log->route_id == 0) {
-            return 'N/A';
+}
+
+public function storeDoctrackUpdate(Request $request)
+{
+    $request->validate([
+        'user_id'     => 'required|integer',
+        'update_by'   => 'required|integer',
+        'docslip_id'  => 'required|string',
+        'doc_type'    => 'required|string',
+        'doc_title'   => 'required|string',
+        'user_name'   => 'required|string',
+        'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+    ]);
+
+    $fileName = null;
+
+    // Handle file upload
+    if ($request->hasFile('file')) {
+        $file = $request->file('file');
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
+        $fileName = $originalName . '.' . $extension;
+
+        $i = 1;
+        $storagePath = storage_path('app/doc_track');
+        while (file_exists($storagePath . '/' . $fileName)) {
+            $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+            $i++;
         }
-        
-        return '<a href="' . route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId . '" target="_blank" style="color: #007bff;">' . $log->route_id . '</a>';
+
+        $file->storeAs('doc_track', $fileName);
     }
 
-    private function formatDateReceived($document)
-    {
-        if (optional($document->routingSlip)->date_received) {
-            return Carbon::parse($document->routingSlip->date_received)->format('F d, Y');
+    // Create doctrack entry
+    $documentTrack = Doctrack::create([
+        'user_id'       => $request->user_id,
+        'update_by'     => $request->update_by,
+        'docslip_id'    => $request->docslip_id,
+        'doc_type'      => $request->doc_type,
+        'doc_title'     => $request->doc_title,
+        'user_name'     => $request->user_name,
+        'doctrack_stat' => 2,
+    ]);
+
+    // Save file record
+    if ($fileName) {
+        // Delete old file (if any)
+        $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
+        if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
+            unlink($storagePath . '/' . $existingFile->file);
         }
-        
-        if ($document && $document->created_at) {
-            return Carbon::parse($document->created_at)->format('F d, Y');
-        }
-        
-        return 'N/A';
+
+        DoctrackFile::updateOrCreate(
+            ['docslip_id' => $request->docslip_id],
+            [
+                'doctrack_id' => $documentTrack->id,
+                'file'        => $fileName,
+            ]
+        );
     }
 
-    private function formatActionTaken($log, $exactSlip = null)
-    {
-        $html = '';
-        $slip = $exactSlip ?? $log->routingSlip;
-        
-        if ($slip && $slip->r_destination) {
-            $html .= '<strong class="text-danger">' . ucwords(strtolower($slip->r_destination)) . '</strong>';
+    // Save log entry
+    LogsTracking::create([
+        'docslip_id' => $request->docslip_id,
+        'user_id'    => $request->user_id,
+        'update_by'  => $request->update_by,
+        'doc_title'  => $request->doc_title,
+        'file_logs'  => $fileName,
+        'logs_status'=> 2,
+        'comments'   => null,
+    ]);
+
+    // Send email notification to the receiver (update_by)
+    $recipient = User::find($request->update_by);
+    $creator = User::find($request->user_id);
+
+    if ($recipient && $recipient->email) {
+        $docInfo = (object)[
+            'docslip_id' => $request->docslip_id,
+            'doc_title'  => $request->doc_title,
+            'doc_type'   => $request->doc_type,
+            'user_name'  => $request->user_name,
+        ];
+
+        try {
+            Mail::to($recipient->email)->send(new DoctrackNotification($docInfo, $recipient->fname . ' ' . $recipient->lname));
+        } catch (\Exception $e) {
+            Log::error("Failed to send email to recipient: " . $e->getMessage());
         }
-        
-        if ($log->assigned_to != null) {
-            $html .= ', was re-assigned to <strong class="text-danger">' . ucwords(strtolower($log->assigned_to)) . '</strong>';
-        }
-        
-        return $html ?: 'N/A';
     }
 
-    private function formatRemarks($exactSlip, $log)
+    return redirect()->route('doctrackSlip', ['id' => $documentTrack->id])
+        ->with('success', 'New entry with tracking # ' . $documentTrack->docslip_id . ' was added successfully!');
+}
+
+// public function update(Request $request, Doctrack $doctrack)
+// {
+//     $request->validate([
+//         'ctrl_no' => 'nullable|string|max:255',
+//     ]);
+
+//     $doctrack->update($request->only(['ctrl_no']));
+
+//     return response()->json(['success' => true, 'message' => 'CTRL # updated successfully.']);
+// }
+
+ public function update(Request $request, Doctrack $doctrack)
     {
-        $html = '';
-        $slip = $exactSlip ?? $log->routingSlip;
-        
-        if ($slip && !empty($slip->trans_remarks)) {
-            $html .= '<span class="badge badge-success" style="font-size:10px; display: block;">' . $slip->trans_remarks . '</span>';
-        }
-        
-        if ($slip && !empty($slip->other_remarks)) {
-            $html .= '<span class="badge badge-danger" style="font-size:10px; display: block;">' . $slip->other_remarks . '</span>';
-        }
-        
-        if (!empty($log->comments)) {
-            $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $log->comments);
-            $html .= '<span class="badge badge-warning" style="margin-top: 2px; font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">' . $wrappedComment . '</span>';
-        }
-        
-        return $html ?: '';
-    }
-
-    private function formatFileName($document, $log)
-    {
-        if (!$document) {
-            return 'N/A';
-        }
-        
-        $html = '<a href="' . route('viewFile', $document->file_name) . '" target="_blank" style="color: #007bff;">';
-        $html .= '<i class="fas fa-file-pdf text-danger"></i> ';
-        $html .= Str::limit($document->file_name, 22) . '</a>';
-        
-        if ($log->viewed_status) {
-            $html .= '<p><small class="text-muted">Viewed on <br>' . Carbon::parse($log->viewed_at)->format('M j, Y h:i A') . '</small></p>';
-        }
-        
-        return $html;
-    }
-
-    private function formatDuration($document, $log)
-    {
-        if (!$log->updated_at || !$document || !$document->created_at) {
-            return 'N/A';
-        }
-        
-        $totalMinutes = Carbon::parse($document->created_at)->diffInMinutes($log->updated_at);
-        $days = floor($totalMinutes / 1440);
-        $hours = floor(($totalMinutes % 1440) / 60);
-        $minutes = $totalMinutes % 60;
-        
-        $diff = '';
-        if ($days > 0) {
-            $diff .= $days . ' ' . Str::plural('day', $days) . ', ';
-        }
-        if ($hours > 0) {
-            $diff .= $hours . ' ' . Str::plural('hr', $hours) . ', ';
-        }
-        $diff .= $minutes . ' ' . Str::plural('min', $minutes);
-        
-        return $diff;
-    }
-
-    private function formatRecallAction($log)
-    {
-        $user = auth()->user();
-        
-        if (!in_array($user->role, ['records_officer', 'administrator'])) {
-            return '';
-        }
-        
-        // Get the routing_slip ID (primary key) from the log's route_id (rslip_id)
-        $routingSlipId = RoutingSlip::where('rslip_id', $log->route_id)
-            ->orderBy('id', 'desc')
-            ->value('id');
-        
-        if (!$routingSlipId) {
-            return '';
-        }
-        
-        return '<div class="buttons">
-            <a href="' . route('recallSlip', ['id' => $routingSlipId]) . '" class="btn btn-icon btn-info edit-slip-btn" target="_blank">
-                <span>Recall</span> <i class="fas fa-undo-alt"></i>
-            </a>
-        </div>';
-    }
-
-    // ============================================
-    // Your existing methods
-    // ============================================
-
-    public function tracking(Request $request)
-    {
-        $user = auth()->user();
-        $userId = $user->id;
-        $fullName = trim($user->fname . ' ' . $user->lname);
-
-        $routeId = $request->query('route_id');
-        $routingSlipId = $request->query('routing_slip_id');
-
-        if ($routeId && !$routingSlipId) {
-            $routingSlipId = RoutingSlip::where('rslip_id', $routeId)
-                ->orderBy('id', 'desc')
-                ->value('id');
-
-            if ($routingSlipId) {
-                return redirect()->route('documents.tracking', [
-                    'route_id' => $routeId,
-                    'routing_slip_id' => $routingSlipId,
-                ]);
-            }
-        }
-
-        // Get ALL routing slips for this route_id
-        $allRoutingSlips = RoutingSlip::where('rslip_id', $routeId)->get();
-
-        // Get documents (without joining to avoid filtering)
-        $documents = Document::where('route_id', $routeId)->get();
-
-        // Attach matching routing slip to each document by file_name = document
-        foreach ($documents as $doc) {
-            $doc->matched_slip = $allRoutingSlips->where('document', $doc->file_name)->first();
-            $doc->routing_slip_user_id = $doc->matched_slip->user_id ?? null;
-            $doc->routed_users = $doc->matched_slip->routed_users ?? null;
-            $doc->r_destination = $doc->matched_slip->r_destination ?? null;
-            $doc->trans_remarks = $doc->matched_slip->trans_remarks ?? null;
-            $doc->source = $doc->matched_slip->source ?? null;
-        }
-
-        $filteredDocuments = $documents->filter(function ($document) use ($fullName, $userId) {
-            $routedUsers = array_map('trim', explode(',', $document->routed_users ?? ''));
-
-            return in_array($fullName, $routedUsers)
-                || Log::where('doc_id', $document->id)
-                    ->whereRaw('LOWER(TRIM(new_destination)) = ?', [strtolower($fullName)])
-                    ->exists()
-                || $document->user_id == $userId
-                || $document->routing_slip_user_id == $userId;
-        });
-
-        $logs = Log::where('user_id', $userId)->get();
-        $users = User::all();
-
-        $routingSlipCount = $logs->every(fn ($log) => $log->status_update != 3)
-            ? RoutingSlip::where('route_status', 3)->count()
-            : 0;
-
-        $superUserCount = $user->role === 'super_user'
-            ? RoutingSlip::where('route_status', 1)->count()
-            : 0;
-
-        $recordsOfficerCount = $user->role === 'records_officer'
-            ? RoutingSlip::where('route_status', 2)->count()
-            : 0;
-
-        return view('track.tracktemp', [
-            'documents' => $filteredDocuments,
-            'users' => $users,
-            'offices' => Office::all(),
-            'docNumber' => $routeId,
-            'routingSlipCount' => $routingSlipCount,
-            'superUserCount' => $superUserCount,
-            'recordsOfficerCount' => $recordsOfficerCount,
-        ]);
-    }
-
-    public function storeDoc(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|integer', 
-            'full_name' => 'required|string|max:255',
-            'route_id' => 'required|integer',
-            'subject' => 'required|string',
-            'doc_type' => 'required|string',
-            'document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,png,jpeg', 
-            'purpose' => 'required|string',
-            'department' => 'required|string',
-            'for_to' => 'required|array',
-            'for_to.*' => 'string',
-            'doc_stat' => 'required|string',
-        ]);
-
-        if ($request->hasFile('document')) {
-            $file = $request->file('document');
-            $originalFileName = str_replace(' ', '_', $file->getClientOriginalName());
-            
-            do {
-                $randomNumber = mt_rand(10000000, 99999999);
-                $fileName = $randomNumber . '_' . $originalFileName;
-            } while (Document::where('file_name', $fileName)->exists());
-            
-            // Store in storage/app/public/documents
-            $documentPath = $file->storeAs('documents', $fileName, 'public');
-        } else {
-            return redirect()->back()->withErrors(['document' => 'No document file provided.']);
-        }
-
-        $document = Document::create([
-            'user_id' => $request->user_id, 
-            'full_name' => $request->full_name,
-            'route_id' =>  $request->route_id,
-            'file_name' => $fileName,
-            'doc_type' => $request->doc_type,
-            'subject' => $request->subject,
-            'purpose' => $request->purpose,
-            'department' => $request->department,
-            'doc_stat' => $request->doc_stat,
-        ]);
-
-        $routeDocument = new RouteDocument();
-        $routeDocument->route_id = $document->route_id;
-
-        $destinationFields = ['destination_1', 'destination_2', 'destination_3', 'destination_4', 'destination_5', 'destination_6', 'destination_7', 'destination_8', 'destination_9', 'destination_10'];
-        
-        foreach ($request->for_to as $index => $destination) {
-            if (isset($destinationFields[$index])) {
-                $routeDocument->{$destinationFields[$index]} = $destination;
-
-                Log::create([
-                    'user_id' => auth()->user()->id,
-                    'doc_id' => $document->id,
-                    'route_id' => $document->route_id,
-                    'action' => 'Added new destination',
-                    'status_update' => $document->doc_stat,
-                    'prev_file' => null,
-                    'new_file' => $document->file_name,
-                    'new_destination' => $destination,
-                    'created_at' => now(),
-                ]);
-            }
-        }
-        $routeDocument->save();
-
-        return redirect()->back()->with('success', 'Document submitted successfully!');
-    }
-
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'user_id' => 'required|integer',
-            'new_user' => 'required|integer',
-            'status_update' => 'required|in:2,3'
-        ]);
-
-        $document = Document::find($id);
-        if (!$document) {
-            return redirect()->back()->with('error', 'Document not found.');
-        }
-
-        $routeId = $document->route_id;
-        $currentUser = Auth::user();
-        $fullName = $currentUser->fname . ' ' . $currentUser->lname;
-
-        if ($request->status_update == 3) {
-            $logToUpdate = Log::where('route_id', $routeId)
-                ->where('new_destination', 'LIKE', "%$fullName%")
-                ->latest('id')
-                ->first();
-
-            if (!$logToUpdate) {
-                return redirect()->back()->with('error', 'No matching log entry found for acknowledgment.');
-            }
-
-            $logToUpdate->user_id = $request->input('user_id');
-            $logToUpdate->new_user = $request->input('new_user');
-            $logToUpdate->action = 'Acknowledged';
-            $logToUpdate->status_update = 3;
-            $logToUpdate->prev_file = $logToUpdate->new_file;
-            $logToUpdate->comments = $request->input('comments', null);
-            $logToUpdate->updated_at = now();
-            $logToUpdate->save();
-
-            LogsHistory::create([
-                'doc_id' => $logToUpdate->doc_id,
-                'action' => $logToUpdate->action,
-                'status_update' => 3,
-                'created_at' => now(),
-                'updated_at' => now(),
+        try {
+            $validated = $request->validate([
+                'ctrl_no' => 'nullable|string|max:255',
             ]);
 
-            return redirect($request->input('redirectUrl'))
-                ->with('success', 'The document was acknowledged successfully.');
+            $doctrack->update($request->only(['ctrl_no']));
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'CTRL # updated successfully.',
+                'data' => [
+                    'id' => $doctrack->id,
+                    'ctrl_no' => $doctrack->ctrl_no
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Doctrack update failed: ' . $e->getMessage(), [
+                'doctrack_id' => $doctrack->id ?? null,
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating the record.'
+            ], 500);
         }
+    }
 
-        if ($request->status_update == 2 && auth()->id() == 56) {
-            $logToUpdate = Log::find($request->input('log_id'));
+// public function storeDoctrackUpdate(Request $request)
+// {
+//     // Validate the request
+//     $request->validate([
+//         'user_id' => 'required|integer',
+//         'update_by' => 'required|integer',
+//         'doc_type' => 'required|string',
+//         'doc_title' => 'required|string',
+//         'user_name' => 'required|string',
+//         'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+//     ]);
 
-            if (!$logToUpdate) {
-                return redirect()->back()->with('error', 'No matching log entry found for re-open.');
+//     // Store the document in the database
+//     $documentTrack = Doctrack::create([
+//         'user_id' => $request->user_id,
+//         'update_by' => $request->update_by,
+//         'docslip_id' => $request->docslip_id,
+//         'doc_type' => $request->doc_type,
+//         'doc_title' => $request->doc_title,
+//         'user_name' => $request->user_name,
+//         'doctrack_stat' => 2,
+//     ]);
+
+//     $storagePath = storage_path('app/doc_track');
+
+//     // Check if a new file is uploaded
+//     if ($request->hasFile('file')) {
+//         $file = $request->file('file');
+//         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+//         $extension = $file->getClientOriginalExtension();
+//         $fileName = $originalName . '.' . $extension;
+
+//         $i = 1;
+//         while (file_exists($storagePath . '/' . $fileName)) {
+//             $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+//             $i++;
+//         }
+
+//         // Delete old file if it exists
+//         $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
+//         if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
+//             unlink($storagePath . '/' . $existingFile->file);
+//         }
+
+//         // Store new file
+//         $file->storeAs('doc_track', $fileName);
+
+//         // Update existing record (no duplicate)
+//         DoctrackFile::updateOrCreate(
+//             ['docslip_id' => $request->docslip_id], // match
+//             [
+//                 'doctrack_id' => $documentTrack->id,
+//                 'file' => $fileName,
+//             ]
+//         );
+//     } else {
+//         // No new file uploaded: retain existing file reference
+//         $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
+//         if ($existingFile) {
+//             $existingFile->update([
+//                 'doctrack_id' => $documentTrack->id,
+//             ]);
+//         }
+//     }
+
+//     return redirect()->route('doctrackSlip', ['id' => $documentTrack->id])
+//         ->with('success', 'New entry with tracking # ' . $documentTrack->docslip_id . ' was added successfully!');
+// }
+
+
+
+// public function uploadFile(Request $request)
+// {
+//     try {
+//         // Corrected table name from 'doctracks' to 'doctrack_slip'
+//         $request->validate([
+//             'docslip_id' => 'required|string|exists:doctrack_slip,docslip_id',
+//             'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+//         ]);
+
+//         $docslip_id = $request->docslip_id;
+//         $file = $request->file('file');
+//         $storagePath = storage_path('app/doc_track');
+
+//         // Make sure the folder exists
+//         if (!file_exists($storagePath)) {
+//             mkdir($storagePath, 0755, true);
+//         }
+
+//         $originalName = $file->getClientOriginalName();
+//         $filePath = $storagePath . '/' . $originalName;
+
+//         // Delete old file from DB and disk
+//         $existingFile = DoctrackFile::where('docslip_id', $docslip_id)->first();
+//         if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
+//             unlink($storagePath . '/' . $existingFile->file);
+//         }
+
+//         // Save new file
+//         $file->storeAs('doc_track', $originalName);
+
+//         // Insert or update file info in DB
+//         DoctrackFile::updateOrCreate(
+//             ['docslip_id' => $docslip_id],
+//             ['file' => $originalName]
+//         );
+
+//         return response()->json(['success' => true]);
+
+//     } catch (\Illuminate\Validation\ValidationException $e) {
+//         return response()->json([
+//             'success' => false,
+//             'message' => $e->validator->errors()->first()
+//         ], 422);
+//     } catch (\Exception $e) {
+//         Log::error('Upload error: ' . $e->getMessage());
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'Server error: ' . $e->getMessage()
+//         ], 500);
+//     }
+// }
+
+// updated the view file 08/11/2026 
+
+public function uploadFile(Request $request)
+{
+    $request->validate([
+        'file' => 'required|file|max:10240',
+        'docslip_id' => 'required'
+    ]);
+
+    try {
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            
+            // Ensure the directory exists
+            $directory = storage_path('app/doc_track');
+            if (!File::exists($directory)) {
+                File::makeDirectory($directory, 0755, true);
             }
-
-            $logToUpdate->status_update = 2;
-            $logToUpdate->action = 'Re-opened';
-            $logToUpdate->updated_at = now();
-            $logToUpdate->save();
-
-            return redirect($request->input('redirectUrl'))
-                ->with('success', 'The document was re-opened successfully.');
+            
+            // Move the file to storage/app/doc_track
+            $file->move($directory, $fileName);
+            
+            // Save to database
+            DoctrackFile::create([
+                'docslip_id' => $request->docslip_id,
+                'file' => $fileName,
+                // Add any other fields you need
+            ]);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'File uploaded successfully'
+            ]);
         }
-
-        return redirect()->back()->with('error', 'Invalid operation.');
+        
+        return response()->json([
+            'success' => false, 
+            'message' => 'No file uploaded'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false, 
+            'message' => 'Error uploading file: ' . $e->getMessage()
+        ], 500);
     }
 
-    public function download($id)
-    {
-        $document = Document::findOrFail($id);
-        $filePath = storage_path('app/public/documents/' . $document->file_name);
+}
 
-        if (file_exists($filePath)) {
-            return response()->download($filePath);
-        } else {
-            return redirect()->back()->with('error', 'File not found.');
-        }
+public function docslipForm($id)
+{
+    $documentTrack = Doctrack::findOrFail($id);
+    $user = auth()->user(); // ✅ fix: get user object, not just the ID
+
+    $recordsOfficerCount = $user->role === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+    $superUserCount = $user->role === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+
+    return view('slip.docslipForm', compact('documentTrack', 'recordsOfficerCount', 'superUserCount'));
+}
+
+public function pdfDocSlip($id)
+{
+    $documentTrack = DoctrackFile::findOrFail($id);
+    $filePath = storage_path('storage/doc_track/' . $documentTrack->file);
+
+    if (file_exists($filePath)) {
+        // force download with correct extension
+        return response()->download($filePath, $documentTrack->file);
+    } else {
+        return redirect()->back()->with('error', 'File not found.');
+    }
+}
+
+// public function slipMonitoring($docslip_id)
+// {
+//     $documentTrackid = Doctrack::with('doctrackFile')
+//         ->where('docslip_id', $docslip_id)
+//         ->get();
+
+//     $user = auth()->user(); // authenticated user
+
+//     // ✅ Get the creator's user_id (first entry assumes the creator)
+//     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
+
+//     // ✅ Role-based counts
+//     $recordsOfficerCount = $user->role === 'records_officer' 
+//         ? RoutingSlip::where('route_status', 2)->count() 
+//         : 0;
+
+//     $superUserCount = $user->role === 'super_user' 
+//         ? RoutingSlip::where('route_status', 1)->count() 
+//         : 0;
+
+//     return view('slip.docMonitoring', compact(
+//         'documentTrackid',
+//         'superUserCount',
+//         'recordsOfficerCount',
+//         'docslip_id',
+//         'creatorId' // 👈 pass to the blade
+//     ));
+// }
+
+// updated on 08/11/2025
+
+// public function slipMonitoring($docslip_id)
+// {
+//     $documentTrackid = Doctrack::with('doctrackFile')
+//         ->where('docslip_id', $docslip_id)
+//         ->get();
+
+//     $user = auth()->user(); // authenticated user
+
+//     // ✅ Update viewed status if not yet viewed
+//     $log = LogsTracking::where('docslip_id', $docslip_id)
+//         ->where('update_by', $user->id) // or 'user_id' depending on your use case
+//         ->latest()
+//         ->first();
+
+//     if ($log && !$log->viewed_status) {
+//         $log->timestamps = false; // prevent updated_at from changing
+//         $log->update([
+//             'viewed_status' => 1,
+//             'viewed_at' => now(),
+//         ]);
+//     }
+
+//     // ✅ Get the creator's user_id
+//     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
+
+//     // ✅ Role-based counts
+//     $recordsOfficerCount = $user->role === 'records_officer' 
+//         ? RoutingSlip::where('route_status', 2)->count() 
+//         : 0;
+
+//     $superUserCount = $user->role === 'super_user' 
+//         ? RoutingSlip::where('route_status', 1)->count() 
+//         : 0;
+
+//     return view('slip.docMonitoring', compact(
+//         'documentTrackid',
+//         'superUserCount',
+//         'recordsOfficerCount',
+//         'docslip_id',
+//         'creatorId'
+//     ));
+// }
+
+// public function slipMonitoring($docslip_id)
+// {
+//     $documentTrackid = Doctrack::with('doctrackFile')
+//         ->where('docslip_id', $docslip_id)
+//         ->get();
+
+//     $user = auth()->user();
+
+//     // Update viewed status for this user if not yet viewed
+//     $log = LogsTracking::where('docslip_id', $docslip_id)
+//         ->where('update_by', $user->id)
+//         ->latest()
+//         ->first();
+
+//     if ($log && !$log->viewed_status) {
+//         $log->timestamps = false;
+//         $log->update([
+//             'viewed_status' => 1,
+//             'viewed_at' => now(),
+//         ]);
+//     }
+
+//     // Get latest viewed date for this slip (by any user)
+//     $lastViewed = LogsTracking::where('docslip_id', $docslip_id)
+//         ->whereNotNull('viewed_at')
+//         ->orderByDesc('viewed_at')
+//         ->first();
+
+//     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
+
+//     $recordsOfficerCount = $user->role === 'records_officer' 
+//         ? RoutingSlip::where('route_status', 2)->count() 
+//         : 0;
+
+//     $superUserCount = $user->role === 'super_user' 
+//         ? RoutingSlip::where('route_status', 1)->count() 
+//         : 0;
+
+//     return view('slip.docMonitoring', compact(
+//         'documentTrackid',
+//         'superUserCount',
+//         'recordsOfficerCount',
+//         'docslip_id',
+//         'creatorId',
+//         'lastViewed' // ✅ pass to view
+//     ));
+// }
+public function slipMonitoring($docslip_id)
+{
+      $users = User::orderBy('fname', 'asc')   // ✅ sort ascending
+                 ->orderBy('lname', 'asc')
+                 ->get();
+
+    $user = auth()->user(); // ✅ get logged-in user
+
+    // Get creator id of the slip
+    $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
+
+    // Base query
+    $documentTrackid = Doctrack::with('doctrackFile')
+        ->where('docslip_id', $docslip_id);
+
+    // If current user is NOT the creator, filter by update_by
+    if ($user->id !== $creatorId) {
+        $documentTrackid->where('update_by', $user->id);
     }
 
-    /**
-     * View file - works for all file types and locations
-     */
-    public function viewFile($filename)
-    {
-        // Remove any path traversal attempts
-        $filename = basename($filename);
-        
-        // Define possible file locations
-        $possiblePaths = [
-            storage_path('app/public/documents/' . $filename),
-            storage_path('app/documents/' . $filename),
-            storage_path('app/doc_track/' . $filename),
-            public_path('storage/documents/' . $filename),
-            public_path('documents/' . $filename),
-        ];
-        
-        $foundPath = null;
-        
-        foreach ($possiblePaths as $path) {
-            if (File::exists($path)) {
-                $foundPath = $path;
-                break;
-            }
-        }
-        
-        if (!$foundPath) {
-            // Log the error for debugging
-            Log::error('File not found: ' . $filename . '. Checked paths: ' . json_encode($possiblePaths));
-            abort(404, 'File not found: ' . $filename);
-        }
-        
-        $file = File::get($foundPath);
-        $type = File::mimeType($foundPath);
-        
-        $response = Response::make($file, 200);
-        $response->header("Content-Type", $type);
-        
-        // Set content disposition based on file type
-        if (in_array($type, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'])) {
-            $response->header('Content-Disposition', 'inline; filename="' . $filename . '"');
-        } else {
-            $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-        }
-        
-        return $response;
+    $documentTrackid = $documentTrackid->get();
+
+    // Update viewed status for this user if not yet viewed
+    $log = LogsTracking::where('docslip_id', $docslip_id)
+        ->where('update_by', $user->id)
+        ->latest()
+        ->first();
+
+    if ($log && !$log->viewed_status) {
+        $log->timestamps = false;
+        $log->update([
+            'viewed_status' => 1,
+            'viewed_at' => now(),
+        ]);
     }
+
+    // Get latest viewed date for this slip (by any user)
+    $lastViewed = LogsTracking::where('docslip_id', $docslip_id)
+        ->whereNotNull('viewed_at')
+        ->orderByDesc('viewed_at')
+        ->first();
+
+    $recordsOfficerCount = $user->role === 'records_officer' 
+        ? RoutingSlip::where('route_status', 2)->count() 
+        : 0;
+
+    $superUserCount = $user->role === 'super_user' 
+        ? RoutingSlip::where('route_status', 1)->count() 
+        : 0;
+
+    return view('slip.docMonitoring', compact(
+        'documentTrackid',
+        'superUserCount',
+        'recordsOfficerCount',
+        'docslip_id',
+        'creatorId',
+        'lastViewed',
+        'users'
+    ));
+}
+
+
+public function search(Request $request)
+{
+    $query = $request->input('query');
+
+    $slip = Doctrack::where('docslip_id', $query)->first();
+
+    if ($slip) {
+        return redirect()->route('slipMonitoring', ['docslip_id' => $slip->docslip_id]);
+    } else {
+        return redirect()->back()->with('error', 'Tracking code not found.');
+    }
+}
+
+// public function updateSlipStatus(Request $request, $id)
+// {
+//     $document = Doctrack::findOrFail($id);
+//     $document->doctrack_stat = $request->doctrack_stat;
+//     $document->save();
+    
+//     return back()->with('success', 'Status updated successfully!');
+// }
+// public function updateSlipStatus(Request $request, $id)
+// {
+//     $document = Doctrack::findOrFail($id);
+
+//     // Save status and comment if provided
+//     if ($request->has('comments')) {
+//         $document->comments = $request->comments;
+//     }
+
+//     if ($request->has('doctrack_stat')) {
+//         $document->doctrack_stat = $request->doctrack_stat;
+//     }
+
+//     $document->save();
+
+//     return back()->with('success', 'Comment saved successfully!');
+// }
+
+
+public function updateSlipStatus(Request $request, $id)
+{
+    $document = Doctrack::findOrFail($id);
+
+    // Save old values for logging
+    $oldStatus = $document->doctrack_stat;
+    $oldComment = $document->comments;
+
+    // Update status and/or comment if present
+    if ($request->has('comments')) {
+        $document->comments = $request->comments;
+    }
+
+    if ($request->has('doctrack_stat')) {
+        $document->doctrack_stat = $request->doctrack_stat;
+    }
+
+    $document->save();
+
+    // 🔽 Insert into logs_tracking
+    LogsTracking::create([
+    'docslip_id'  => $document->docslip_id,
+    'user_id'     => $document->user_id,         // creator
+    'update_by'   => auth()->id(),               // updater (e.g., GMAR PALMA)
+    'doc_title'   => $document->doc_title,
+    'file_logs'   => optional($document->doctrackFile)->file ?? null,
+    'logs_status' => $document->doctrack_stat,   // 3 = acknowledged, etc.
+    'comments'    => $request->comments ?? null,
+]);
+
+    return back()->with('success', 'Status and comment saved successfully!');
+}
+
+// public function deleteSlip($id)
+// {
+//     // Find the document by ID
+//     $documentTrack = Doctrack::findOrFail($id);
+
+//     // Delete the document
+//     $documentTrack->delete();
+
+//     // Redirect to doctrackslip-list with a success message
+//     return redirect()->route('doctrackSlip')
+//         ->with('success', 'Document deleted successfully!');
+// }
+
+
+public function viewFile($filename)
+{
+    $path = storage_path('app/doc_track/' . $filename);
+    
+    if (!File::exists($path)) {
+        abort(404, 'File not found');
+    }
+    
+    $file = File::get($path);
+    $type = File::mimeType($path);
+    
+    $response = Response::make($file, 200);
+    $response->header("Content-Type", $type);
+    
+    return $response;
+}
+
 }
