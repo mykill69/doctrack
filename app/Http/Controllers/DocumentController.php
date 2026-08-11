@@ -188,7 +188,121 @@ class DocumentController extends Controller
     /**
      * Server-side data for DataTables AJAX
      */
-    public function getDashboardData(Request $request)
+//     public function getDashboardData(Request $request)
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userFullName = $user->fname . ' ' . $user->lname;
+//     $userRole = $user->role;
+//     $isSuperUser = ($userRole === 'super_user');
+//     $isAdminOrRecordsOfficer = in_array($userRole, ['records_officer', 'administrator']);
+
+//     $searchValue = $request->input('search.value');
+//     $start = $request->input('start', 0);
+//     $length = $request->input('length', 25);
+    
+//     // Build base query
+//     $baseQuery = Log::with(['routingSlip', 'document']);
+    
+//     if (!$isSuperUser) {
+//         $baseQuery->where(function ($q) use ($userId, $userFullName) {
+//             $q->where('new_user', $userId)
+//               ->orWhere('user_id', $userId)
+//               ->orWhereRaw('LOWER(new_destination) = ?', [strtolower($userFullName)])
+//               ->orWhereHas('routingSlip', function ($sq) use ($userFullName) {
+//                   $sq->where('pres_dept', $userFullName);
+//               });
+//         });
+//     }
+    
+//     // Apply search at database level
+//     if ($searchValue) {
+//         $baseQuery->where(function ($q) use ($searchValue) {
+//             $q->where('route_id', 'LIKE', "%{$searchValue}%")
+//               ->orWhere('new_destination', 'LIKE', "%{$searchValue}%")
+//               ->orWhereHas('routingSlip', function ($sq) use ($searchValue) {
+//                   $sq->where('source', 'LIKE', "%{$searchValue}%")
+//                     ->orWhere('subject', 'LIKE', "%{$searchValue}%");
+//               });
+//         });
+//     }
+    
+//     // Get total count
+//     $totalRecords = $baseQuery->count();
+    
+//     // Get paginated results directly from database
+//     $paginatedLogs = $baseQuery->orderBy('route_id', 'desc')
+//         ->skip($start)
+//         ->take($length)
+//         ->get();
+    
+//     // Preload routing slips and documents only for current page
+//     $routeIds = $paginatedLogs->pluck('route_id')->unique();
+//     $newFiles = $paginatedLogs->pluck('new_file')->unique();
+    
+//     $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
+//         ->whereIn('document', $newFiles)
+//         ->get();
+    
+//     $allDocuments = Document::whereIn('route_id', $routeIds)
+//         ->whereIn('file_name', $newFiles)
+//         ->get();
+
+//     // Build response data
+//     $data = [];
+//     foreach ($paginatedLogs as $log) {
+//         $exactSlip = $allRoutingSlips
+//             ->where('rslip_id', $log->route_id)
+//             ->where('document', $log->new_file)
+//             ->first();
+        
+//         if (!$exactSlip) {
+//             $exactSlip = $log->routingSlip;
+//         }
+        
+//         $exactDoc = $allDocuments
+//             ->where('route_id', $log->route_id)
+//             ->where('file_name', $log->new_file)
+//             ->first();
+        
+//         if (!$exactDoc) {
+//             $exactDoc = $log->document;
+//         }
+        
+//         $routingSlipId = $exactSlip ? $exactSlip->id : RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
+        
+//         $row = [
+//             'route_id' => $log->route_id,
+//             'route_display' => $this->formatRouteLink($log, $routingSlipId),
+//             'date_received' => $exactSlip ? Carbon::parse($exactSlip->date_received)->format('F d, Y') : 'N/A',
+//             'source' => $exactSlip->source ?? 'N/A',
+//             'subject' => $exactSlip->subject ?? ($exactDoc->subject ?? 'N/A'),
+//             'action_unit' => $exactSlip->pres_dept ?? 'N/A',
+//             'received_by_date' => ($exactSlip && $exactSlip->updated_at) ? $exactSlip->updated_at->format('F j, Y') : 'N/A',
+//             'action_taken' => $this->formatActionTaken($log, $exactSlip),
+//             'date_released' => optional($exactDoc)->created_at ? $exactDoc->created_at->format('m-d-Y h:i:s A') : 'N/A',
+//             'remarks' => $this->formatRemarks($exactSlip, $log),
+//             'file_name' => $this->formatFileName($exactDoc, $log),
+//             'updated_by' => '<span class="badge badge-secondary">' . ($log->new_destination ?? 'N/A') . '</span><br>' . $log->updated_at->format('m-d-Y h:i:s A'),
+//             'duration' => $this->formatDuration($exactDoc, $log),
+//         ];
+        
+//         if ($isAdminOrRecordsOfficer) {
+//             $row['action'] = $this->formatRecallAction($log);
+//         }
+        
+//         $data[] = $row;
+//     }
+
+//     return response()->json([
+//         'draw' => intval($request->input('draw')),
+//         'recordsTotal' => $totalRecords,
+//         'recordsFiltered' => $totalRecords,
+//         'data' => $data
+//     ]);
+// }
+
+public function getDashboardData(Request $request)
 {
     $user = auth()->user();
     $userId = $user->id;
@@ -198,11 +312,13 @@ class DocumentController extends Controller
     $isAdminOrRecordsOfficer = in_array($userRole, ['records_officer', 'administrator']);
 
     $searchValue = $request->input('search.value');
-    $start = $request->input('start', 0);
-    $length = $request->input('length', 25);
+    $start = (int) $request->input('start', 0);
+    $length = (int) $request->input('length', 25);
     
-    // Build base query
-    $baseQuery = Log::with(['routingSlip', 'document']);
+    // Build base query - use select to reduce data
+    $baseQuery = Log::select('id', 'route_id', 'doc_id', 'new_file', 'new_destination', 
+        'new_user', 'user_id', 'assigned_to', 'comments', 'viewed_status', 
+        'viewed_at', 'status_update', 'created_at', 'updated_at');
     
     if (!$isSuperUser) {
         $baseQuery->where(function ($q) use ($userId, $userFullName) {
@@ -227,26 +343,32 @@ class DocumentController extends Controller
         });
     }
     
-    // Get total count
+    // Get total count - use a faster count method
     $totalRecords = $baseQuery->count();
     
-    // Get paginated results directly from database
+    // Get paginated results - only select needed fields, skip eager loading large relations
     $paginatedLogs = $baseQuery->orderBy('route_id', 'desc')
         ->skip($start)
         ->take($length)
         ->get();
     
     // Preload routing slips and documents only for current page
-    $routeIds = $paginatedLogs->pluck('route_id')->unique();
-    $newFiles = $paginatedLogs->pluck('new_file')->unique();
+    $routeIds = $paginatedLogs->pluck('route_id')->unique()->toArray();
+    $newFiles = $paginatedLogs->pluck('new_file')->unique()->toArray();
     
-    $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
-        ->whereIn('document', $newFiles)
-        ->get();
+    // Only query if we have data
+    $allRoutingSlips = collect();
+    $allDocuments = collect();
     
-    $allDocuments = Document::whereIn('route_id', $routeIds)
-        ->whereIn('file_name', $newFiles)
-        ->get();
+    if (!empty($routeIds) && !empty($newFiles)) {
+        $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
+            ->whereIn('document', $newFiles)
+            ->get();
+        
+        $allDocuments = Document::whereIn('route_id', $routeIds)
+            ->whereIn('file_name', $newFiles)
+            ->get();
+    }
 
     // Build response data
     $data = [];
@@ -257,7 +379,9 @@ class DocumentController extends Controller
             ->first();
         
         if (!$exactSlip) {
-            $exactSlip = $log->routingSlip;
+            $exactSlip = RoutingSlip::where('rslip_id', $log->route_id)
+                ->where('document', $log->new_file)
+                ->first();
         }
         
         $exactDoc = $allDocuments
@@ -266,7 +390,9 @@ class DocumentController extends Controller
             ->first();
         
         if (!$exactDoc) {
-            $exactDoc = $log->document;
+            $exactDoc = Document::where('route_id', $log->route_id)
+                ->where('file_name', $log->new_file)
+                ->first();
         }
         
         $routingSlipId = $exactSlip ? $exactSlip->id : RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
@@ -301,6 +427,8 @@ class DocumentController extends Controller
         'data' => $data
     ]);
 }
+
+
     // ============================================
     // Helper Methods
     // ============================================
