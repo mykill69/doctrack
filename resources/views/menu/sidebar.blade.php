@@ -179,8 +179,7 @@
             $userFullName = $user->fname . ' ' . $user->lname;
             $userRole = $user->role;
 
-            // Get logs with status_update = 2 and null conditions
-            $pendingLogs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+            $pendingCountQuery = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
                 ->leftJoin('routing_slip', function ($join) {
                     $join
                         ->on('logs.route_id', '=', 'routing_slip.rslip_id')
@@ -189,22 +188,18 @@
                 ->where('logs.status_update', 2)
                 ->where(function ($q) {
                     $q->whereNull('logs.new_user')->orWhereNull('logs.assigned_to');
-                });
+                })
+                ->whereNotNull('documents.id');
 
-            // Apply role-based filtering (same as pending page)
             if ($userRole === 'records_officer') {
-                $pendingLogs->where('routing_slip.user_id', $userId);
+                $pendingCountQuery->where('routing_slip.user_id', $userId);
             } else {
-                $pendingLogs->where(function ($q) use ($userId, $userFullName) {
+                $pendingCountQuery->where(function ($q) use ($userId, $userFullName) {
                     $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
                 });
             }
 
-            // Get the logs and then apply unique doc_id filter (same as pending page)
-            $logs = $pendingLogs->select('logs.*', 'documents.id as doc_id')->orderByDesc('logs.created_at')->get();
-
-            // Filter out null doc_ids and unique by doc_id (exactly like pending page)
-            $statusUpdateCount1 = $logs->whereNotNull('doc_id')->unique('doc_id')->count();
+            $statusUpdateCount1 = $pendingCountQuery->distinct('documents.id')->count('documents.id');
         @endphp
 
         <li class="nav-item">
@@ -295,47 +290,41 @@
         </li> --}}
 
         @if (auth()->user()->id != 1235)
+            @php
+                $user = auth()->user();
+                $userId = $user->id;
+                $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
+                $userRole = $user->role;
+
+                $completedCountQuery = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+                    ->leftJoin('routing_slip', function ($join) {
+                        $join
+                            ->on('logs.route_id', '=', 'routing_slip.rslip_id')
+                            ->on('logs.user_id', '=', 'routing_slip.user_id');
+                    })
+                    ->where('logs.status_update', 3)
+                    ->whereNotNull('logs.new_user')
+                    ->whereNotNull('documents.id');
+
+                if ($userRole === 'records_officer') {
+                    $completedCountQuery->where(function ($q) use ($userId, $userFullName) {
+                        $q->where('routing_slip.user_id', $userId)
+                            ->orWhere('logs.new_destination', $userFullName)
+                            ->orWhere('logs.user_id', $userId);
+                    });
+                } else {
+                    $completedCountQuery->where(function ($q) use ($userId, $userFullName) {
+                        $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
+                    });
+                }
+
+                $statusUpdateCount = $completedCountQuery->distinct('documents.id')->count('documents.id');
+            @endphp
+
             <li class="nav-item">
                 <a href="{{ route('served') }}" class="nav-link {{ request()->routeIs('served') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-check"></i>
                     <p>Completed
-                        @php
-                            $user = auth()->user();
-                            $userId = $user->id;
-                            $userFullName = trim(
-                                $user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname,
-                            );
-                            $userRole = $user->role;
-
-                            $completedLogs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
-                                ->leftJoin('routing_slip', function ($join) {
-                                    $join
-                                        ->on('logs.route_id', '=', 'routing_slip.rslip_id')
-                                        ->on('logs.user_id', '=', 'routing_slip.user_id');
-                                })
-                                ->where('logs.status_update', 3)
-                                ->whereNotNull('logs.new_user');
-
-                            if ($userRole === 'records_officer') {
-                                $completedLogs->where(function ($q) use ($userId, $userFullName) {
-                                    $q->where('routing_slip.user_id', $userId)
-                                        ->orWhere('logs.new_destination', $userFullName)
-                                        ->orWhere('logs.user_id', $userId);
-                                });
-                            } else {
-                                $completedLogs->where(function ($q) use ($userId, $userFullName) {
-                                    $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
-                                });
-                            }
-
-                            $completedLogsList = $completedLogs
-                                ->select('logs.*', 'documents.id as doc_id')
-                                ->orderByDesc('logs.created_at')
-                                ->get();
-
-                            $statusUpdateCount = $completedLogsList->whereNotNull('doc_id')->unique('doc_id')->count();
-                        @endphp
-
                         <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
                     </p>
                 </a>
