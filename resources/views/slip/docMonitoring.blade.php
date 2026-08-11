@@ -199,7 +199,7 @@
                                                     <div class="d-flex align-items-center">
                                                         <i class="fas fa-paperclip text-muted mr-2"></i>
                                                         @if ($documentTrack->doctrackFile)
-                                                            <a href="{{ asset('storage/doc_track/' . $documentTrack->doctrackFile->file) }}"
+                                                            <a href="{{ asset('app/doc_track/' . $documentTrack->doctrackFile->file) }}"
                                                                 target="_blank">
                                                                 <i class="fas fa-file-pdf text-danger"></i>
                                                                 <span>{{ $documentTrack->doctrackFile->file }}</span>
