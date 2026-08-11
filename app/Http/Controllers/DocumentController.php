@@ -21,105 +21,169 @@ use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
+    // public function dashboard()
+    // {
+    //     $user = auth()->user();
+    //     $userId = $user->id;
+    //     $userFullName = $user->fname . ' ' . $user->lname;
+    //     $userRole = $user->role;
+    //     $isSuperUser = ($userRole === 'super_user');
+
+    //     // Only load counts and metadata (not table data - that loads via AJAX)
+        
+    //     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
+
+    //     // COUNTS
+    //     if ($isSuperUser) {
+    //         $superUserCount = RoutingSlip::where('route_status', 1)->count();
+    //         $recordsOfficerCount = RoutingSlip::where('route_status', 2)->count();
+    //     } else {
+    //         $superUserCount = $userRole === 'super_user'
+    //             ? RoutingSlip::where('route_status', 1)->count()
+    //             : 0;
+
+    //         $recordsOfficerCount = $userRole === 'records_officer'
+    //             ? RoutingSlip::where('route_status', 2)->count()
+    //             : 0;
+    //     }
+
+    //     $groups = User::select('id', 'fname', 'lname', 'department')
+    //         ->orderBy('department')
+    //         ->orderBy('lname')
+    //         ->get()
+    //         ->groupBy('department');
+
+    //     $offices = Office::all();
+    //     $dpa = $user->dpa;
+    //     $users = User::all();
+
+    //     // DOCUMENT TRACK
+    //     $documentTrack = collect();
+        
+    //     if ($isSuperUser) {
+    //         Doctrack::with(['createdBy', 'doctrackFile'])
+    //             ->orderByDesc('created_at')
+    //             ->chunk(200, function ($chunk) use (&$documentTrack) {
+    //                 $documentTrack = $documentTrack->merge($chunk);
+    //             });
+    //     } else {
+    //         Doctrack::with(['createdBy', 'doctrackFile'])
+    //             ->where(function ($query) use ($userId, $userFullName) {
+    //                 $query->where('user_id', $userId)
+    //                       ->orWhere('update_by', $userId)
+    //                       ->orWhere('user_name', $userFullName);
+    //             })
+    //             ->orderByDesc('created_at')
+    //             ->chunk(200, function ($chunk) use (&$documentTrack) {
+    //                 $documentTrack = $documentTrack->merge($chunk);
+    //             });
+    //     }
+
+    //     $documentTrack->transform(function ($item) {
+    //         $start = Carbon::parse($item->created_at);
+    //         $end = Carbon::parse($item->updated_at ?? $item->created_at);
+    //         $diffInMinutes = $end->diffInMinutes($start);
+
+    //         $item->time_diff = [
+    //             'days' => floor($diffInMinutes / 1440),
+    //             'hours' => floor(($diffInMinutes % 1440) / 60),
+    //             'minutes' => $diffInMinutes % 60,
+    //         ];
+
+    //         return $item;
+    //     });
+
+    //     // DOCTRACK COUNT
+    //     if ($isSuperUser) {
+    //         $doctrackCount = Doctrack::where('doctrack_stat', 2)->count();
+    //     } else {
+    //         $doctrackCount = Doctrack::where('doctrack_stat', 2)
+    //             ->where(function ($query) use ($userId, $userFullName) {
+    //                 $query->where('user_id', $userId)
+    //                       ->orWhere('update_by', $userId)
+    //                       ->orWhere(function ($q) use ($userFullName, $userId) {
+    //                           $q->where('user_name', $userFullName)
+    //                             ->where('user_id', $userId);
+    //                       });
+    //             })
+    //             ->count();
+    //     }
+
+    //     return view('home.dashboard', compact(
+    //         'offices',
+    //         'routingSlipCount',
+    //         'superUserCount',
+    //         'recordsOfficerCount',
+    //         'dpa',
+    //         'users',
+    //         'doctrackCount',
+    //         'groups'
+    //     ));
+    // }
+
     public function dashboard()
-    {
-        $user = auth()->user();
-        $userId = $user->id;
-        $userFullName = $user->fname . ' ' . $user->lname;
-        $userRole = $user->role;
-        $isSuperUser = ($userRole === 'super_user');
+{
+    $user = auth()->user();
+    $userId = $user->id;
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userRole = $user->role;
+    $isSuperUser = ($userRole === 'super_user');
 
-        // Only load counts and metadata (not table data - that loads via AJAX)
-        
-        $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
+    // Only load counts and metadata (not table data - that loads via AJAX)
+    
+    $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
 
-        // COUNTS
-        if ($isSuperUser) {
-            $superUserCount = RoutingSlip::where('route_status', 1)->count();
-            $recordsOfficerCount = RoutingSlip::where('route_status', 2)->count();
-        } else {
-            $superUserCount = $userRole === 'super_user'
-                ? RoutingSlip::where('route_status', 1)->count()
-                : 0;
+    // COUNTS
+    if ($isSuperUser) {
+        $superUserCount = RoutingSlip::where('route_status', 1)->count();
+        $recordsOfficerCount = RoutingSlip::where('route_status', 2)->count();
+    } else {
+        $superUserCount = $userRole === 'super_user'
+            ? RoutingSlip::where('route_status', 1)->count()
+            : 0;
 
-            $recordsOfficerCount = $userRole === 'records_officer'
-                ? RoutingSlip::where('route_status', 2)->count()
-                : 0;
-        }
-
-        $groups = User::select('id', 'fname', 'lname', 'department')
-            ->orderBy('department')
-            ->orderBy('lname')
-            ->get()
-            ->groupBy('department');
-
-        $offices = Office::all();
-        $dpa = $user->dpa;
-        $users = User::all();
-
-        // DOCUMENT TRACK
-        $documentTrack = collect();
-        
-        if ($isSuperUser) {
-            Doctrack::with(['createdBy', 'doctrackFile'])
-                ->orderByDesc('created_at')
-                ->chunk(200, function ($chunk) use (&$documentTrack) {
-                    $documentTrack = $documentTrack->merge($chunk);
-                });
-        } else {
-            Doctrack::with(['createdBy', 'doctrackFile'])
-                ->where(function ($query) use ($userId, $userFullName) {
-                    $query->where('user_id', $userId)
-                          ->orWhere('update_by', $userId)
-                          ->orWhere('user_name', $userFullName);
-                })
-                ->orderByDesc('created_at')
-                ->chunk(200, function ($chunk) use (&$documentTrack) {
-                    $documentTrack = $documentTrack->merge($chunk);
-                });
-        }
-
-        $documentTrack->transform(function ($item) {
-            $start = Carbon::parse($item->created_at);
-            $end = Carbon::parse($item->updated_at ?? $item->created_at);
-            $diffInMinutes = $end->diffInMinutes($start);
-
-            $item->time_diff = [
-                'days' => floor($diffInMinutes / 1440),
-                'hours' => floor(($diffInMinutes % 1440) / 60),
-                'minutes' => $diffInMinutes % 60,
-            ];
-
-            return $item;
-        });
-
-        // DOCTRACK COUNT
-        if ($isSuperUser) {
-            $doctrackCount = Doctrack::where('doctrack_stat', 2)->count();
-        } else {
-            $doctrackCount = Doctrack::where('doctrack_stat', 2)
-                ->where(function ($query) use ($userId, $userFullName) {
-                    $query->where('user_id', $userId)
-                          ->orWhere('update_by', $userId)
-                          ->orWhere(function ($q) use ($userFullName, $userId) {
-                              $q->where('user_name', $userFullName)
-                                ->where('user_id', $userId);
-                          });
-                })
-                ->count();
-        }
-
-        return view('home.dashboard', compact(
-            'offices',
-            'routingSlipCount',
-            'superUserCount',
-            'recordsOfficerCount',
-            'dpa',
-            'users',
-            'doctrackCount',
-            'groups'
-        ));
+        $recordsOfficerCount = $userRole === 'records_officer'
+            ? RoutingSlip::where('route_status', 2)->count()
+            : 0;
     }
+
+    $groups = User::select('id', 'fname', 'lname', 'department')
+        ->orderBy('department')
+        ->orderBy('lname')
+        ->get()
+        ->groupBy('department');
+
+    $offices = Office::all();
+    $dpa = $user->dpa;
+    $users = User::all();
+
+    // DOCTRACK COUNT ONLY - No need to load all records
+    if ($isSuperUser) {
+        $doctrackCount = Doctrack::where('doctrack_stat', 2)->count();
+    } else {
+        $doctrackCount = Doctrack::where('doctrack_stat', 2)
+            ->where(function ($query) use ($userId, $userFullName) {
+                $query->where('user_id', $userId)
+                      ->orWhere('update_by', $userId)
+                      ->orWhere(function ($q) use ($userFullName, $userId) {
+                          $q->where('user_name', $userFullName)
+                            ->where('user_id', $userId);
+                      });
+            })
+            ->count();
+    }
+
+    return view('home.dashboard', compact(
+        'offices',
+        'routingSlipCount',
+        'superUserCount',
+        'recordsOfficerCount',
+        'dpa',
+        'users',
+        'doctrackCount',
+        'groups'
+    ));
+}
 
     /**
      * Server-side data for DataTables AJAX
