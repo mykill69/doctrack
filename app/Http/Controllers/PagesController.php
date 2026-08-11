@@ -726,12 +726,8 @@ public function getDoctrackData(Request $request)
 
 public function pending()
 {
-    // $user = auth()->user();
-    // $userFullName = $user->fname . ' ' . $user->lname;
-    // $userId = $user->id;
-    // $userRole = $user->role;
     $user = auth()->user();
-    $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
+    $userFullName = $user->fname . ' ' . $user->lname;
     $userId = $user->id;
     $userRole = $user->role;
     $userDepartment = $user->department;
@@ -1106,7 +1102,7 @@ public function served()
     $user = auth()->user();
     $userId = $user->id;
     $userDepartment = trim($user->department);
-    $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
+    $userFullName = trim($user->fname . ' ' . $user->lname);
     $userRole = $user->role;
 
     $users = User::select('id','fname','lname')->get();
@@ -1190,7 +1186,7 @@ public function getServedData(Request $request)
     $user = auth()->user();
     $userId = $user->id;
     $userDepartment = trim($user->department);
-    $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
+    $userFullName = trim($user->fname . ' ' . $user->lname);
     $userRole = $user->role;
 
     $searchValue = $request->input('search.value');
@@ -1256,7 +1252,7 @@ public function getServedData(Request $request)
     // Build data array
     $data = [];
     foreach ($paginatedLogs as $log) {
-        // Match EXACT routing slip by new_file = document
+        // ✅ Match EXACT routing slip by new_file = document
         $exactSlip = $allRoutingSlips
             ->where('rslip_id', $log->route_id)
             ->where('document', $log->new_file)
@@ -1266,7 +1262,7 @@ public function getServedData(Request $request)
             $exactSlip = $log->routingSlip;
         }
 
-        // Match EXACT document by file_name = new_file
+        // ✅ Match EXACT document by file_name = new_file
         $exactDoc = $allDocuments
             ->where('route_id', $log->route_id)
             ->where('file_name', $log->new_file)
