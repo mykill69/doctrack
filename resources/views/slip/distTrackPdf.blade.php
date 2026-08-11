@@ -132,18 +132,9 @@
                             <td>{{ $log->update_by_name ?? '' }}</td>
 
                             {{-- SIGNATURE --}}
-                            {{-- <td>
-                                @if ($log->esig_file)
-                                    <img src="{{ public_path('storage/esignature/' . $log->esig_file) }}" alt="Signature"
-                                        style="width: 80px; height: 50px;">
-                                @endif
-                            </td> --}}
                             <td>
-                                @if ($log->esig_full_path && file_exists($log->esig_full_path))
-                                    <img src="{{ $log->esig_full_path }}" alt="Signature"
-                                        style="width: 80px; height: 50px;">
-                                @elseif ($log->esig_file)
-                                    <span style="font-size: 10px;">{{ $log->esig_file }}</span>
+                                @if ($log->esig_src)
+                                    <img src="{{ $log->esig_src }}" alt="Signature" style="width: 80px; height: 50px;">
                                 @endif
                             </td>
                         </tr>

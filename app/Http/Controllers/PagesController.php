@@ -1940,16 +1940,27 @@ public function viewDistributionPdf($id)
         ->select('logs.*', 'users.department as user_department')
         ->orderBy('logs.created_at', 'asc')
         ->get()
-        ->unique('new_destination') // <-- Removes duplicates
-        ->values(); // reindex collection
+        ->unique('new_destination')
+        ->values();
 
     // Add e-signature if status_update == 3
     $logs->transform(function ($log) {
         if ($log->status_update == 3) {
             $esig = \App\Models\Esig::where('user_id', $log->new_user)->first();
-            $log->esig_file = $esig ? $esig->esig_file : null;
+            if ($esig && $esig->esig_file) {
+                $esigPath = storage_path('app/esignature/' . $esig->esig_file);
+                if (file_exists($esigPath)) {
+                    $imageData = file_get_contents($esigPath);
+                    $mimeType = mime_content_type($esigPath);
+                    $log->esig_src = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                } else {
+                    $log->esig_src = null;
+                }
+            } else {
+                $log->esig_src = null;
+            }
         } else {
-            $log->esig_file = null;
+            $log->esig_src = null;
         }
         return $log;
     });
