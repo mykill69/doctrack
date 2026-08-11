@@ -2016,6 +2016,50 @@ public function trackingDistributionList()
     return view('home.trackingDistList', compact('logs', 'offices', 'doctrackCount'));
 }
 
+// public function viewTrackingDistributionPdf($id)
+// {
+//     $title = 'DISTRIBUTION/RETRIEVAL LIST';
+
+//     // Get the doc_title from the first matching record
+//     $docTitle = Doctrack::where('docslip_id', $id)->value('doc_title');
+
+//     // Eager-load updatedBy and exclude rows where update_by is NULL
+// $logs = Doctrack::with(['updatedBy', 'receivedBy' => function ($query) {
+//         $query->select('id', 'fname', 'lname', 'department');
+//     }])
+//     ->where('docslip_id', $id)
+//     ->whereNotNull('update_by')
+//     ->orderBy('created_at', 'desc')
+//     ->get()
+//     ->map(function ($log) {
+//         // department from user referenced by update_by
+//         $log->user_department = $log->updatedBy->department ?? null;
+
+//         // full name of the update_by user
+//         $log->update_by_name = $log->updatedBy
+//             ? trim($log->updatedBy->fname . ' ' . $log->updatedBy->lname)
+//             : null;
+
+//         // full name from new_destination (OFFICE OF CUSTODIAN)
+//         $log->received_by_name = $log->receivedBy
+//             ? trim($log->receivedBy->fname . ' ' . $log->receivedBy->lname)
+//             : null;
+
+//         // e-signature when doctrack_stat is 3 or 5
+//         if (in_array($log->doctrack_stat, [3, 5])) {
+//             $esig = \App\Models\Esig::where('user_id', $log->update_by)->first();
+//             $log->esig_file = $esig ? $esig->esig_file : null;
+//         } else {
+//             $log->esig_file = null;
+//         }
+
+//         return $log;
+//     });
+
+//     return PDF::loadView('slip.distTrackPdf', compact('logs', 'title', 'docTitle'))
+//         ->stream('distribution_list.pdf');
+// }
+
 public function viewTrackingDistributionPdf($id)
 {
     $title = 'DISTRIBUTION/RETRIEVAL LIST';
@@ -2024,42 +2068,44 @@ public function viewTrackingDistributionPdf($id)
     $docTitle = Doctrack::where('docslip_id', $id)->value('doc_title');
 
     // Eager-load updatedBy and exclude rows where update_by is NULL
-$logs = Doctrack::with(['updatedBy', 'receivedBy' => function ($query) {
-        $query->select('id', 'fname', 'lname', 'department');
-    }])
-    ->where('docslip_id', $id)
-    ->whereNotNull('update_by')
-    ->orderBy('created_at', 'desc')
-    ->get()
-    ->map(function ($log) {
-        // department from user referenced by update_by
-        $log->user_department = $log->updatedBy->department ?? null;
+    $logs = Doctrack::with(['updatedBy', 'receivedBy' => function ($query) {
+            $query->select('id', 'fname', 'lname', 'department');
+        }])
+        ->where('docslip_id', $id)
+        ->whereNotNull('update_by')
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($log) {
+            // department from user referenced by update_by
+            $log->user_department = $log->updatedBy->department ?? null;
 
-        // full name of the update_by user
-        $log->update_by_name = $log->updatedBy
-            ? trim($log->updatedBy->fname . ' ' . $log->updatedBy->lname)
-            : null;
+            // full name of the update_by user
+            $log->update_by_name = $log->updatedBy
+                ? trim($log->updatedBy->fname . ' ' . $log->updatedBy->lname)
+                : null;
 
-        // full name from new_destination (OFFICE OF CUSTODIAN)
-        $log->received_by_name = $log->receivedBy
-            ? trim($log->receivedBy->fname . ' ' . $log->receivedBy->lname)
-            : null;
+            // full name from receivedBy
+            $log->received_by_name = $log->receivedBy
+                ? trim($log->receivedBy->fname . ' ' . $log->receivedBy->lname)
+                : null;
 
-        // e-signature when doctrack_stat is 3 or 5
-        if (in_array($log->doctrack_stat, [3, 5])) {
-            $esig = \App\Models\Esig::where('user_id', $log->update_by)->first();
-            $log->esig_file = $esig ? $esig->esig_file : null;
-        } else {
-            $log->esig_file = null;
-        }
+            // e-signature when doctrack_stat is 3 or 5
+            if (in_array($log->doctrack_stat, [3, 5])) {
+                $esig = \App\Models\Esig::where('user_id', $log->update_by)->first();
+                $log->esig_file = $esig ? $esig->esig_file : null;
+                // Store the full storage path
+                $log->esig_full_path = $esig ? storage_path('app/esignature/' . $esig->esig_file) : null;
+            } else {
+                $log->esig_file = null;
+                $log->esig_full_path = null;
+            }
 
-        return $log;
-    });
+            return $log;
+        });
 
     return PDF::loadView('slip.distTrackPdf', compact('logs', 'title', 'docTitle'))
         ->stream('distribution_list.pdf');
 }
-
 
 
 public function deleteSlip($docslip_id)
