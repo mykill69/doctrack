@@ -173,7 +173,7 @@
             </a>
         </li> --}}
 
-        @php
+        {{-- @php
             $user = auth()->user();
             $userId = $user->id;
             $userFullName = $user->fname . ' ' . $user->lname;
@@ -217,9 +217,85 @@
                     </span>
                 </p>
             </a>
-        </li>
+        </li> --}}
 
-        <li class="nav-item">
+        @php
+            $user = auth()->user();
+            $userId = $user->id;
+            $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
+            $userRole = $user->role;
+
+            // Get logs with status_update = 2 and null conditions
+            $pendingLogs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+                ->leftJoin('routing_slip', function ($join) {
+                    $join
+                        ->on('logs.route_id', '=', 'routing_slip.rslip_id')
+                        ->on('logs.user_id', '=', 'routing_slip.user_id');
+                })
+                ->where('logs.status_update', 2)
+                ->where(function ($q) {
+                    $q->whereNull('logs.new_user')->orWhereNull('logs.assigned_to');
+                });
+
+            // Apply role-based filtering (same as pending page)
+            if ($userRole === 'records_officer') {
+                // For records_officer, use user_id which is unique
+                $pendingLogs->where(function ($q) use ($userId, $userFullName) {
+                    $q->where('routing_slip.user_id', $userId)
+                        ->orWhere('logs.new_destination', $userFullName)
+                        ->orWhere('logs.user_id', $userId);
+                });
+            } else {
+                $pendingLogs->where(function ($q) use ($userId, $userFullName) {
+                    $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
+                });
+            }
+
+            // Get the logs and then apply unique doc_id filter (same as pending page)
+            $logs = $pendingLogs->select('logs.*', 'documents.id as doc_id')->orderByDesc('logs.created_at')->get();
+
+            // Filter out null doc_ids and unique by doc_id (exactly like pending page)
+            $statusUpdateCount1 = $logs->whereNotNull('doc_id')->unique('doc_id')->count();
+        @endphp
+
+        @php
+            $user = auth()->user();
+            $userId = $user->id;
+            $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
+            $userRole = $user->role;
+
+            // Get logs with status_update = 3 (completed/acknowledged)
+            $completedLogs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+                ->leftJoin('routing_slip', function ($join) {
+                    $join
+                        ->on('logs.route_id', '=', 'routing_slip.rslip_id')
+                        ->on('logs.user_id', '=', 'routing_slip.user_id');
+                })
+                ->where('logs.status_update', 3)
+                ->whereNotNull('logs.new_user');
+
+            // Apply role-based filtering
+            if ($userRole === 'records_officer') {
+                $completedLogs->where(function ($q) use ($userId, $userFullName) {
+                    $q->where('routing_slip.user_id', $userId)
+                        ->orWhere('logs.new_destination', $userFullName)
+                        ->orWhere('logs.user_id', $userId);
+                });
+            } else {
+                $completedLogs->where(function ($q) use ($userId, $userFullName) {
+                    $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
+                });
+            }
+
+            $completedLogsList = $completedLogs
+                ->select('logs.*', 'documents.id as doc_id')
+                ->orderByDesc('logs.created_at')
+                ->get();
+
+            $statusUpdateCount = $completedLogsList->whereNotNull('doc_id')->unique('doc_id')->count();
+        @endphp
+
+        {{-- <li class="nav-item">
             <a href="{{ route('served') }}" class="nav-link {{ request()->routeIs('served') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-check"></i>
                 <p>Completed
@@ -248,7 +324,54 @@
                     <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
                 </p>
             </a>
-        </li>
+        </li> --}}
+        @if (auth()->user()->id != 1235)
+            <li class="nav-item">
+                <a href="{{ route('served') }}" class="nav-link {{ request()->routeIs('served') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-check"></i>
+                    <p>Completed
+                        @php
+                            $user = auth()->user();
+                            $userId = $user->id;
+                            $userFullName = trim(
+                                $user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname,
+                            );
+                            $userRole = $user->role;
+
+                            $completedLogs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+                                ->leftJoin('routing_slip', function ($join) {
+                                    $join
+                                        ->on('logs.route_id', '=', 'routing_slip.rslip_id')
+                                        ->on('logs.user_id', '=', 'routing_slip.user_id');
+                                })
+                                ->where('logs.status_update', 3)
+                                ->whereNotNull('logs.new_user');
+
+                            if ($userRole === 'records_officer') {
+                                $completedLogs->where(function ($q) use ($userId, $userFullName) {
+                                    $q->where('routing_slip.user_id', $userId)
+                                        ->orWhere('logs.new_destination', $userFullName)
+                                        ->orWhere('logs.user_id', $userId);
+                                });
+                            } else {
+                                $completedLogs->where(function ($q) use ($userId, $userFullName) {
+                                    $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
+                                });
+                            }
+
+                            $completedLogsList = $completedLogs
+                                ->select('logs.*', 'documents.id as doc_id')
+                                ->orderByDesc('logs.created_at')
+                                ->get();
+
+                            $statusUpdateCount = $completedLogsList->whereNotNull('doc_id')->unique('doc_id')->count();
+                        @endphp
+
+                        <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
+                    </p>
+                </a>
+            </li>
+        @endif
 
         @php
             $trackingActive = request()->routeIs('doctrackSlip', 'incoming');

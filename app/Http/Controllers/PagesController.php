@@ -726,8 +726,12 @@ public function getDoctrackData(Request $request)
 
 public function pending()
 {
+    // $user = auth()->user();
+    // $userFullName = $user->fname . ' ' . $user->lname;
+    // $userId = $user->id;
+    // $userRole = $user->role;
     $user = auth()->user();
-    $userFullName = $user->fname . ' ' . $user->lname;
+    $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
     $userId = $user->id;
     $userRole = $user->role;
     $userDepartment = $user->department;
@@ -1099,10 +1103,21 @@ public function pending()
 
 public function served()
 {
+    // $user = auth()->user();
+    // $userId = $user->id;
+    // $userDepartment = trim($user->department);
+    // $userFullName = trim($user->fname . ' ' . $user->lname);
+    // $userRole = $user->role;
+
+    // Block user ID 1235 from accessing this page
+    if (auth()->user()->id == 1235) {
+        abort(403, 'Access denied');
+    }
+    
     $user = auth()->user();
     $userId = $user->id;
     $userDepartment = trim($user->department);
-    $userFullName = trim($user->fname . ' ' . $user->lname);
+    $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
     $userRole = $user->role;
 
     $users = User::select('id','fname','lname')->get();
@@ -1183,10 +1198,19 @@ public function served()
  */
 public function getServedData(Request $request)
 {
+    // $user = auth()->user();
+    // $userId = $user->id;
+    // $userDepartment = trim($user->department);
+    // $userFullName = trim($user->fname . ' ' . $user->lname);
+    // $userRole = $user->role;
+    if (auth()->user()->id == 1235) {
+        return response()->json(['error' => 'Access denied'], 403);
+    }
+    
     $user = auth()->user();
     $userId = $user->id;
     $userDepartment = trim($user->department);
-    $userFullName = trim($user->fname . ' ' . $user->lname);
+    $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
     $userRole = $user->role;
 
     $searchValue = $request->input('search.value');
