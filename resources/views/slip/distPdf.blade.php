@@ -137,9 +137,8 @@
 
                             {{-- SIGNATURE (only if status_update == 3) --}}
                             <td>
-                                @if ($log->status_update == 3 && $log->esig_file)
-                                    <img src="{{ public_path('storage/esignature/' . $log->esig_file) }}" alt="Signature"
-                                        style="width: 80px; height: 50px;">
+                                @if ($log->status_update == 3 && $log->esig_src)
+                                    <img src="{{ $log->esig_src }}" alt="Signature" style="width: 80px; height: 50px;">
                                 @endif
                             </td>
                         </tr>
