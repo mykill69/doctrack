@@ -28,18 +28,31 @@
                                             <select class="form-control" name="month">
                                                 <option value="">-- All Months --</option>
                                                 @for ($m = 1; $m <= 12; $m++)
-                                                    <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>
+                                                    <option value="{{ $m }}"
+                                                        {{ request('month') == $m ? 'selected' : '' }}>
                                                         {{ date('F', mktime(0, 0, 0, $m, 1)) }}
                                                     </option>
                                                 @endfor
                                             </select>
                                         </div>
-                                        <div class="col-md-2">
+                                        {{-- <div class="col-md-2">
                                             <label for="status">Status:</label>
                                             <select class="form-control" name="status">
                                                 <option value="">-- Select Status --</option>
                                                 <option value="2" {{ request('status') == 2 ? 'selected' : '' }}>Pending</option>
                                                 <option value="3" {{ request('status') == 3 ? 'selected' : '' }}>Completed</option>
+                                            </select>
+                                        </div> --}}
+                                        <div class="col-md-2">
+                                            <label for="status">Status:</label>
+                                            <select class="form-control" name="status">
+                                                <option value="">-- All Status --</option>
+                                                <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>
+                                                    All</option>
+                                                <option value="2" {{ request('status') == 2 ? 'selected' : '' }}>
+                                                    Pending</option>
+                                                <option value="3" {{ request('status') == 3 ? 'selected' : '' }}>
+                                                    Completed</option>
                                             </select>
                                         </div>
                                         <div class="col-md-2 d-flex align-items-end">
@@ -54,16 +67,18 @@
                             {{-- PDF Viewer Area --}}
                             <div style="position: relative;">
                                 {{-- Loading Overlay --}}
-                                <div id="loadingOverlay" style="display: none; position: absolute; top: 0; left: 0; 
+                                <div id="loadingOverlay"
+                                    style="display: none; position: absolute; top: 0; left: 0; 
                                     width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 1000; 
                                     flex-direction: column; justify-content: center; align-items: center;">
-                                    <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status">
+                                    <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;"
+                                        role="status">
                                         <span class="sr-only">Loading...</span>
                                     </div>
                                     <h5 class="mt-3 text-primary font-weight-bold">Generating PDF...</h5>
                                     <p class="text-muted">Please wait while your document is being prepared.</p>
                                 </div>
-                                
+
                                 {{-- iframe --}}
                                 <iframe name="printFrame" id="printFrame" src="" frameborder="0"
                                     style="width:100%; height:800px; display: none;"></iframe>
@@ -86,7 +101,7 @@
                 // Clear iframe src to show loading state
                 $('#printFrame').attr('src', '');
             });
-            
+
             // When iframe finishes loading, hide the loading overlay
             $('#printFrame').on('load', function() {
                 $('#loadingOverlay').fadeOut(500);

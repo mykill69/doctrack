@@ -391,6 +391,117 @@ class PrintController extends Controller
 //     return view('print.printLogbook', $data);
 // }
 
+// latest update 08/11/2026
+
+// public function logbookPdf(Request $request)
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userDepartment = $user->department;
+//     $userFullName = $user->fname . ' ' . $user->lname;
+//     $userRole = $user->role;
+//     $isPresident = ($userId == 38);
+
+//     $ctrl_from = $request->input('ctrl_from');
+//     $ctrl_to   = $request->input('ctrl_to');
+//     $month     = $request->input('month');
+//     $status    = $request->input('status');
+
+//     $query = Log::query()
+//         ->whereNotNull('new_user');
+
+//     // CTRL # range filter (optional)
+//     if ($ctrl_from && $ctrl_to) {
+//         $query->whereBetween('route_id', [$ctrl_from, $ctrl_to]);
+//     }
+
+//     // Month filter
+//     if ($month) {
+//         $query->whereMonth('created_at', $month);
+//     }
+
+//     // Status filter
+//     if ($status) {
+//         $query->where('status_update', $status);
+//     }
+
+//     // Access control
+//     if (!$isPresident) {
+//         if ($userRole === 'records_officer') {
+//             $query->where('logs.user_id', $userId)
+//                   ->whereHas('routingSlip', function ($q) use ($userId) {
+//                       $q->where('routing_slip.user_id', $userId);
+//                   });
+            
+//             $query->whereIn('logs.id', function ($sub) use ($userId) {
+//                 $sub->select(DB::raw('MAX(id)'))
+//                     ->from('logs')
+//                     ->where('user_id', $userId)
+//                     ->groupBy('route_id');
+//             });
+//         } else {
+//             $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+//                 $q->where('logs.new_user', $userId)
+//                   ->orWhere('logs.user_id', $userId)
+//                   ->orWhere('logs.new_destination', $userDepartment)
+//                   ->orWhere('logs.new_destination', $userFullName);
+//             });
+//         }
+//     }
+
+//     $logs = $query->with(['routingSlip', 'document'])
+//         ->orderBy('logs.route_id', 'asc')
+//         ->get();
+
+//     // Preload exact routing slips and documents
+//     $routeIds = $logs->pluck('route_id')->unique();
+//     $newFiles = $logs->pluck('new_file')->unique();
+
+//     $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
+//         ->whereIn('document', $newFiles)
+//         ->get();
+
+//     $allDocuments = Document::whereIn('route_id', $routeIds)
+//         ->whereIn('file_name', $newFiles)
+//         ->get();
+
+//     foreach ($logs as $log) {
+//         $log->exactSlip = $allRoutingSlips
+//             ->where('rslip_id', $log->route_id)
+//             ->where('document', $log->new_file)
+//             ->first() ?? $log->routingSlip;
+        
+//         $log->exactDoc = $allDocuments
+//             ->where('route_id', $log->route_id)
+//             ->where('file_name', $log->new_file)
+//             ->first() ?? $log->document;
+//     }
+
+//     // Counts
+//     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
+//     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
+//     $recordsOfficerCount = $userRole === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
+
+//     $groups = User::select('id', 'fname', 'lname', 'department')
+//         ->orderBy('department')->orderBy('lname')->get()->groupBy('department');
+
+//     $offices = Office::all();
+//     $dpa = $user->dpa;
+//     $users = User::all();
+//     $doctrackCount = Doctrack::where('doctrack_stat', 2)->count();
+
+//     $data = compact(
+//         'offices', 'logs', 'routingSlipCount', 'superUserCount',
+//         'recordsOfficerCount', 'dpa', 'users', 'doctrackCount', 'groups', 'isPresident'
+//     );
+
+//     if ($request->ajax() || $request->wantsJson() || $request->has('ctrl_from') || $request->has('month')) {
+//         $pdf = Pdf::loadView('print.logbookPdf', $data)->setPaper('legal', 'landscape');
+//         return $pdf->stream('logbook.pdf');
+//     }
+
+//     return view('print.printLogbook', $data);
+// }
 
 
 public function logbookPdf(Request $request)
@@ -421,8 +532,12 @@ public function logbookPdf(Request $request)
     }
 
     // Status filter
-    if ($status) {
+    if ($status && $status !== 'all') {
         $query->where('status_update', $status);
+    }
+    // If status is 'all' or empty, show both pending (2) and completed (3)
+    if ($status === 'all') {
+        $query->whereIn('status_update', [2, 3]);
     }
 
     // Access control
@@ -448,6 +563,13 @@ public function logbookPdf(Request $request)
             });
         }
     }
+
+    // Remove duplicates by getting unique route_id with latest record
+    $query->whereIn('logs.id', function ($sub) {
+        $sub->select(DB::raw('MAX(id)'))
+            ->from('logs')
+            ->groupBy('route_id', 'new_file');
+    });
 
     $logs = $query->with(['routingSlip', 'document'])
         ->orderBy('logs.route_id', 'asc')
@@ -495,7 +617,7 @@ public function logbookPdf(Request $request)
         'recordsOfficerCount', 'dpa', 'users', 'doctrackCount', 'groups', 'isPresident'
     );
 
-    if ($request->ajax() || $request->wantsJson() || $request->has('ctrl_from') || $request->has('month')) {
+    if ($request->ajax() || $request->wantsJson() || $request->has('ctrl_from') || $request->has('month') || $request->has('status')) {
         $pdf = Pdf::loadView('print.logbookPdf', $data)->setPaper('legal', 'landscape');
         return $pdf->stream('logbook.pdf');
     }
