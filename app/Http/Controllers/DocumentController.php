@@ -587,7 +587,38 @@ class DocumentController extends Controller
         }
     }
 
-    public function viewPdf($id)
+//     public function viewPdf($id)
+// {
+//     $document = Document::findOrFail($id);
+
+//     $log = Log::where('doc_id', $id)
+//         ->where('new_destination', auth()->user()->fname . ' ' . auth()->user()->lname)
+//         ->latest()
+//         ->first();
+
+//     if ($log && !$log->viewed_status) {
+//         $log->timestamps = false;
+//         $log->update([
+//             'viewed_status' => 1,
+//             'viewed_at' => now(),
+//         ]);
+//     }
+
+//     $filePath = storage_path('app/documents/' . $document->file_name);
+
+    
+
+//     if (file_exists($filePath)) {
+//         return response()->file($filePath, [
+//             'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+//             'Content-Type' => 'application/pdf',
+//         ]);
+//     } else {
+//         return redirect()->back()->with('error', 'File not found.');
+//     }
+// }
+
+public function viewPdf($id)
 {
     $document = Document::findOrFail($id);
 
@@ -604,12 +635,16 @@ class DocumentController extends Controller
         ]);
     }
 
-    $filePath = storage_path('app/documents/' . $document->file_name);
+    // ✅ FIXED: Use public disk path
+    $filePath = storage_path('app/public/documents/' . $document->file_name);
 
     if (file_exists($filePath)) {
+        // Determine MIME type dynamically instead of hardcoding PDF
+        $mimeType = mime_content_type($filePath);
+        
         return response()->file($filePath, [
             'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
-            'Content-Type' => 'application/pdf',
+            'Content-Type' => $mimeType,
         ]);
     } else {
         return redirect()->back()->with('error', 'File not found.');

@@ -180,12 +180,18 @@ public function storeDoctrack(Request $request)
         $i = 1;
         $storagePath = storage_path('app/doc_track');
 
-        while (file_exists($storagePath . '/' . $fileName)) {
-            $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
-            $i++;
-        }
+        // while (file_exists($storagePath . '/' . $fileName)) {
+        //     $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+        //     $i++;
+        // }
 
-        $file->storeAs('doc_track', $fileName);
+        while (Storage::disk('public')->exists('doc_track/' . $fileName)) {
+        $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+        $i++;
+}
+
+        // $file->storeAs('doc_track', $fileName);
+        $file->storeAs('doc_track', $fileName, 'public'); // ← Add 'public' as 3rd parameter
     }
 
     $creator = User::findOrFail($request->user_id);
@@ -328,13 +334,22 @@ public function storeDoctrackUpdate(Request $request)
         $fileName = $originalName . '.' . $extension;
 
         $i = 1;
-        $storagePath = storage_path('app/doc_track');
-        while (file_exists($storagePath . '/' . $fileName)) {
-            $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
-            $i++;
-        }
+        // $storagePath = storage_path('app/doc_track');
+        // while (file_exists($storagePath . '/' . $fileName)) {
+        //     $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+        //     $i++;
+        // }
 
-        $file->storeAs('doc_track', $fileName);
+        // $file->storeAs('doc_track', $fileName);
+
+        // ✅ FIXED: Save to public disk (storage/app/public/doc_track/)
+    while (Storage::disk('public')->exists('doc_track/' . $fileName)) {
+        $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
+        $i++;
+    }
+
+    $file->storeAs('doc_track', $fileName, 'public'); // ← Add 'public' as 3rd parameter
+
     }
 
     // Create doctrack entry
@@ -351,10 +366,14 @@ public function storeDoctrackUpdate(Request $request)
     // Save file record
     if ($fileName) {
         // Delete old file (if any)
+        // $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
+        // if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
+        //     unlink($storagePath . '/' . $existingFile->file);
+        // }
         $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
-        if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
-            unlink($storagePath . '/' . $existingFile->file);
-        }
+    if ($existingFile && Storage::disk('public')->exists('doc_track/' . $existingFile->file)) {
+        Storage::disk('public')->delete('doc_track/' . $existingFile->file);
+    }
 
         DoctrackFile::updateOrCreate(
             ['docslip_id' => $request->docslip_id],
@@ -520,10 +539,61 @@ public function storeDoctrackUpdate(Request $request)
 
 
 
+// public function uploadFile(Request $request)
+// {
+//     try {
+//         // Corrected table name from 'doctracks' to 'doctrack_slip'
+//         $request->validate([
+//             'docslip_id' => 'required|string|exists:doctrack_slip,docslip_id',
+//             'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+//         ]);
+
+//         $docslip_id = $request->docslip_id;
+//         $file = $request->file('file');
+//         $storagePath = storage_path('app/doc_track');
+
+//         // Make sure the folder exists
+//         if (!file_exists($storagePath)) {
+//             mkdir($storagePath, 0755, true);
+//         }
+
+//         $originalName = $file->getClientOriginalName();
+//         $filePath = $storagePath . '/' . $originalName;
+
+//         // Delete old file from DB and disk
+//         $existingFile = DoctrackFile::where('docslip_id', $docslip_id)->first();
+//         if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
+//             unlink($storagePath . '/' . $existingFile->file);
+//         }
+
+//         // Save new file
+//         $file->storeAs('doc_track', $originalName);
+
+//         // Insert or update file info in DB
+//         DoctrackFile::updateOrCreate(
+//             ['docslip_id' => $docslip_id],
+//             ['file' => $originalName]
+//         );
+
+//         return response()->json(['success' => true]);
+
+//     } catch (\Illuminate\Validation\ValidationException $e) {
+//         return response()->json([
+//             'success' => false,
+//             'message' => $e->validator->errors()->first()
+//         ], 422);
+//     } catch (\Exception $e) {
+//         Log::error('Upload error: ' . $e->getMessage());
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'Server error: ' . $e->getMessage()
+//         ], 500);
+//     }
+// }
+
 public function uploadFile(Request $request)
 {
     try {
-        // Corrected table name from 'doctracks' to 'doctrack_slip'
         $request->validate([
             'docslip_id' => 'required|string|exists:doctrack_slip,docslip_id',
             'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
@@ -531,26 +601,17 @@ public function uploadFile(Request $request)
 
         $docslip_id = $request->docslip_id;
         $file = $request->file('file');
-        $storagePath = storage_path('app/doc_track');
-
-        // Make sure the folder exists
-        if (!file_exists($storagePath)) {
-            mkdir($storagePath, 0755, true);
-        }
-
         $originalName = $file->getClientOriginalName();
-        $filePath = $storagePath . '/' . $originalName;
 
-        // Delete old file from DB and disk
+        // ✅ Delete old file from public disk
         $existingFile = DoctrackFile::where('docslip_id', $docslip_id)->first();
-        if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
-            unlink($storagePath . '/' . $existingFile->file);
+        if ($existingFile && Storage::disk('public')->exists('doc_track/' . $existingFile->file)) {
+            Storage::disk('public')->delete('doc_track/' . $existingFile->file);
         }
 
-        // Save new file
-        $file->storeAs('doc_track', $originalName);
+        // ✅ Save to public disk (storage/app/public/doc_track/)
+        $file->storeAs('doc_track', $originalName, 'public');
 
-        // Insert or update file info in DB
         DoctrackFile::updateOrCreate(
             ['docslip_id' => $docslip_id],
             ['file' => $originalName]
@@ -571,8 +632,6 @@ public function uploadFile(Request $request)
         ], 500);
     }
 }
-
-
 
 
 public function docslipForm($id)
