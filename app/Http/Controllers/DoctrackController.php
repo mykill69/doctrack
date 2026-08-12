@@ -767,6 +767,7 @@ public function pdfDocSlip($id)
 //         'lastViewed' // ✅ pass to view
 //     ));
 // }
+
 public function slipMonitoring($docslip_id)
 {
       $users = User::orderBy('fname', 'asc')   // ✅ sort ascending
