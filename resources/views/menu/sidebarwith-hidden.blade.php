@@ -25,17 +25,13 @@
                     <p>Documents for Action
                         @php
                             $user = auth()->user();
-                            $userRole = $user->role;
-                            $userId = $user->id;
-
-                            if ($userRole === 'super_user') {
+                            if ($user->role === 'super_user') {
                                 $userCount = \App\Models\RoutingSlip::where('route_status', 1)->count();
-                            } elseif ($userRole === 'records_officer') {
+                            } elseif ($user->role === 'records_officer') {
                                 $userCount = \App\Models\RoutingSlip::where('route_status', 2)
-                                    ->where('user_id', $userId)
-                                    ->count();
+                                    ->where('user_id', $user->id)->count();
                             } else {
-                                $userCount = \App\Models\RoutingSlip::where('user_id', $userId)->count();
+                                $userCount = \App\Models\RoutingSlip::where('user_id', $user->id)->count();
                             }
                         @endphp
                         <span class="badge badge-info ml-2">{{ $userCount }}</span>
@@ -44,34 +40,34 @@
             @endif
         </li>
 
-        {{-- Pending --}}
+        {{-- Pending - OPTIMIZED: COUNT in database instead of loading all records --}}
         @php
             $user = auth()->user();
             $userId = $user->id;
             $userFullName = $user->fname . ' ' . $user->lname;
             $userRole = $user->role;
 
-            $pendingLogs = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+            $pendingQuery = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
                 ->leftJoin('routing_slip', function ($join) {
-                    $join
-                        ->on('logs.route_id', '=', 'routing_slip.rslip_id')
+                    $join->on('logs.route_id', '=', 'routing_slip.rslip_id')
                         ->on('logs.user_id', '=', 'routing_slip.user_id');
                 })
                 ->where('logs.status_update', 2)
                 ->where(function ($q) {
                     $q->whereNull('logs.new_user')->orWhereNull('logs.assigned_to');
-                });
+                })
+                ->whereNotNull('documents.id');
 
             if ($userRole === 'records_officer') {
-                $pendingLogs->where('routing_slip.user_id', $userId);
+                $pendingQuery->where('routing_slip.user_id', $userId);
             } else {
-                $pendingLogs->where(function ($q) use ($userId, $userFullName) {
-                    $q->where('logs.new_destination', $userFullName)->orWhere('logs.user_id', $userId);
+                $pendingQuery->where(function ($q) use ($userId, $userFullName) {
+                    $q->where('logs.new_destination', $userFullName)
+                      ->orWhere('logs.user_id', $userId);
                 });
             }
 
-            $logs = $pendingLogs->select('logs.*', 'documents.id as doc_id')->orderByDesc('logs.created_at')->get();
-            $statusUpdateCount1 = $logs->whereNotNull('doc_id')->unique('doc_id')->count();
+            $statusUpdateCount1 = $pendingQuery->distinct('documents.id')->count('documents.id');
         @endphp
 
         <li class="nav-item">
@@ -83,36 +79,47 @@
             </a>
         </li>
 
-        {{-- Completed - Only show if user is NOT 1235 --}}
+        {{-- Completed - OPTIMIZED: COUNT in database instead of loading all records --}}
         @if (auth()->user()->id != 1235)
-        <li class="nav-item">
-            <a href="{{ route('served') }}" class="nav-link {{ request()->routeIs('served') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-check"></i>
-                <p>Completed
-                    @php
-                        $user = auth()->user();
-                        $userId = $user->id;
-                        $userDepartment = trim($user->department);
-                        $userFullName = trim($user->fname . ' ' . $user->lname);
-                        $userRole = $user->role;
+            @php
+                $user = auth()->user();
+                $userId = $user->id;
+                $userFullName = trim($user->fname . ' ' . ($user->mname ? $user->mname . ' ' : '') . $user->lname);
+                $userRole = $user->role;
 
-                        $servedQuery = Log::whereNotNull('new_user');
+                $completedQuery = Log::leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+                    ->leftJoin('routing_slip', function ($join) {
+                        $join->on('logs.route_id', '=', 'routing_slip.rslip_id')
+                            ->on('logs.user_id', '=', 'routing_slip.user_id');
+                    })
+                    ->where('logs.status_update', 3)
+                    ->whereNotNull('logs.new_user')
+                    ->whereNotNull('documents.id');
 
-                        if ($userRole !== 'records_officer') {
-                            $servedQuery->where(function ($q) use ($userId, $userDepartment, $userFullName) {
-                                $q->where('new_user', $userId)
-                                    ->orWhere('user_id', $userId)
-                                    ->orWhere('new_destination', $userDepartment)
-                                    ->orWhere('new_destination', $userFullName);
-                            });
-                        }
+                if ($userRole === 'records_officer') {
+                    $completedQuery->where(function ($q) use ($userId, $userFullName) {
+                        $q->where('routing_slip.user_id', $userId)
+                          ->orWhere('logs.new_destination', $userFullName)
+                          ->orWhere('logs.user_id', $userId);
+                    });
+                } else {
+                    $completedQuery->where(function ($q) use ($userId, $userFullName) {
+                        $q->where('logs.new_destination', $userFullName)
+                          ->orWhere('logs.user_id', $userId);
+                    });
+                }
 
-                        $statusUpdateCount = $servedQuery->distinct('route_id')->count();
-                    @endphp
-                    <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
-                </p>
-            </a>
-        </li>
+                $statusUpdateCount = $completedQuery->distinct('documents.id')->count('documents.id');
+            @endphp
+
+            <li class="nav-item">
+                <a href="{{ route('served') }}" class="nav-link {{ request()->routeIs('served') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-check"></i>
+                    <p>Completed
+                        <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
+                    </p>
+                </a>
+            </li>
         @endif
 
         @php
@@ -123,14 +130,19 @@
             <a href="{{ route('doctrackSlip') }}"
                 class="nav-link {{ request()->routeIs('doctrackSlip') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-route"></i>
-                <p>Tracking Document
-                    <span class="right badge badge-primary">{{ $doctrackCount ?? 0 }}</span>
+                <p>
+                    Tracking Document
+                    <span class="right badge badge-primary">
+                        {{ $doctrackCount ?? 0 }}
+                    </span>
                 </p>
             </a>
         </li>
 
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')
-            @php $distributionActive = request()->routeIs('distributionList', 'trackingDistributionList'); @endphp
+            @php
+                $distributionActive = request()->routeIs('distributionList', 'trackingDistributionList');
+            @endphp
             <li class="nav-item {{ $distributionActive ? 'menu-open menu-is-opening' : '' }}">
                 <a href="#" class="nav-link">
                     <i class="fas fa-list nav-icon"></i>
