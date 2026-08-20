@@ -200,7 +200,8 @@ letter-spacing: 5px;
 
                         <tr>
                             <td colspan="2"></td>
-                            <td colspan="2" style="text-align: right;font-family: Verdana, sans-serif;font-size:10px;">Date:
+                            <td colspan="2"
+                                style="text-align: right;font-family: Verdana, sans-serif;font-size:10px;">Date:
                                 <u>{{ \Carbon\Carbon::parse($routingSlip->date_received)->format('F d, Y') }}</u>
                             </td>
                         </tr>
@@ -275,12 +276,21 @@ letter-spacing: 5px;
 
                         <tr>
                             <td colspan="4" style="padding: 0; margin: 0;">
-                                @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
+                                {{-- @if (isset($esig, $esig->user_id, $esig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
                                     <div style="display: flex; align-items: center; margin-top: 15%;">
                                         @if ($esig->user_id == 63 || $esig->user_id == 64)
                                             <span style="font-weight: bold;">for:</span>
                                         @endif
                                         <img src="{{ $esig->esig_path }}" alt="Electronic Signature"
+                                            style="width: 200px; height: auto; margin-bottom: -20px;">
+                                    </div>
+                                @endif --}}
+                                @if ($esigSrc && $routingSlip->route_status != 1)
+                                    <div style="display: flex; align-items: center; margin-top: 15%;">
+                                        @if ($esig->user_id == 63 || $esig->user_id == 64)
+                                            <span style="font-weight: bold;">for:</span>
+                                        @endif
+                                        <img src="{{ $esigSrc }}" alt="Electronic Signature"
                                             style="width: 200px; height: auto; margin-bottom: -20px;">
                                     </div>
                                 @endif
@@ -323,7 +333,8 @@ letter-spacing: 5px;
 
                             <tr>
                                 <td colspan="2"></td>
-                                <td colspan="2" style="text-align: right; font-family: Verdana, sans-serif;font-size:10px;">
+                                <td colspan="2"
+                                    style="text-align: right; font-family: Verdana, sans-serif;font-size:10px;">
                                     Date:
                                     <u>{{ \Carbon\Carbon::parse($routingSlip->updated_at)->format('F d, Y') }}</u>
                                 </td>
@@ -400,10 +411,16 @@ letter-spacing: 5px;
                             <tr>
                                 <td colspan="4" style="padding: 0; margin: 0;">
                                     {{-- Show e-signature if available and route_status != 1 --}}
-                                    @if (isset($reassigningUserEsig, $reassigningUserEsig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
+                                    {{-- @if (isset($reassigningUserEsig, $reassigningUserEsig->esig_file, $routingSlip) && $routingSlip->route_status != 1)
                                         <div style="display: flex; align-items: center; margin-top: 15%;">
                                             <img src="{{ public_path('storage/esignature/' . $reassigningUserEsig->esig_file) }}"
                                                 alt="Electronic Signature"
+                                                style="width: 120px; height: auto; margin-bottom: -20px;">
+                                        </div>
+                                    @endif --}}
+                                    @if ($reassigningUserEsigSrc && $routingSlip->route_status != 1)
+                                        <div style="display: flex; align-items: center; margin-top: 15%;">
+                                            <img src="{{ $reassigningUserEsigSrc }}" alt="Electronic Signature"
                                                 style="width: 120px; height: auto; margin-bottom: -20px;">
                                         </div>
                                     @endif

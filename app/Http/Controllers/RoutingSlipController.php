@@ -512,12 +512,171 @@ public function slipForm(Request $request, $id)
 //     return $pdf->stream('routing-slip.pdf');
 // }
 
+// udated for viewing of esignature 08/20/2026
+
+// public function pdfSlip(Request $request, $id)
+// {
+//     // ✅ Get routing_slip_id
+//     $routingSlipId = $request->query('routing_slip_id');
+
+//     // ✅ Fallback
+//     if (!$routingSlipId) {
+//         $routingSlipId = DB::table('routing_slip')
+//             ->where('rslip_id', $id)
+//             ->orderByDesc('id')
+//             ->value('id');
+//     }
+
+//     // ✅ Get EXACT routing slip
+//     $routingSlip = DB::table('routing_slip')
+//         ->where('rslip_id', $id)
+//         ->where('id', $routingSlipId)
+//         ->first();
+
+//     $remarks = Remark::all();
+
+//     $relatedDocuments = DB::table('documents')
+//         ->where('route_id', $id)
+//         ->get();
+
+//     // ✅ Logs (still route-based unless you add routing_slip_id column)
+//     $logs = DB::table('logs')
+//         ->where('route_id', $id)
+//         ->whereIn('action', ['re-assigned', 'Acknowledged'])
+//         ->whereNotNull('new_destination')
+//         ->get();
+
+//     // ==============================
+//     // REASSIGNING USER LOGIC
+//     // ==============================
+
+//     $reassigningUser = DB::table('logs')
+//         ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
+//         ->join('users', 'assign_logs.new_user', '=', 'users.id')
+//         ->where('logs.route_id', $id)
+//         ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
+//         ->select('users.id', 'users.fname', 'users.lname', 'users.department')
+//         ->orderByDesc('assign_logs.id')
+//         ->first();
+
+//     $reassignUserDept = $reassigningUser->department ?? null;
+
+//     // ✅ Fallback
+//     if (!$reassigningUser || empty($reassigningUser->id)) {
+//         $directUser = DB::table('logs')
+//             ->join('users', 'logs.new_user', '=', 'users.id')
+//             ->where('logs.route_id', $id)
+//             ->whereIn('logs.action', ['re-assigned', 'Acknowledged'])
+//             ->select('users.id', 'users.fname', 'users.lname', 'users.department')
+//             ->orderByDesc('logs.id')
+//             ->first();
+
+//         if ($directUser) {
+//             $reassigningUser = $directUser;
+//             $reassignUserDept = $directUser->department;
+//         }
+//     }
+
+//     $reassigningUserEsig = null;
+//     $groupName = null;
+
+//     // ==============================
+//     // GROUP FALLBACK LOGIC
+//     // ==============================
+
+//     if ($logs->isEmpty()) {
+//         $assignedTo = DB::table('logs')
+//             ->where('route_id', $id)
+//             ->whereNotNull('assigned_to')
+//             ->orderByDesc('id')
+//             ->value('assigned_to');
+
+//         if ($assignedTo) {
+//             $group = \App\Models\Group::where('group_name', $assignedTo)->first();
+
+//             if ($group) {
+//                 $groupName = $group->group_name;
+
+//                 $logWithUser = DB::table('logs')
+//                     ->where('route_id', $id)
+//                     ->whereNotNull('new_user')
+//                     ->orderByDesc('id')
+//                     ->first();
+
+//                 if ($logWithUser && $logWithUser->new_user) {
+//                     $userForGroup = $group->users()
+//                         ->where('users.id', $logWithUser->new_user)
+//                         ->select('users.id', 'users.fname', 'users.lname', 'users.department')
+//                         ->first();
+
+//                     if ($userForGroup) {
+//                         $reassigningUser = $userForGroup;
+//                         $reassignUserDept = $userForGroup->department;
+//                         $reassigningUserEsig = Esig::where('user_id', $userForGroup->id)->first();
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     // ✅ Always load esig
+//     if ($reassigningUser && !isset($reassigningUserEsig)) {
+//         $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id)->first();
+//     }
+
+//     // ==============================
+//     // PRESIDENT ESIGNATURE
+//     // ==============================
+
+//     $esigUserId = match ($routingSlip->pres_dept) {
+//         "Dr. Aladino C. Moraca" => 38,
+//         'VPAF' => 63,
+//         'VPAA' => 64,
+//         default => null,
+//     };
+
+//     $esig = null;
+
+//     if ($esigUserId) {
+//         $esig = Esig::where('user_id', $esigUserId)->first();
+
+//         if ($esig && $esig->esig_file) {
+//             $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
+//         }
+//     }
+
+//     // ==============================
+//     // PDF GENERATION
+//     // ==============================
+
+//     $pdf = Pdf::loadView('slip.pdfSlip', compact(
+//         'remarks',
+//         'routingSlip',
+//         'relatedDocuments',
+//         'esig',
+//         'logs',
+//         'reassignUserDept',
+//         'reassigningUser',
+//         'reassigningUserEsig',
+//         'groupName'
+//     ));
+
+//     $pdf->setPaper('letter', 'portrait');
+//     $pdf->setOption('isRemoteEnabled', true);
+//     $pdf->setOption('isHtml5ParserEnabled', true);
+//     $pdf->setOption('margin-top', 0);
+//     $pdf->setOption('margin-right', 0);
+//     $pdf->setOption('margin-bottom', 0);
+//     $pdf->setOption('margin-left', 0);
+
+//     return $pdf->stream('routing-slip.pdf');
+// }
+
+
 public function pdfSlip(Request $request, $id)
 {
-    // ✅ Get routing_slip_id
     $routingSlipId = $request->query('routing_slip_id');
 
-    // ✅ Fallback
     if (!$routingSlipId) {
         $routingSlipId = DB::table('routing_slip')
             ->where('rslip_id', $id)
@@ -525,7 +684,6 @@ public function pdfSlip(Request $request, $id)
             ->value('id');
     }
 
-    // ✅ Get EXACT routing slip
     $routingSlip = DB::table('routing_slip')
         ->where('rslip_id', $id)
         ->where('id', $routingSlipId)
@@ -537,16 +695,11 @@ public function pdfSlip(Request $request, $id)
         ->where('route_id', $id)
         ->get();
 
-    // ✅ Logs (still route-based unless you add routing_slip_id column)
     $logs = DB::table('logs')
         ->where('route_id', $id)
         ->whereIn('action', ['re-assigned', 'Acknowledged'])
         ->whereNotNull('new_destination')
         ->get();
-
-    // ==============================
-    // REASSIGNING USER LOGIC
-    // ==============================
 
     $reassigningUser = DB::table('logs')
         ->join('assign_logs', 'logs.route_id', '=', 'assign_logs.route_id')
@@ -559,7 +712,6 @@ public function pdfSlip(Request $request, $id)
 
     $reassignUserDept = $reassigningUser->department ?? null;
 
-    // ✅ Fallback
     if (!$reassigningUser || empty($reassigningUser->id)) {
         $directUser = DB::table('logs')
             ->join('users', 'logs.new_user', '=', 'users.id')
@@ -576,11 +728,8 @@ public function pdfSlip(Request $request, $id)
     }
 
     $reassigningUserEsig = null;
+    $reassigningUserEsigSrc = null;
     $groupName = null;
-
-    // ==============================
-    // GROUP FALLBACK LOGIC
-    // ==============================
 
     if ($logs->isEmpty()) {
         $assignedTo = DB::table('logs')
@@ -617,9 +766,18 @@ public function pdfSlip(Request $request, $id)
         }
     }
 
-    // ✅ Always load esig
-    if ($reassigningUser && !isset($reassigningUserEsig)) {
+    if ($reassigningUser && !$reassigningUserEsig) {
         $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id)->first();
+    }
+
+    // ✅ Convert reassigning user esig to base64
+    if ($reassigningUserEsig && $reassigningUserEsig->esig_file) {
+        $esigPath = storage_path('app/esignature/' . $reassigningUserEsig->esig_file);
+        if (file_exists($esigPath)) {
+            $imageData = file_get_contents($esigPath);
+            $mimeType = mime_content_type($esigPath);
+            $reassigningUserEsigSrc = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+        }
     }
 
     // ==============================
@@ -634,12 +792,18 @@ public function pdfSlip(Request $request, $id)
     };
 
     $esig = null;
+    $esigSrc = null;
 
     if ($esigUserId) {
         $esig = Esig::where('user_id', $esigUserId)->first();
 
         if ($esig && $esig->esig_file) {
-            $esig->esig_path = public_path('storage/esignature/' . $esig->esig_file);
+            $esigPath = storage_path('app/esignature/' . $esig->esig_file);
+            if (file_exists($esigPath)) {
+                $imageData = file_get_contents($esigPath);
+                $mimeType = mime_content_type($esigPath);
+                $esigSrc = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+            }
         }
     }
 
@@ -652,10 +816,12 @@ public function pdfSlip(Request $request, $id)
         'routingSlip',
         'relatedDocuments',
         'esig',
+        'esigSrc',
         'logs',
         'reassignUserDept',
         'reassigningUser',
         'reassigningUserEsig',
+        'reassigningUserEsigSrc',
         'groupName'
     ));
 
@@ -669,7 +835,6 @@ public function pdfSlip(Request $request, $id)
 
     return $pdf->stream('routing-slip.pdf');
 }
-
 
 
 // 08/13/2025
