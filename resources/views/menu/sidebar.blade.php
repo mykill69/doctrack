@@ -85,34 +85,34 @@
 
         {{-- Completed - Only show if user is NOT 1235 --}}
         @if (auth()->user()->id != 1235)
-        <li class="nav-item">
-            <a href="{{ route('served') }}" class="nav-link {{ request()->routeIs('served') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-check"></i>
-                <p>Completed
-                    @php
-                        $user = auth()->user();
-                        $userId = $user->id;
-                        $userDepartment = trim($user->department);
-                        $userFullName = trim($user->fname . ' ' . $user->lname);
-                        $userRole = $user->role;
+            <li class="nav-item">
+                <a href="{{ route('served') }}" class="nav-link {{ request()->routeIs('served') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-check"></i>
+                    <p>Completed
+                        @php
+                            $user = auth()->user();
+                            $userId = $user->id;
+                            $userDepartment = trim($user->department);
+                            $userFullName = trim($user->fname . ' ' . $user->lname);
+                            $userRole = $user->role;
 
-                        $servedQuery = Log::whereNotNull('new_user');
+                            $servedQuery = Log::whereNotNull('new_user');
 
-                        if ($userRole !== 'records_officer') {
-                            $servedQuery->where(function ($q) use ($userId, $userDepartment, $userFullName) {
-                                $q->where('new_user', $userId)
-                                    ->orWhere('user_id', $userId)
-                                    ->orWhere('new_destination', $userDepartment)
-                                    ->orWhere('new_destination', $userFullName);
-                            });
-                        }
+                            if ($userRole !== 'records_officer') {
+                                $servedQuery->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+                                    $q->where('new_user', $userId)
+                                        ->orWhere('user_id', $userId)
+                                        ->orWhere('new_destination', $userDepartment)
+                                        ->orWhere('new_destination', $userFullName);
+                                });
+                            }
 
-                        $statusUpdateCount = $servedQuery->distinct('route_id')->count();
-                    @endphp
-                    <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
-                </p>
-            </a>
-        </li>
+                            $statusUpdateCount = $servedQuery->distinct('route_id')->count();
+                        @endphp
+                        <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
+                    </p>
+                </a>
+            </li>
         @endif
 
         @php
@@ -129,7 +129,7 @@
             </a>
         </li>
 
-        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+        {{-- @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             @php $distributionActive = request()->routeIs('distributionList', 'trackingDistributionList'); @endphp
             <li class="nav-item {{ $distributionActive ? 'menu-open menu-is-opening' : '' }}">
                 <a href="#" class="nav-link">
@@ -151,15 +151,27 @@
                     </li>
                 </ul>
             </li>
+        @endif --}}
+
+        @if ($user_role == 'Administrator' || $user_role == 'records_officer')
+            <li class="nav-item">
+                <a href="{{ route('distributionList') }}"
+                    class="nav-link {{ request()->routeIs('distributionList') ? 'active' : '' }}">
+                    <i class="fas fa-list nav-icon"></i>
+                    <p>Distribution List</p>
+                </a>
+            </li>
         @endif
 
         @php
-            $showPrintLogbook = in_array($user_role, ['Administrator', 'records_officer', 'president']) || auth()->user()->id == 38;
+            $showPrintLogbook =
+                in_array($user_role, ['Administrator', 'records_officer', 'president']) || auth()->user()->id == 38;
         @endphp
 
         @if ($showPrintLogbook)
             <li class="nav-item">
-                <a href="{{ route('printLogbook') }}" class="nav-link {{ request()->routeIs('printLogbook') ? 'active' : '' }}">
+                <a href="{{ route('printLogbook') }}"
+                    class="nav-link {{ request()->routeIs('printLogbook') ? 'active' : '' }}">
                     <i class="fas fa-print nav-icon"></i>
                     <p>Print Logbook</p>
                 </a>
@@ -168,7 +180,8 @@
 
         @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             <li class="nav-item">
-                <a href="{{ route('userView') }}" class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">
+                <a href="{{ route('userView') }}"
+                    class="nav-link {{ request()->routeIs('userView') ? 'active' : '' }}">
                     <i class="fas fa-users-cog nav-icon"></i>
                     <p>User Management
                         @php $userCount = \App\Models\User::count(); @endphp
@@ -189,7 +202,8 @@
 
         @if (($user_role == 'Administrator' || $user_role == 'records_officer') && auth()->user()->id != 1235)
             <li class="nav-item">
-                <a href="{{ route('userGroups') }}" class="nav-link {{ request()->routeIs('userGroups') ? 'active' : '' }}">
+                <a href="{{ route('userGroups') }}"
+                    class="nav-link {{ request()->routeIs('userGroups') ? 'active' : '' }}">
                     <i class="fas fa-users nav-icon"></i>
                     <p>Group List</p>
                 </a>
@@ -205,20 +219,24 @@
             </li>
         @endif
 
-        <li class="nav-item {{ request()->routeIs('viewLogs', 'viewLogs-Tracking') ? 'menu-is-opening menu-open' : '' }}">
+        <li
+            class="nav-item {{ request()->routeIs('viewLogs', 'viewLogs-Tracking') ? 'menu-is-opening menu-open' : '' }}">
             <a href="#" class="nav-link">
                 <i class="fa fa-history nav-icon"></i>
                 <p>Logs<i class="right fas fa-angle-left"></i></p>
             </a>
-            <ul class="nav nav-treeview" style="{{ request()->routeIs('viewLogs', 'viewLogs-Tracking') ? 'display: block;' : 'display: none;' }}">
+            <ul class="nav nav-treeview"
+                style="{{ request()->routeIs('viewLogs', 'viewLogs-Tracking') ? 'display: block;' : 'display: none;' }}">
                 <li class="nav-item">
-                    <a href="{{ route('viewLogs-Tracking') }}" class="nav-link {{ request()->routeIs('viewLogs-Tracking') ? 'active' : '' }}">
+                    <a href="{{ route('viewLogs-Tracking') }}"
+                        class="nav-link {{ request()->routeIs('viewLogs-Tracking') ? 'active' : '' }}">
                         <i class="fas fa-file-alt nav-icon text-primary"></i>
                         <p>Tracking Logs</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('viewLogs') }}" class="nav-link {{ request()->routeIs('viewLogs') ? 'active' : '' }}">
+                    <a href="{{ route('viewLogs') }}"
+                        class="nav-link {{ request()->routeIs('viewLogs') ? 'active' : '' }}">
                         <i class="fas fa-route nav-icon text-success"></i>
                         <p>Route Logs</p>
                     </a>

@@ -191,14 +191,24 @@ Route::group(['middleware'=>['login_auth']],function(){
     // Update ctrl no in doctrack slip
     Route::put('/doctrack-slip/{doctrack}', [DoctrackController::class, 'update'])->name('doctrack.update');
 
-    // Routed Distribution list
-    Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
-    Route::get('/distribution-List/view/{id}', [PagesController::class, 'viewDistribution'])->name('viewDistribution');
-    Route::get('/distributionList/pdf/{id}', [PagesController::class, 'viewDistributionPdf'])->name('viewDistributionPdf');
+    // // Routed Distribution list
+    // Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
+    // Route::get('/distribution-List/view/{id}', [PagesController::class, 'viewDistribution'])->name('viewDistribution');
+    // Route::get('/distributionList/pdf/{id}', [PagesController::class, 'viewDistributionPdf'])->name('viewDistributionPdf');
 
-    // Tracking Distribution list
-    Route::get('/trackingDistributionList', [PagesController::class, 'trackingDistributionList'])->name('trackingDistributionList');
-    Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewTrackingDistributionPdf'])->name('viewTrackingDistributionPdf');
+    // // Tracking Distribution list
+    // Route::get('/trackingDistributionList', [PagesController::class, 'trackingDistributionList'])->name('trackingDistributionList');
+    // Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewTrackingDistributionPdf'])->name('viewTrackingDistributionPdf');
+
+    // Distribution list (Combined)
+Route::get('/distributionList', [PagesController::class, 'distributionList'])->name('distributionList');
+Route::get('/distribution-List/view/{id}', [PagesController::class, 'viewDistribution'])->name('viewDistribution');
+Route::get('/distributionList/pdf/{id}', [PagesController::class, 'viewDistributionPdf'])->name('viewDistributionPdf');
+
+// Tracking Distribution PDF (Keep this)
+Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewTrackingDistributionPdf'])->name('viewTrackingDistributionPdf');
+
+// Remove the old trackingDistributionList route
 
     // Offices
     Route::get('/offices', [PagesController::class, 'offices'])->name('offices');

@@ -667,6 +667,134 @@ public function doctrackSlip()
 /**
  * Server-side data for Doctrack DataTables AJAX
  */
+// public function getDoctrackData(Request $request)
+// {
+//     $user = auth()->user();
+//     $userId = $user->id;
+//     $userFullName = $user->fname . ' ' . $user->lname;
+//     $isUser1235 = ($userId == 1235);
+
+//     $searchValue = $request->input('search.value');
+//     $start = $request->input('start', 0);
+//     $length = $request->input('length', 50);
+
+//     $query = Doctrack::with(['createdBy', 'doctrackFile'])
+//         ->where(function ($q) use ($userId, $userFullName) {
+//             $q->where('user_id', $userId)
+//               ->orWhere('update_by', $userId)
+//               ->orWhere(function ($sq) use ($userFullName, $userId) {
+//                   $sq->where('user_name', $userFullName)
+//                     ->where('user_id', $userId);
+//               });
+//         })
+//         ->orderByDesc('created_at');
+
+//     // Search
+//     if ($searchValue) {
+//         $query->where(function ($q) use ($searchValue) {
+//             $q->where('docslip_id', 'LIKE', "%{$searchValue}%")
+//               ->orWhere('user_name', 'LIKE', "%{$searchValue}%")
+//               ->orWhere('doc_title', 'LIKE', "%{$searchValue}%")
+//               ->orWhere('doc_type', 'LIKE', "%{$searchValue}%")
+//               ->orWhere('ctrl_no', 'LIKE', "%{$searchValue}%");
+//         });
+//     }
+
+//     $totalRecords = $query->count();
+//     $doctracks = $query->skip($start)->take($length)->get();
+
+//     $data = [];
+//     foreach ($doctracks as $record) {
+//         $comments = LogsTracking::where('docslip_id', $record->docslip_id)
+//             ->whereNotNull('comments')
+//             ->orderByDesc('created_at')
+//             ->get();
+
+//         $commentsHtml = '';
+//         foreach ($comments as $comment) {
+//             if (!is_null($record->update_by)) {
+//                 $wrappedComment = nl2br(e($comment->comments));
+//                 $commentsHtml .= '<div style="margin-bottom: 3px;">';
+//                 $commentsHtml .= '<span class="badge badge-warning" style="font-size:10px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">' . $wrappedComment . '</span>';
+//                 $commentsHtml .= '<br><small class="text-muted">' . \Carbon\Carbon::parse($comment->created_at)->format('M-d-Y h:i A') . '</small>';
+//                 $commentsHtml .= '</div>';
+//             }
+//         }
+//         if (empty($commentsHtml) && !is_null($record->update_by)) {
+//             $commentsHtml = '<span class="text-muted">No comments</span>';
+//         }
+
+//         $user = $record->update_by
+//             ? \App\Models\User::find($record->update_by)
+//             : \App\Models\User::find($record->user_id);
+        
+//         $actionTaken = $user 
+//             ? '<p class="text-red text-bold">' . ucwords(strtolower($user->fname)) . ' ' . ucwords(strtolower($user->lname)) . '</p>'
+//             : '<p class="text-muted"><i>User not found</i></p>';
+
+//         $startTime = \Carbon\Carbon::parse($record->created_at);
+//         $endTime = \Carbon\Carbon::parse($record->updated_at ?? $record->created_at);
+//         $diffInMinutes = $endTime->diffInMinutes($startTime);
+//         $days = floor($diffInMinutes / 1440);
+//         $hours = floor(($diffInMinutes % 1440) / 60);
+//         $minutes = $diffInMinutes % 60;
+
+//         $duration = '';
+//         if ($days > 0) $duration .= $days . ' ' . \Illuminate\Support\Str::plural('day', $days) . ' ';
+//         if ($hours > 0) $duration .= $hours . ' ' . \Illuminate\Support\Str::plural('hr', $hours) . ' ';
+//         if ($minutes > 0 || ($days == 0 && $hours == 0)) $duration .= $minutes . ' ' . \Illuminate\Support\Str::plural('min', $minutes);
+
+//         $statusBadge = '';
+//         switch ($record->doctrack_stat) {
+//             case 1: $statusBadge = '<span class="badge badge-primary">Created</span>'; break;
+//             case 2: $statusBadge = '<span class="badge badge-warning">Pending</span>'; break;
+//             case 3: $statusBadge = '<span class="badge badge-success">Signed</span>'; break;
+//             case 5: $statusBadge = '<span class="badge badge-info">Checked</span>'; break;
+//             case 6: $statusBadge = '<span class="badge badge-success">Acknowledged</span>'; break;
+//             default: $statusBadge = '<span class="badge badge-danger">Returned with comments</span>';
+//         }
+
+//         $actionDropdown = '<div class="btn-group">';
+//         $actionDropdown .= '<button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">Click here</button>';
+//         $actionDropdown .= '<div class="dropdown-menu">';
+//         if ($record->doctrack_stat == 1) {
+//             $actionDropdown .= '<form action="' . route('deleteSlip', ['docslip_id' => $record->docslip_id]) . '" method="POST" onsubmit="return confirm(\'Are you sure?\')">';
+//             $actionDropdown .= '<input type="hidden" name="_token" value="' . csrf_token() . '">';
+//             $actionDropdown .= '<input type="hidden" name="_method" value="DELETE">';
+//             $actionDropdown .= '<button type="submit" class="dropdown-item"><i class="fas fa-trash-alt"></i> Delete</button>';
+//             $actionDropdown .= '</form>';
+//         }
+//         $actionDropdown .= '<a class="dropdown-item" href="' . route('slipMonitoring', ['docslip_id' => $record->docslip_id]) . '" target="_blank"><i class="fas fa-eye"></i> View Details</a>';
+//         $actionDropdown .= '</div></div>';
+
+//         $row = [
+//             'ctrl_no' => $record->ctrl_no,
+//             'ctrl_input' => $isUser1235 ? '<input type="text" class="form-control doctrack-input form-control-sm" data-id="' . $record->id . '" data-field="ctrl_no" value="' . ($record->ctrl_no ?? '') . '" style="width: 80px;">' : '',
+//             'date_received' => $record->created_at->format('M j, Y'),
+//             'source' => $record->user_name ?? 'N/A',
+//             'subject' => ($record->doc_title ?? 'N/A') . ' - ' . ($record->doc_type ?? 'N/A'),
+//             'action_unit' => '--',
+//             'received_by_date' => '--',
+//             'action_taken' => $actionTaken,
+//             'date_released' => $record->updated_at->format('M d, Y'),
+//             'remarks' => $commentsHtml,
+//             'status' => $statusBadge,
+//             'tracking_code' => '<a href="' . route('slipMonitoring', ['docslip_id' => $record->docslip_id]) . '" target="_blank" style="color: #007bff;">' . $record->docslip_id . '</a>',
+//             'duration' => trim($duration) ?: '0 minutes',
+//             'action' => $actionDropdown,
+//         ];
+
+//         $data[] = $row;
+//     }
+
+//     return response()->json([
+//         'draw' => intval($request->input('draw')),
+//         'recordsTotal' => $totalRecords,
+//         'recordsFiltered' => $totalRecords,
+//         'data' => $data
+//     ]);
+// }
+
 public function getDoctrackData(Request $request)
 {
     $user = auth()->user();
@@ -677,6 +805,26 @@ public function getDoctrackData(Request $request)
     $searchValue = $request->input('search.value');
     $start = $request->input('start', 0);
     $length = $request->input('length', 50);
+    
+    // Get order column and direction from DataTables
+    $orderColumnIndex = $request->input('order.0.column', 0);
+    $orderDirection = $request->input('order.0.dir', 'desc');
+    
+    // Map column index to database column name
+    $columnMap = [
+        'ctrl_no' => 'ctrl_no',
+        'created_at' => 'created_at',
+        'user_name' => 'user_name',
+        'doc_title' => 'doc_title',
+        'updated_at' => 'updated_at',
+        'doctrack_stat' => 'doctrack_stat'
+    ];
+    
+    // Get the actual column name from the map
+    $columns = $request->input('columns', []);
+    $orderColumn = isset($columns[$orderColumnIndex]['data']) 
+        ? ($columnMap[$columns[$orderColumnIndex]['data']] ?? 'created_at')
+        : 'created_at';
 
     $query = Doctrack::with(['createdBy', 'doctrackFile'])
         ->where(function ($q) use ($userId, $userFullName) {
@@ -686,8 +834,7 @@ public function getDoctrackData(Request $request)
                   $sq->where('user_name', $userFullName)
                     ->where('user_id', $userId);
               });
-        })
-        ->orderByDesc('created_at');
+        });
 
     // Search
     if ($searchValue) {
@@ -701,6 +848,10 @@ public function getDoctrackData(Request $request)
     }
 
     $totalRecords = $query->count();
+    
+    // Apply ordering - FIX: Use orderBy with the correct column
+    $query->orderBy($orderColumn, $orderDirection);
+    
     $doctracks = $query->skip($start)->take($length)->get();
 
     $data = [];
@@ -2017,6 +2168,51 @@ public function passChange(Request $request, $id)
 }
 
 
+// public function distributionList()
+// {
+//     $user = auth()->user();
+//     $userRole = $user->role;
+
+//     if (!in_array($userRole, ['Administrator', 'records_officer'])) {
+//         abort(403, 'Unauthorized');
+//     }
+
+//   $logs = RoutingSlip::leftJoin('documents', 'routing_slip.rslip_id', '=', 'documents.route_id')
+//     ->select('routing_slip.*', 'documents.id as doc_id', 'documents.file_name')
+//     ->orderBy('routing_slip.created_at', 'desc')
+//     ->get()
+//     ->filter(function ($item) {
+//         $destinations = \App\Models\Log::where('route_id', $item->rslip_id)
+//             ->whereNotNull('new_destination')
+//             ->whereRaw("TRIM(new_destination) != ''")
+//             ->distinct()
+//             ->pluck('new_destination');
+
+//         // attach destinations for display
+//         $item->destinations = $destinations;
+
+//         return $destinations->count() >= 4;
+//     });
+
+
+
+//     $offices = Office::all();
+
+//     // ✅ Add doctrackCount similar to viewSlip
+//     $userFullName = $user->fname . ' ' . $user->lname;
+
+//     $documentTrack = Doctrack::where(function ($query) use ($user, $userFullName) {
+//             $query->where('user_id', $user->id)
+//                   ->orWhere('update_by', $user->id)
+//                   ->orWhere('user_name', $userFullName);
+//         })->get();
+
+//     // Count only records with doctrack_stat == 2
+//     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+
+//     return view('home.distList', compact('logs', 'offices', 'doctrackCount'));
+// }
+
 public function distributionList()
 {
     $user = auth()->user();
@@ -2026,28 +2222,57 @@ public function distributionList()
         abort(403, 'Unauthorized');
     }
 
-  $logs = RoutingSlip::leftJoin('documents', 'routing_slip.rslip_id', '=', 'documents.route_id')
-    ->select('routing_slip.*', 'documents.id as doc_id', 'documents.file_name')
-    ->orderBy('routing_slip.created_at', 'desc')
-    ->get()
-    ->filter(function ($item) {
-        $destinations = \App\Models\Log::where('route_id', $item->rslip_id)
-            ->whereNotNull('new_destination')
-            ->whereRaw("TRIM(new_destination) != ''")
-            ->distinct()
-            ->pluck('new_destination');
+    // Get Routed Distribution List (Original distributionList logic)
+    $routedLogs = RoutingSlip::leftJoin('documents', 'routing_slip.rslip_id', '=', 'documents.route_id')
+        ->select('routing_slip.*', 'documents.id as doc_id', 'documents.file_name')
+        ->orderBy('routing_slip.created_at', 'desc')
+        ->get()
+        ->filter(function ($item) {
+            $destinations = \App\Models\Log::where('route_id', $item->rslip_id)
+                ->whereNotNull('new_destination')
+                ->whereRaw("TRIM(new_destination) != ''")
+                ->distinct()
+                ->pluck('new_destination');
 
-        // attach destinations for display
-        $item->destinations = $destinations;
+            // attach destinations for display
+            $item->destinations = $destinations;
 
-        return $destinations->count() >= 4;
-    });
+            return $destinations->count() >= 4;
+        });
 
+    // Get Tracking Distribution List (Original trackingDistributionList logic)
+    $trackingLogs = Doctrack::with(['updatedBy', 'doctrackFile'])
+        ->orderBy('created_at', 'desc')
+        ->whereNotNull('update_by')
+        ->where('user_id', 56) // 👈 filter here
+        ->get()
+        ->groupBy('docslip_id')
+        ->filter(function ($group) {
+            // Only keep groups with 4 or more entries
+            return $group->count() >= 4;
+        })
+        ->map(function ($group) {
+            // Get the first record to use as the "main" row
+            $first = $group->first();
 
+            // Combine all update_by names
+            $names = $group->map(function ($item) {
+                return $item->updatedBy ? $item->updatedBy->fname . ' ' . $item->updatedBy->lname : null;
+            })
+            ->filter() // Remove nulls
+            ->unique() // Remove duplicates
+            ->implode(', '); // Combine into one string
+
+            // Attach the combined names as a new property
+            $first->combined_names = $names;
+
+            return $first;
+        })
+        ->values(); // Reset array keys
 
     $offices = Office::all();
 
-    // ✅ Add doctrackCount similar to viewSlip
+    // Common doctrackCount logic
     $userFullName = $user->fname . ' ' . $user->lname;
 
     $documentTrack = Doctrack::where(function ($query) use ($user, $userFullName) {
@@ -2059,7 +2284,7 @@ public function distributionList()
     // Count only records with doctrack_stat == 2
     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
-    return view('home.distList', compact('logs', 'offices', 'doctrackCount'));
+    return view('home.distList', compact('routedLogs', 'trackingLogs', 'offices', 'doctrackCount'));
 }
 
 
