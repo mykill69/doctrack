@@ -836,20 +836,44 @@ public function getDoctrackData(Request $request)
               });
         });
 
-    // Search
+    // Search - FIXED to handle status text search
     if ($searchValue) {
         $query->where(function ($q) use ($searchValue) {
             $q->where('docslip_id', 'LIKE', "%{$searchValue}%")
               ->orWhere('user_name', 'LIKE', "%{$searchValue}%")
               ->orWhere('doc_title', 'LIKE', "%{$searchValue}%")
               ->orWhere('doc_type', 'LIKE', "%{$searchValue}%")
-              ->orWhere('ctrl_no', 'LIKE', "%{$searchValue}%");
+              ->orWhere('ctrl_no', 'LIKE', "%{$searchValue}%")
+              // Handle status text search
+              ->orWhere(function ($sq) use ($searchValue) {
+                  $statusMap = [
+                      'created' => 1,
+                      'pending' => 2,
+                      'signed' => 3,
+                      'checked' => 5,
+                      'acknowledged' => 6,
+                      'returned' => 4
+                  ];
+                  
+                  $searchLower = strtolower($searchValue);
+                  $statusIds = [];
+                  
+                  foreach ($statusMap as $key => $value) {
+                      if (strpos($key, $searchLower) !== false || strpos($searchLower, $key) !== false) {
+                          $statusIds[] = $value;
+                      }
+                  }
+                  
+                  if (!empty($statusIds)) {
+                      $sq->whereIn('doctrack_stat', $statusIds);
+                  }
+              });
         });
     }
 
     $totalRecords = $query->count();
     
-    // Apply ordering - FIX: Use orderBy with the correct column
+    // Apply ordering
     $query->orderBy($orderColumn, $orderDirection);
     
     $doctracks = $query->skip($start)->take($length)->get();
