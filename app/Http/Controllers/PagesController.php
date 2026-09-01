@@ -836,7 +836,7 @@ public function getDoctrackData(Request $request)
               });
         });
 
-    // Search - FIXED to handle status text search
+    // Search
     if ($searchValue) {
         $query->where(function ($q) use ($searchValue) {
             $q->where('docslip_id', 'LIKE', "%{$searchValue}%")
@@ -903,8 +903,9 @@ public function getDoctrackData(Request $request)
             ? \App\Models\User::find($record->update_by)
             : \App\Models\User::find($record->user_id);
         
+        // FIX: ACTION TAKEN - Convert names to ALL CAPS
         $actionTaken = $user 
-            ? '<p class="text-red text-bold">' . ucwords(strtolower($user->fname)) . ' ' . ucwords(strtolower($user->lname)) . '</p>'
+            ? '<p class="text-red text-bold">' . strtoupper($user->fname) . ' ' . strtoupper($user->lname) . '</p>'
             : '<p class="text-muted"><i>User not found</i></p>';
 
         $startTime = \Carbon\Carbon::parse($record->created_at);
@@ -950,7 +951,7 @@ public function getDoctrackData(Request $request)
             'subject' => ($record->doc_title ?? 'N/A') . ' - ' . ($record->doc_type ?? 'N/A'),
             'action_unit' => '--',
             'received_by_date' => '--',
-            'action_taken' => $actionTaken,
+            'action_taken' => $actionTaken, // Now in ALL CAPS
             'date_released' => $record->updated_at->format('M d, Y'),
             'remarks' => $commentsHtml,
             'status' => $statusBadge,
