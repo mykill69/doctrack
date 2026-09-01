@@ -9,6 +9,7 @@
         margin-top: 0.31rem;
     }
 </style>
+
 @section('body')
     <div class="content-wrapper">
         <div class="content" style="padding-top: 1%;">
@@ -35,7 +36,6 @@
                                                 <th>DATE RELEASED</th>
                                                 <th>REMARKS</th>
                                                 <th>FILE NAME</th>
-                                                {{-- <th>OFFICE</th> --}}
                                                 <th>ACTION</th>
                                             </tr>
                                         </thead>
@@ -106,7 +106,6 @@
                                                         @endif
                                                     </td>
 
-
                                                     <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
                                                     <td style="font-size:10px;width:5%;">
                                                         @php
@@ -153,34 +152,8 @@
                                                                 No PDF Available
                                                             </span>
                                                         @endif
-                                                        </p>
                                                     </td>
-                                                    {{-- <td>{{ $log->new_destination }}</td> --}}
-                                                    {{-- <td>
-                                                        <a href="{{ route('tracking', ['route_id' => $log->route_id]) }}"
-                                                            class="btn btn-primary" target="_blank">
-                                                            <i class="fas fa-pen"></i>
-                                                        </a>
-                                                    </td> --}}
-                                                    {{-- 
-                                                    @php
-                                                        $routingSlipId = \App\Models\RoutingSlip::where(
-                                                            'rslip_id',
-                                                            $log->route_id,
-                                                        )
-                                                            ->orderBy('id', 'desc')
-                                                            ->value('id');
-                                                    @endphp
 
-                                                    <td>
-                                                        <a href="{{ route('tracking', [
-                                                            'route_id' => $log->route_id,
-                                                            'routing_slip_id' => $log->routing_slip_id,
-                                                        ]) }}"
-                                                            class="btn btn-primary" target="_blank">
-                                                            <i class="fas fa-pen"></i>
-                                                        </a>
-                                                    </td> --}}
                                                     @php
                                                         $routingSlipId = \App\Models\RoutingSlip::where(
                                                             'rslip_id',
@@ -214,32 +187,33 @@
         <!-- /.content -->
     </div>
 
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-
 
     <script>
         $(document).ready(function() {
             var t = $('#pendingTable').DataTable({
                 "order": [
-                    [0, "desc"]
-                ], // CTRL # descending
+                    [7, "desc"] // Changed to sort by DATE RELEASED column (index 7) descending
+                ],
                 "pageLength": 20,
-                "columnDefs": [{
-                    "targets": 0,
-                    "type": "num",
-                    "orderable": true
-                }]
+                "columnDefs": [
+                    {
+                        "targets": 0,
+                        "type": "num",
+                        "orderable": true
+                    },
+                    {
+                        "targets": 7, // DATE RELEASED column
+                        "type": "date",
+                        "orderable": true
+                    }
+                ]
             });
 
-            t.order([0, "desc"]).draw();
+            // Apply the order
+            t.order([7, "desc"]).draw();
         });
     </script>
-
-
-
-
-
 
     @include('modal.docAdd')
     @include('modal.docEdit')

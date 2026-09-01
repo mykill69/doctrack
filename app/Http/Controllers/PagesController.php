@@ -1035,6 +1035,96 @@ public function getDoctrackData(Request $request)
 // }
 
 
+// september 1, 2026. updated the sorting
+
+// public function pending()
+// {
+//     $user = auth()->user();
+//     $userFullName = $user->fname . ' ' . $user->lname;
+//     $userId = $user->id;
+//     $userRole = $user->role;
+//     $userDepartment = $user->department;
+
+//     // Step 1: Get logs joined with documents and routing_slip
+//     $logs = Log::with('routingSlip')
+//         ->leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
+//         ->leftJoin('routing_slip', function ($join) {
+//             $join->on('logs.route_id', '=', 'routing_slip.rslip_id')
+//                  ->on('logs.user_id', '=', 'routing_slip.user_id'); // ensure correct user
+//         })
+//         ->select(
+//             'logs.*',
+//             'documents.id as doc_id',
+//             'documents.file_name',
+//             'routing_slip.id as routing_slip_id',
+//             'routing_slip.date_received',
+//             'routing_slip.source',
+//             'routing_slip.subject',
+//             'routing_slip.pres_dept',
+//             'routing_slip.trans_remarks',
+//             'routing_slip.r_destination as routing_destination'
+//         )
+//         ->where('logs.status_update', 2)
+//         ->where(function ($q) {
+//             $q->whereNull('logs.new_user')
+//               ->orWhereNull('logs.assigned_to');
+//         })
+//         ->where(function ($q) use ($userFullName, $userId) {
+//             $q->where('logs.new_destination', $userFullName)
+//               ->orWhere('logs.user_id', $userId);
+//         })
+//         ->orderByDesc('logs.created_at')
+//         ->get();
+
+//     // Step 2: Remove duplicate doc_id
+//     // $logs = $logs->unique('doc_id')->values();
+//     $logs = $logs->whereNotNull('doc_id')
+//              ->unique('doc_id')
+//              ->values();
+
+//     // Step 3: Other data
+//     $offices = Office::all();
+//     $recordsOfficerCount = 0;
+//     $superUserCount = 0;
+
+//     // Get all Doctrack records (no grouping)
+//     $documentTrack = Doctrack::with(['createdBy', 'doctrackFile'])
+//         ->where(function ($query) use ($userId, $userFullName) {
+//             $query->where('user_id', $userId)
+//                   ->orWhere('update_by', $userId)
+//                   ->orWhere('user_name', $userFullName);
+//         })
+//         ->orderByDesc('created_at')
+//         ->get();
+
+//     // Calculate time_diff for each record here
+//     $documentTrack->transform(function ($item) {
+//         $start = \Carbon\Carbon::parse($item->created_at);
+//         $end = \Carbon\Carbon::parse($item->updated_at ?? $item->created_at);
+//         $diffInMinutes = $end->diffInMinutes($start);
+
+//         $item->time_diff = [
+//             'days' => floor($diffInMinutes / 1440),
+//             'hours' => floor(($diffInMinutes % 1440) / 60),
+//             'minutes' => $diffInMinutes % 60,
+//         ];
+
+//         return $item;
+//     });
+
+//     // Count only records with doctrack_stat == 2
+//     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
+
+//     return view('home.pending', compact(
+//         'logs', 
+//         'offices', 
+//         'recordsOfficerCount', 
+//         'superUserCount', 
+//         'doctrackCount',
+//         'documentTrack'
+//     ));
+// }
+
 public function pending()
 {
     $user = auth()->user();
@@ -1048,7 +1138,7 @@ public function pending()
         ->leftJoin('documents', 'logs.doc_id', '=', 'documents.id')
         ->leftJoin('routing_slip', function ($join) {
             $join->on('logs.route_id', '=', 'routing_slip.rslip_id')
-                 ->on('logs.user_id', '=', 'routing_slip.user_id'); // ensure correct user
+                 ->on('logs.user_id', '=', 'routing_slip.user_id');
         })
         ->select(
             'logs.*',
@@ -1071,11 +1161,10 @@ public function pending()
             $q->where('logs.new_destination', $userFullName)
               ->orWhere('logs.user_id', $userId);
         })
-        ->orderByDesc('logs.created_at')
+        ->orderByDesc('logs.updated_at') // Changed from created_at to updated_at
         ->get();
 
     // Step 2: Remove duplicate doc_id
-    // $logs = $logs->unique('doc_id')->values();
     $logs = $logs->whereNotNull('doc_id')
              ->unique('doc_id')
              ->values();
@@ -1113,13 +1202,17 @@ public function pending()
     // Count only records with doctrack_stat == 2
     $doctrackCount = $documentTrack->where('doctrack_stat', 2)->count();
 
+    // Get users for display
+    $users = \App\Models\User::all();
+
     return view('home.pending', compact(
         'logs', 
         'offices', 
         'recordsOfficerCount', 
         'superUserCount', 
         'doctrackCount',
-        'documentTrack'
+        'documentTrack',
+        'users' // Pass users to view
     ));
 }
 
