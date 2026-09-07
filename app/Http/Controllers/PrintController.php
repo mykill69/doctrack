@@ -503,6 +503,7 @@ class PrintController extends Controller
 //     return view('print.printLogbook', $data);
 // }
 
+// september 7, 2026 for logbook of the president
 
 public function logbookPdf(Request $request)
 {
@@ -512,6 +513,7 @@ public function logbookPdf(Request $request)
     $userFullName = $user->fname . ' ' . $user->lname;
     $userRole = $user->role;
     $isPresident = ($userId == 38);
+    $isSuperUser = ($userRole === 'super_user');
 
     $ctrl_from = $request->input('ctrl_from');
     $ctrl_to   = $request->input('ctrl_to');
@@ -521,9 +523,17 @@ public function logbookPdf(Request $request)
     $query = Log::query()
         ->whereNotNull('new_user');
 
-    // CTRL # range filter (optional)
+    // CTRL # range filter (optional) - Use op_ctrl for president and super_user
     if ($ctrl_from && $ctrl_to) {
-        $query->whereBetween('route_id', [$ctrl_from, $ctrl_to]);
+        if ($isPresident || $isSuperUser) {
+            // Use op_ctrl for president and super_user
+            $query->whereHas('routingSlip', function ($q) use ($ctrl_from, $ctrl_to) {
+                $q->whereBetween('op_ctrl', [$ctrl_from, $ctrl_to]);
+            });
+        } else {
+            // Use route_id for others
+            $query->whereBetween('route_id', [$ctrl_from, $ctrl_to]);
+        }
     }
 
     // Month filter
@@ -614,7 +624,8 @@ public function logbookPdf(Request $request)
 
     $data = compact(
         'offices', 'logs', 'routingSlipCount', 'superUserCount',
-        'recordsOfficerCount', 'dpa', 'users', 'doctrackCount', 'groups', 'isPresident'
+        'recordsOfficerCount', 'dpa', 'users', 'doctrackCount', 'groups', 
+        'isPresident', 'isSuperUser'
     );
 
     if ($request->ajax() || $request->wantsJson() || $request->has('ctrl_from') || $request->has('month') || $request->has('status')) {

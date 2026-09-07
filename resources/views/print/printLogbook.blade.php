@@ -13,16 +13,29 @@
                             <div class="card-body">
                                 <form id="printForm" method="GET" target="printFrame" action="{{ route('logbookPdf') }}">
                                     <div class="row">
-                                        <div class="col-md-3">
-                                            <label for="ctrl_from">CTRL # From: (Optional)</label>
-                                            <input type="number" class="form-control" name="ctrl_from"
-                                                value="{{ request('ctrl_from') }}" placeholder="e.g. 1000">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="ctrl_to">CTRL # To: (Optional)</label>
-                                            <input type="number" class="form-control" name="ctrl_to"
-                                                value="{{ request('ctrl_to') }}" placeholder="e.g. 2000">
-                                        </div>
+                                        @if(auth()->user()->id == 38 || auth()->user()->role == 'super_user')
+                                            <div class="col-md-3">
+                                                <label for="ctrl_from">OP CTRL # From: (Optional)</label>
+                                                <input type="number" class="form-control" name="ctrl_from"
+                                                    value="{{ request('ctrl_from') }}" placeholder="e.g. 1000">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="ctrl_to">OP CTRL # To: (Optional)</label>
+                                                <input type="number" class="form-control" name="ctrl_to"
+                                                    value="{{ request('ctrl_to') }}" placeholder="e.g. 2000">
+                                            </div>
+                                        @else
+                                            <div class="col-md-3">
+                                                <label for="ctrl_from">CTRL # From: (Optional)</label>
+                                                <input type="number" class="form-control" name="ctrl_from"
+                                                    value="{{ request('ctrl_from') }}" placeholder="e.g. 1000">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="ctrl_to">CTRL # To: (Optional)</label>
+                                                <input type="number" class="form-control" name="ctrl_to"
+                                                    value="{{ request('ctrl_to') }}" placeholder="e.g. 2000">
+                                            </div>
+                                        @endif
                                         <div class="col-md-2">
                                             <label for="month">Month:</label>
                                             <select class="form-control" name="month">
@@ -35,14 +48,6 @@
                                                 @endfor
                                             </select>
                                         </div>
-                                        {{-- <div class="col-md-2">
-                                            <label for="status">Status:</label>
-                                            <select class="form-control" name="status">
-                                                <option value="">-- Select Status --</option>
-                                                <option value="2" {{ request('status') == 2 ? 'selected' : '' }}>Pending</option>
-                                                <option value="3" {{ request('status') == 3 ? 'selected' : '' }}>Completed</option>
-                                            </select>
-                                        </div> --}}
                                         <div class="col-md-2">
                                             <label for="status">Status:</label>
                                             <select class="form-control" name="status">

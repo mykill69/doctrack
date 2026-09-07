@@ -66,22 +66,51 @@
 
     @php
         $logsByRouteId = $logs->keyBy('route_id');
+        $isPresident = auth()->user()->id == 38;
+        $isSuperUser = auth()->user()->role == 'super_user';
+        $useOpCtrl = ($isPresident || $isSuperUser);
         
-        // ✅ Always start from the first CTRL # in range or 1
-        $ctrl_from = request('ctrl_from');
-        $minRouteId = $ctrl_from ? (int)$ctrl_from : ($logs->isNotEmpty() ? $logs->min('route_id') : 1);
-        
-        // ✅ End at the last CTRL # in range or max log
-        $ctrl_to = request('ctrl_to');
-        $maxRouteId = $ctrl_to ? (int)$ctrl_to : ($logs->isNotEmpty() ? $logs->max('route_id') : 1);
+        // Determine min and max values based on user role
+        if ($useOpCtrl) {
+            // For president and super_user, use op_ctrl
+            $allOpCtrls = $logs->map(function($log) {
+                return $log->exactSlip->op_ctrl ?? null;
+            })->filter()->unique()->sort()->values();
+            
+            $ctrl_from = request('ctrl_from');
+            $ctrl_to = request('ctrl_to');
+            $minRouteId = $ctrl_from ? (int)$ctrl_from : ($allOpCtrls->isNotEmpty() ? $allOpCtrls->first() : 1);
+            $maxRouteId = $ctrl_to ? (int)$ctrl_to : ($allOpCtrls->isNotEmpty() ? $allOpCtrls->last() : 1);
+        } else {
+            // For others, use route_id
+            $ctrl_from = request('ctrl_from');
+            $minRouteId = $ctrl_from ? (int)$ctrl_from : ($logs->isNotEmpty() ? $logs->min('route_id') : 1);
+            
+            $ctrl_to = request('ctrl_to');
+            $maxRouteId = $ctrl_to ? (int)$ctrl_to : ($logs->isNotEmpty() ? $logs->max('route_id') : 1);
+        }
         
         // Build complete sequence
         $orderedLogs = collect();
-        for ($i = $minRouteId; $i <= $maxRouteId; $i++) {
-            $orderedLogs->push([
-                'route_id' => $i,
-                'log' => $logsByRouteId[$i] ?? null,
-            ]);
+        if ($useOpCtrl) {
+            // For president and super_user, order by op_ctrl
+            for ($i = $minRouteId; $i <= $maxRouteId; $i++) {
+                $matchedLog = $logs->first(function ($log) use ($i) {
+                    return ($log->exactSlip->op_ctrl ?? null) == $i;
+                });
+                $orderedLogs->push([
+                    'ctrl_value' => $i,
+                    'log' => $matchedLog,
+                ]);
+            }
+        } else {
+            // For others, order by route_id
+            for ($i = $minRouteId; $i <= $maxRouteId; $i++) {
+                $orderedLogs->push([
+                    'ctrl_value' => $i,
+                    'log' => $logsByRouteId[$i] ?? null,
+                ]);
+            }
         }
         
         $logsPerPage = 15;
@@ -114,9 +143,14 @@
                             @php
                                 $exactSlip = $log->exactSlip ?? $log->routingSlip;
                                 $exactDoc = $log->exactDoc ?? $log->document;
+                                
+                                // Determine which CTRL # to display
+                                $displayCtrl = ($useOpCtrl && $exactSlip && $exactSlip->op_ctrl) 
+                                    ? $exactSlip->op_ctrl 
+                                    : $log->route_id;
                             @endphp
                             <tr>
-                                <td>{{ $log->route_id }}</td>
+                                <td>{{ $displayCtrl }}</td>
                                 <td>
                                     {{ $exactSlip && $exactSlip->date_received
                                         ? \Carbon\Carbon::parse($exactSlip->date_received)->format('M d, Y')
@@ -162,7 +196,7 @@
                             </tr>
                         @else
                             <tr>
-                                <td>{{ $item['route_id'] }}</td>
+                                <td>{{ $item['ctrl_value'] }}</td>
                                 <td>&nbsp;</td>
                                 <td>&nbsp;</td>
                                 <td>&nbsp;</td>
