@@ -44,7 +44,6 @@ public function storeSlip(Request $request)
         'route_status' => 'required|string',
         'received_name' => 'required|string',
         'document' => 'required|file|mimes:pdf',
-        // 'file_stamp' => 'required|file|mimes:jpg,jpeg,png',
         'date_received' => 'required|string',
     ]);
 
@@ -52,11 +51,6 @@ public function storeSlip(Request $request)
     $pdfFile = $request->file('document');
     $pdfName = $pdfFile->getClientOriginalName();
     $pdfFile->storeAs('documents', $pdfName);
-
-//     // Store the uploaded stamp image
-// $stampFile = $request->file('file_stamp');
-// $stampName = $stampFile->getClientOriginalName(); // keep the original filename
-// $stampFile->storeAs('stamps', $stampName); // this will overwrite if file already exists
 
     // Save to DB without modifying PDF
     RoutingSlip::create([
