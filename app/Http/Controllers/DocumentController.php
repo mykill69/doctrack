@@ -738,7 +738,7 @@ private function applyDashboardOrder($query, Request $request)
             'route_id' => 'required|integer',
             'subject' => 'required|string',
             'doc_type' => 'required|string',
-            'document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,png,jpeg', 
+            'document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,png,jpeg|max:25600', 
             'purpose' => 'required|string',
             'department' => 'required|string',
             'for_to' => 'required|array',

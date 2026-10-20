@@ -69,6 +69,14 @@
         $isPresident = auth()->user()->id == 38;
         $isSuperUser = auth()->user()->role == 'super_user';
         $useOpCtrl = ($isPresident || $isSuperUser);
+
+        // ✅ The document tracking slip entries (the second logbook) keyed by control number
+        $doctrackByCtrl = $doctrackByCtrl ?? [];
+        $doctrackCtrlNos = array_keys($doctrackByCtrl);
+        
+        // ✅ The range chosen by the user (never taken from the global request)
+        $ctrl_from = $ctrl_from ?? request('ctrl_from');
+        $ctrl_to   = $ctrl_to   ?? request('ctrl_to');
         
         // Determine min and max values based on user role
         if ($useOpCtrl) {
@@ -77,17 +85,25 @@
                 return $log->exactSlip->op_ctrl ?? null;
             })->filter()->unique()->sort()->values();
             
-            $ctrl_from = request('ctrl_from');
-            $ctrl_to = request('ctrl_to');
             $minRouteId = $ctrl_from ? (int)$ctrl_from : ($allOpCtrls->isNotEmpty() ? $allOpCtrls->first() : 1);
             $maxRouteId = $ctrl_to ? (int)$ctrl_to : ($allOpCtrls->isNotEmpty() ? $allOpCtrls->last() : 1);
         } else {
             // For others, use route_id
-            $ctrl_from = request('ctrl_from');
             $minRouteId = $ctrl_from ? (int)$ctrl_from : ($logs->isNotEmpty() ? $logs->min('route_id') : 1);
-            
-            $ctrl_to = request('ctrl_to');
             $maxRouteId = $ctrl_to ? (int)$ctrl_to : ($logs->isNotEmpty() ? $logs->max('route_id') : 1);
+
+            // ✅ COMBINE BOTH LOGBOOKS - the control numbers of the document
+            //    tracking slip live in the same numbering space, so the range
+            //    and the rows are taken from BOTH sources.
+            //    The range chosen by the user is never overridden.
+            if (!empty($doctrackCtrlNos)) {
+                if (empty($ctrl_from)) {
+                    $minRouteId = min($minRouteId, min($doctrackCtrlNos));
+                }
+                if (empty($ctrl_to)) {
+                    $maxRouteId = max($maxRouteId, max($doctrackCtrlNos));
+                }
+            }
         }
         
         // Build complete sequence
@@ -101,6 +117,7 @@
                 $orderedLogs->push([
                     'ctrl_value' => $i,
                     'log' => $matchedLog,
+                    'doctrack' => $doctrackByCtrl[$i] ?? null,
                 ]);
             }
         } else {
@@ -109,6 +126,7 @@
                 $orderedLogs->push([
                     'ctrl_value' => $i,
                     'log' => $logsByRouteId[$i] ?? null,
+                    'doctrack' => $doctrackByCtrl[$i] ?? null,
                 ]);
             }
         }
@@ -137,7 +155,10 @@
                 </thead>
                 <tbody>
                     @foreach ($chunk as $item)
-                        @php $log = $item['log']; @endphp
+                        @php
+                            $log = $item['log'];
+                            $doctrack = $item['doctrack'] ?? null;
+                        @endphp
                         
                         @if ($log)
                             @php
@@ -148,48 +169,106 @@
                                 $displayCtrl = ($useOpCtrl && $exactSlip && $exactSlip->op_ctrl) 
                                     ? $exactSlip->op_ctrl 
                                     : $log->route_id;
+
+                                // ✅ COMBINE BOTH LOGBOOKS - the empty fields of the
+                                //    document logbook are completed with the data
+                                //    of the document tracking slip
+                                $dateReceived = $exactSlip && $exactSlip->date_received
+                                    ? \Carbon\Carbon::parse($exactSlip->date_received)->format('M d, Y')
+                                    : ($exactDoc && $exactDoc->created_at
+                                        ? \Carbon\Carbon::parse($exactDoc->created_at)->format('M d, Y')
+                                        : null);
+
+                                $source = $exactSlip->source ?? null;
+                                $subject = $exactSlip->subject ?? ($exactDoc->subject ?? null);
+                                $actionUnit = $exactSlip->pres_dept ?? null;
+                                $receivedBy = ($exactSlip && $exactSlip->updated_at) ? $exactSlip->updated_at->format('M d, Y') : null;
+                                $dateReleased = ($exactDoc && $exactDoc->created_at) ? $exactDoc->created_at->format('m-d-Y h:i:s A') : null;
+
+                                $actionTaken = trim(
+                                    ($exactSlip && $exactSlip->r_destination ? ucwords(strtolower($exactSlip->r_destination)) : '')
+                                    . ($log->assigned_to ? ($exactSlip && $exactSlip->r_destination ? ', ' : '') . 're-assigned to ' . ucwords(strtolower($log->assigned_to)) : '')
+                                );
+
+                                $remarks = trim(
+                                    ($exactSlip && !empty($exactSlip->trans_remarks) ? $exactSlip->trans_remarks : '')
+                                    . ($exactSlip && !empty($exactSlip->other_remarks) ? ' ' . $exactSlip->other_remarks : '')
+                                    . (!empty($log->comments) ? ' ' . $log->comments : '')
+                                );
+
+                                if ($doctrack) {
+                                    $dateReceived = $dateReceived ?: ($doctrack['date_received'] ? \Carbon\Carbon::parse($doctrack['date_received'])->format('M d, Y') : null);
+                                    $source      = $source ?: $doctrack['source'];
+                                    $subject     = $subject ?: trim($doctrack['doc_title'] . ($doctrack['doc_type'] ? ' - ' . $doctrack['doc_type'] : ''));
+                                    $actionUnit  = $actionUnit ?: $doctrack['action_unit'];
+                                    $receivedBy  = $receivedBy ?: $doctrack['received_date'];
+                                    $actionTaken = $actionTaken ?: $doctrack['action_taken'];
+                                    $dateReleased = $dateReleased ?: ($doctrack['date_released'] ? \Carbon\Carbon::parse($doctrack['date_released'])->format('m-d-Y h:i:s A') : null);
+                                    $remarks     = $remarks ?: $doctrack['remarks'];
+                                }
+
+                                $dateReceived = $dateReceived ?: 'N/A';
+                                $source      = $source ?: 'N/A';
+                                $subject     = $subject ?: 'N/A';
+                                $actionUnit  = $actionUnit ?: 'N/A';
+                                $receivedBy  = $receivedBy ?: 'N/A';
+                                $actionTaken = $actionTaken ?: 'N/A';
+                                $dateReleased = $dateReleased ?: 'N/A';
+                                $remarks     = $remarks ?: '';
+
+                                $words = explode(' ', $subject);
+                                if (count($words) > 80) {
+                                    $subject = implode(' ', array_slice($words, 0, 80)) . '...';
+                                }
                             @endphp
                             <tr>
                                 <td>{{ $displayCtrl }}</td>
-                                <td>
-                                    {{ $exactSlip && $exactSlip->date_received
-                                        ? \Carbon\Carbon::parse($exactSlip->date_received)->format('M d, Y')
-                                        : ($exactDoc && $exactDoc->created_at
-                                            ? \Carbon\Carbon::parse($exactDoc->created_at)->format('M d, Y')
-                                            : 'N/A') }}
-                                </td>
-                                <td>{{ $exactSlip->source ?? 'N/A' }}</td>
-                                @php
-                                    $subject = $exactSlip->subject ?? ($exactDoc->subject ?? 'N/A');
-                                    $words = explode(' ', $subject);
-                                    if (count($words) > 80) {
-                                        $subject = implode(' ', array_slice($words, 0, 80)) . '...';
-                                    }
-                                @endphp
+                                <td>{{ $dateReceived }}</td>
+                                <td>{{ $source }}</td>
                                 <td style="max-width: 300px;font-size:6; overflow: hidden; text-overflow: ellipsis;" title="{{ $subject }}">
                                     {{ $subject }}
                                 </td>
-                                <td>{{ $exactSlip->pres_dept ?? 'N/A' }}</td>
-                                <td>{{ $exactSlip && $exactSlip->updated_at ? $exactSlip->updated_at->format('M d, Y') : 'N/A' }}</td>
+                                <td>{{ $actionUnit }}</td>
+                                <td>{{ $receivedBy }}</td>
                                 <td>
-                                    @if ($exactSlip && $exactSlip->r_destination)
-                                        <strong class="text-danger">{{ ucwords(strtolower($exactSlip->r_destination)) }}</strong>
-                                    @endif
-                                    @if ($log->assigned_to)
-                                        , re-assigned to <strong class="text-danger">{{ ucwords(strtolower($log->assigned_to)) }}</strong>
+                                    @if ($actionTaken !== 'N/A')
+                                        <strong class="text-danger">{{ $actionTaken }}</strong>
                                     @endif
                                 </td>
-                                <td>{{ $exactDoc && $exactDoc->created_at ? $exactDoc->created_at->format('m-d-Y h:i:s A') : 'N/A' }}</td>
+                                <td>{{ $dateReleased }}</td>
                                 <td style="font-size:10px;">
-                                    @if ($exactSlip && !empty($exactSlip->trans_remarks))
-                                        <span>{{ $exactSlip->trans_remarks }}</span>
+                                    @if ($remarks)
+                                        <span style="margin-top:2px; max-width:150px; word-wrap:break-word; white-space:normal;">{!! $remarks !!}</span>
                                     @endif
-                                    @if ($exactSlip && !empty($exactSlip->other_remarks))
-                                        <span>{{ $exactSlip->other_remarks }}</span>
-                                    @endif
-                                    @php $comment = $log->comments ?? ''; $wrappedComment = preg_replace('/((?:\S+\s+){4})/', '$1<br>', $comment); @endphp
-                                    @if ($comment)
-                                        <span style="margin-top:2px; max-width:150px; word-wrap:break-word; white-space:normal;">{!! $wrappedComment !!}</span>
+                                </td>
+                                <td></td>
+                            </tr>
+                        @elseif ($doctrack)
+                            {{-- ✅ CONTROL NUMBER THAT ONLY EXISTS ON THE DOCUMENT TRACKING SLIP --}}
+                            @php
+                                $subject = trim($doctrack['doc_title'] . ($doctrack['doc_type'] ? ' - ' . $doctrack['doc_type'] : ''));
+                                $words = explode(' ', $subject);
+                                if (count($words) > 80) {
+                                    $subject = implode(' ', array_slice($words, 0, 80)) . '...';
+                                }
+                                $remarks = $doctrack['remarks'] ?: '';
+                            @endphp
+                            <tr>
+                                <td>{{ $doctrack['ctrl_no'] }}</td>
+                                <td>{{ $doctrack['date_received'] ? \Carbon\Carbon::parse($doctrack['date_received'])->format('M d, Y') : 'N/A' }}</td>
+                                <td>{{ $doctrack['source'] ?: 'N/A' }}</td>
+                                <td style="max-width: 300px;font-size:6; overflow: hidden; text-overflow: ellipsis;" title="{{ $subject }}">
+                                    {{ $subject }}
+                                </td>
+                                <td>{{ $doctrack['action_unit'] ?: 'N/A' }}</td>
+                                <td>{{ $doctrack['received_date'] ?: 'N/A' }}</td>
+                                <td>
+                                    <strong class="text-danger">{{ $doctrack['action_taken'] }}</strong>
+                                </td>
+                                <td>{{ $doctrack['date_released'] ? \Carbon\Carbon::parse($doctrack['date_released'])->format('m-d-Y h:i:s A') : 'N/A' }}</td>
+                                <td style="font-size:10px;">
+                                    @if ($remarks)
+                                        <span style="margin-top:2px; max-width:150px; word-wrap:break-word; white-space:normal;">{!! $remarks !!}</span>
                                     @endif
                                 </td>
                                 <td></td>

@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
 use App\Models\Office;
 use App\Models\Document;
 use App\Models\RoutingSlip;
@@ -26,6 +27,12 @@ use Illuminate\Support\Facades\Response;
 
 class DoctrackController extends Controller
 {
+    /**
+     * ✅ Maximum TOTAL size of the files attached to a single transaction.
+     *    25600 KB = 25 MB (a single file OR all the files combined).
+     */
+    const MAX_TRANSACTION_FILES_KB = 25600;
+
 //     public function storeDoctrack(Request $request)
 // {
 //     // ✅ Validate the request
@@ -173,8 +180,11 @@ public function storeDoctrack(Request $request)
         'update_by'   => 'required|array',
         'update_by.*' => 'required|string',
         'file'        => 'nullable|array',
-        'file.*'      => 'file|mimes:pdf,doc,docx,jpg,jpeg,png,xls,xlsx,xlsm|max:20480',
+        'file.*'      => 'file|mimes:pdf,doc,docx,jpg,jpeg,png,xls,xlsx,xlsm|max:25600',
     ]);
+
+    // ✅ The TOTAL size of the files of the transaction must not exceed 25MB
+    $this->validateTotalUploadSize($request);
 
     $docslip_id = 'CPSU' . mt_rand(10000000, 99999999);
 
@@ -315,8 +325,13 @@ public function storeDoctrackUpdate(Request $request)
         'doc_title'   => 'required|string',
         'user_name'   => 'required|string',
         'file'        => 'nullable|array',
-        'file.*'      => 'file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+        'file.*'      => 'file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:25600',
     ]);
+
+    // ✅ The TOTAL size of the files of the transaction must not exceed 25MB
+    //    (the uploaded files replace the previous attachment, so only the
+    //    new ones are counted)
+    $this->validateTotalUploadSize($request);
 
     // ✅ Handle file upload (multiple files allowed)
     $fileNames = $this->storeUploadedFiles($request->file('file'));
@@ -569,11 +584,19 @@ public function uploadFile(Request $request)
 
     $request->validate([
         'file' => 'required|array',
-        'file.*' => 'file|max:10240',
+        'file.*' => 'file|max:25600',
         'docslip_id' => 'required'
     ]);
 
     try {
+        // ✅ The TOTAL size of the files of the transaction must not exceed 25MB
+        //    (the files already attached are counted as well)
+        $this->validateTotalUploadSize(
+            $request,
+            'file',
+            $this->transactionFilesSizeKb($request->docslip_id)
+        );
+
         if ($request->hasFile('file')) {
             // Ensure the directory exists
             $directory = storage_path('app/doc_track');
@@ -618,6 +641,9 @@ public function uploadFile(Request $request)
             'message' => 'No file uploaded'
         ]);
         
+    } catch (ValidationException $e) {
+        // ✅ Let Laravel answer with a 422 and the validation messages
+        throw $e;
     } catch (\Exception $e) {
         return response()->json([
             'success' => false, 
@@ -823,6 +849,19 @@ public function slipMonitoring($docslip_id)
         ? RoutingSlip::where('route_status', 1)->count() 
         : 0;
 
+    // ✅ The size (KB) of the files already attached to the transaction
+    $attachedFilesKb = 0;
+    $slipFiles = $documentTrackid->isNotEmpty() ? ($documentTrackid->first()->doctrackFiles ?? collect()) : collect();
+
+    foreach ($slipFiles as $slipFile) {
+        foreach ($this->possibleFilePaths($slipFile->file) as $path) {
+            if (File::exists($path)) {
+                $attachedFilesKb += (int) ceil(File::size($path) / 1024);
+                break;
+            }
+        }
+    }
+
     return view('slip.docMonitoring', compact(
         'documentTrackid',
         'superUserCount',
@@ -830,7 +869,8 @@ public function slipMonitoring($docslip_id)
         'docslip_id',
         'creatorId',
         'lastViewed',
-        'users'
+        'users',
+        'attachedFilesKb'
     ));
 }
 
@@ -978,6 +1018,83 @@ protected function normalizeFileInput(Request $request, string $key = 'file')
     }
 
     return $request;
+}
+
+/**
+ * ✅ Make sure the TOTAL size of the files of a transaction does not exceed 25MB.
+ *
+ * A single file can be up to 25MB and several files can be uploaded as long
+ * as the SUM of all of them stays within 25MB.
+ */
+protected function validateTotalUploadSize(Request $request, string $key = 'file', int $alreadyUsedKb = 0)
+{
+    $files = $request->file($key);
+
+    if ($files instanceof UploadedFile) {
+        $files = [$files];
+    }
+
+    if (!is_array($files)) {
+        return;
+    }
+
+    $totalKb = $alreadyUsedKb;
+
+    foreach ($files as $file) {
+        if ($file instanceof UploadedFile) {
+            $totalKb += (int) ceil($file->getSize() / 1024);
+        }
+    }
+
+    if ($totalKb > self::MAX_TRANSACTION_FILES_KB) {
+        $message = 'The total size of the files must not be greater than 25MB. '
+            . 'The selected files are ' . round(($totalKb - $alreadyUsedKb) / 1024, 2) . 'MB';
+
+        if ($alreadyUsedKb > 0) {
+            $message .= ' and the transaction already has ' . round($alreadyUsedKb / 1024, 2) . 'MB';
+        }
+
+        throw ValidationException::withMessages([$key => $message . '.']);
+    }
+}
+
+/**
+ * ✅ Total size (in KB) of the files already attached to a transaction.
+ */
+protected function transactionFilesSizeKb(string $docslipId): int
+{
+    $bytes = 0;
+
+    $files = DoctrackFile::where('docslip_id', $docslipId)->get();
+
+    foreach ($files as $file) {
+        foreach ($this->possibleFilePaths($file->file) as $path) {
+            if (File::exists($path)) {
+                $bytes += File::size($path);
+                break;
+            }
+        }
+    }
+
+    return (int) ceil($bytes / 1024);
+}
+
+/**
+ * ✅ The locations where an attached file can be stored.
+ */
+protected function possibleFilePaths(string $filename): array
+{
+    if (empty($filename)) {
+        return [];
+    }
+
+    $filename = basename($filename);
+
+    return [
+        storage_path('app/doc_track/' . $filename),
+        storage_path('app/public/doc_track/' . $filename),
+        public_path('storage/doc_track/' . $filename),
+    ];
 }
 
 /**

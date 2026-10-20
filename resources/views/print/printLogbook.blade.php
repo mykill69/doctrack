@@ -11,6 +11,15 @@
                                 <h3 class="card-title">PRINT LOGBOOK</h3>
                             </div>
                             <div class="card-body">
+                                {{-- ✅ The printed logbook combines BOTH logbooks --}}
+                                <div class="alert alert-info py-2 px-3" style="font-size: 0.85rem;">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    The printed logbook combines the <strong>Document Logbook</strong> (the dashboard /
+                                    routed documents) and the <strong>Document Tracking Slip</strong> entries.
+                                    A control number that only exists on the document tracking slip is printed
+                                    with its own details instead of an empty row.
+                                </div>
+
                                 <form id="printForm" method="GET" target="printFrame" action="{{ route('logbookPdf') }}">
                                     <div class="row">
                                         @if(auth()->user()->id == 38 || auth()->user()->role == 'super_user')

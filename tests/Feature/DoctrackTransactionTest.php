@@ -313,4 +313,152 @@ class DoctrackTransactionTest extends TestCase
 
         $this->assertSame($sorted, $names, 'The ACTION TAKEN column is not sorted');
     }
+
+    public function test_logbook_pdf_is_generated()
+    {
+        $user = User::where('role', 'records_officer')->first() ?? User::first();
+
+        $response = $this->actingAs($user)->get(route('logbookPdf') . '?' . http_build_query([
+            'ctrl_from' => 1,
+            'ctrl_to'   => 5,
+        ]));
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('%PDF', $response->getContent());
+    }
+
+    public function test_logbook_row_is_filled_from_the_document_tracking_slip()
+    {
+        $user = User::where('role', 'records_officer')->first() ?? User::first();
+
+        $this->actingAs($user);
+
+        // ✅ A control number that only exists on the document tracking slip
+        //    must NOT be printed as an empty row
+        $html = view('print.logbookPdf', [
+            'logs'          => collect(),
+            'doctrackByCtrl' => [
+                4321 => [
+                    'ctrl_no'       => 4321,
+                    'docslip_id'    => 'CPSU00000001',
+                    'doc_title'     => 'Combined Logbook Test Document',
+                    'doc_type'      => 'Issuance',
+                    'source'        => 'Records Office',
+                    'creator_id'    => $user->id,
+                    'date_received' => '2026-01-05 10:00:00',
+                    'date_released' => '2026-01-06 11:00:00',
+                    'received_date' => 'Jan 05, 2026',
+                    'action_unit'   => 'RECORDS OFFICE',
+                    'received_by'   => 'Juan Dela Cruz',
+                    'action_taken'  => 'Juan Dela Cruz',
+                    'remarks'       => 'Combined logbook remark',
+                    'doctrack_stat' => 6,
+                    'recipients'    => [],
+                    'user_ids'      => [],
+                ],
+            ],
+            'ctrl_from'    => 4321,
+            'ctrl_to'      => 4321,
+            'isPresident'  => false,
+            'isSuperUser'  => false,
+        ])->render();
+
+        $this->assertStringContainsString('4321', $html, 'The control number is missing');
+        $this->assertStringContainsString('Combined Logbook Test Document', $html,
+            'The document tracking slip data was not printed');
+        $this->assertStringContainsString('Records Office', $html);
+        $this->assertStringContainsString('Juan Dela Cruz', $html);
+        $this->assertStringContainsString('Combined logbook remark', $html);
+    }
+
+    public function test_files_up_to_25mb_are_accepted()
+    {
+        $user = User::where('role', 'super_user')->first() ?? User::first();
+
+        // ✅ 25MB per file (25600 KB) must be accepted
+        $response = $this->actingAs($user)->post(route('storeDoctrack'), [
+            'user_id'   => $user->id,
+            'doc_type'  => 'Correspondence',
+            'doc_title' => '25MB upload test',
+            'update_by' => [(string) $user->id],
+            'file'      => [
+                UploadedFile::fake()->create('big25.pdf', 25600),
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+    }
+
+    public function test_files_over_25mb_are_rejected()
+    {
+        $user = User::where('role', 'super_user')->first() ?? User::first();
+
+        $response = $this->actingAs($user)->post(route('storeDoctrack'), [
+            'user_id'   => $user->id,
+            'doc_type'  => 'Correspondence',
+            'doc_title' => 'Over 25MB upload test',
+            'update_by' => [(string) $user->id],
+            'file'      => [
+                UploadedFile::fake()->create('toobig.pdf', 25601),
+            ],
+        ]);
+
+        // the request is rejected by the validation
+        $this->assertTrue(
+            $response->isRedirect() || $response->status() === 422,
+            'The file over 25MB was not rejected'
+        );
+
+        $errors = session('errors');
+        $this->assertNotNull($errors, 'No validation error was raised');
+        $this->assertStringContainsString(
+            'must not be greater than 25600',
+            implode(' ', $errors->getBag('default')->all())
+        );
+    }
+
+    public function test_total_size_of_multiple_files_is_limited_to_25mb()
+    {
+        $user = User::where('role', 'super_user')->first() ?? User::first();
+
+        // ✅ 2 files of 13MB each = 26MB total -> must be rejected
+        $response = $this->actingAs($user)->post(route('storeDoctrack'), [
+            'user_id'   => $user->id,
+            'doc_type'  => 'Correspondence',
+            'doc_title' => 'Multiple files over 25MB test',
+            'update_by' => [(string) $user->id],
+            'file'      => [
+                UploadedFile::fake()->create('a.pdf', 13312),
+                UploadedFile::fake()->create('b.pdf', 13312),
+            ],
+        ]);
+
+        $this->assertTrue(
+            $response->isRedirect() || $response->status() === 422,
+            'The total size over 25MB was not rejected'
+        );
+
+        $errors = session('errors');
+        $this->assertNotNull($errors, 'No validation error was raised');
+        $this->assertStringContainsString(
+            'The total size of the files must not be greater than 25MB',
+            implode(' ', $errors->getBag('default')->all())
+        );
+
+        // ✅ the same files but under the limit must be accepted
+        $response = $this->actingAs($user)->post(route('storeDoctrack'), [
+            'user_id'   => $user->id,
+            'doc_type'  => 'Correspondence',
+            'doc_title' => 'Multiple files under 25MB test',
+            'update_by' => [(string) $user->id],
+            'file'      => [
+                UploadedFile::fake()->create('c.pdf', 13000),
+                UploadedFile::fake()->create('d.pdf', 12000),
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+    }
 }

@@ -257,7 +257,7 @@
 
                                                     <!-- Upload Button -->
                                                     <button
-                                                        onclick="openFileUpload('{{ $documentTrack->docslip_id }}')"
+                                                        onclick="openFileUpload('{{ $documentTrack->docslip_id }}', {{ $attachedFilesKb ?? 0 }})"
                                                         class="btn btn-sm btn-outline-primary ml-auto"
                                                         {{ !$isEnabled ? 'disabled' : '' }}>
                                                         <i class="fas fa-upload mr-1"></i>Upload File
@@ -451,7 +451,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    function openFileUpload(doctrackId) {
+    function openFileUpload(doctrackId, attachedKb) {
         Swal.fire({
             title: 'Upload File',
             html: `
@@ -461,7 +461,7 @@
                 <form id="uploadForm" enctype="multipart/form-data">
                     <input type="file" name="file[]" id="fileInput" multiple
                         class="form-control border border-secondary rounded" required>
-                    <small class="form-text text-muted">Accepted: pdf, doc(x), jpg, png, xls(x), max 20MB. You may select multiple files.</small>
+                    <small class="form-text text-muted">Accepted: pdf, doc(x), jpg, png, xls(x), 25MB total per transaction. You may select multiple files.</small>
                 </form>
             `,
             showCancelButton: true,
@@ -483,11 +483,31 @@
                     return false;
                 }
 
+                // ✅ The TOTAL size of all the files of the transaction
+                //    must not be greater than 25MB (the files already
+                //    attached are counted as well)
+                const maxTotal = 25 * 1024 * 1024;
+                const usedBytes = (attachedKb || 0) * 1024;
+                const selected = Array.from(fileInput.files);
+                const total = usedBytes + selected.reduce((sum, f) => sum + f.size, 0);
+
+                if (total > maxTotal) {
+                    let message = 'The total size of the files must not be greater than 25MB ' +
+                        '(you selected ' + (selected.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2) + 'MB';
+
+                    if (usedBytes > 0) {
+                        message += ' and the transaction already has ' + (usedBytes / 1024 / 1024).toFixed(2) + 'MB';
+                    }
+
+                    Swal.showValidationMessage(message + ').');
+                    return false;
+                }
+
                 formData.append('_token', token);
                 formData.append('docslip_id', doctrackId);
 
                 // ✅ Append every selected file (multiple files in one upload)
-                Array.from(fileInput.files).forEach(file => {
+                selected.forEach(file => {
                     formData.append('file[]', file);
                 });
 

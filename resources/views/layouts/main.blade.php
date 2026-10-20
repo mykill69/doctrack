@@ -704,7 +704,7 @@
                     <div class="form-group text-left">
                         <label>Attach File(s) (optional)</label>
                         <input type="file" name="file[]" class="form-control" id="docFile" multiple>
-                        <small class="form-text text-muted">You may attach multiple files in one go.</small>
+                        <small class="form-text text-muted">You may attach multiple files in one go (25MB total per transaction).</small>
                         <div id="docFileList" class="mt-1 small text-muted"></div>
                     </div>
                 </form>
@@ -749,7 +749,21 @@
                     formData.delete('file[]');
 
                     if (fileInput && fileInput.files.length > 0) {
-                        Array.from(fileInput.files).forEach(file => {
+                        // ✅ The TOTAL size of all the files of the transaction
+                        //    must not be greater than 25MB
+                        const maxTotal = 25 * 1024 * 1024;
+                        const selected = Array.from(fileInput.files);
+                        const total = selected.reduce((sum, f) => sum + f.size, 0);
+
+                        if (total > maxTotal) {
+                            Swal.showValidationMessage(
+                                'The total size of the files must not be greater than 25MB ' +
+                                '(you selected ' + (total / 1024 / 1024).toFixed(2) + 'MB).'
+                            );
+                            return false;
+                        }
+
+                        selected.forEach(file => {
                             formData.append('file[]', file);
                         });
                     }

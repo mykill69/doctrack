@@ -155,7 +155,7 @@
                                         </div>
                                         <small class="text-muted d-block mt-1">
                                             <i class="fas fa-info-circle"></i> Leave blank to keep the current document.
-                                            Accepted: PDF files only (Max: 20MB).
+                                            Accepted: PDF files only (Max: 25MB).
                                         </small>
                                         @error('document')
                                             <span class="text-danger d-block mt-1"><i class="fas fa-exclamation-circle"></i>

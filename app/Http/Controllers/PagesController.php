@@ -2263,7 +2263,7 @@ public function passChange(Request $request, $id)
         'email' => 'nullable|string|max:255|unique:users,email,' . $id,
         'password' => 'nullable|string|min:8|confirmed',
         'department' => 'nullable|string|max:255',
-        'esig_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf',
+        'esig_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:25600',
     ]);
 
     if ($validator->fails()) {

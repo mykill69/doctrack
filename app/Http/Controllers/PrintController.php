@@ -609,6 +609,34 @@ public function logbookPdf(Request $request)
             ->first() ?? $log->document;
     }
 
+    // ✅ DOCTRACK SLIP ENTRIES (the second logbook)
+    //    The document tracking slip has its own control number (ctrl_no) which
+    //    lives in the same numbering space as the dashboard control number.
+    //    They are combined so a control number that only exists on the
+    //    document tracking slip is NOT printed as an empty row.
+    $doctrackQuery = Doctrack::query()
+        ->whereNotNull('ctrl_no')
+        ->where('ctrl_no', '<>', 0);
+
+    // Access control - the same rule used on the document tracking slip list
+    if (!$isPresident) {
+        $doctrackQuery->where(function ($q) use ($userId, $userFullName) {
+            $q->where('user_id', $userId)
+              ->orWhere('update_by', $userId)
+              ->orWhere('user_name', $userFullName);
+        });
+    }
+
+    // Month filter (same filter used on the document logbook)
+    if ($month) {
+        // the date is stored as "YYYY-MM-DD HH:MM:SS"
+        $doctrackQuery->whereRaw('created_at LIKE ?', ['%-' . sprintf('%02d', (int) $month) . '-%']);
+    }
+
+    $doctrackRows = $doctrackQuery->orderBy('ctrl_no')->orderBy('id')->get();
+
+    $doctrackByCtrl = $this->buildDoctrackLogbookEntries($doctrackRows);
+
     // Counts
     $routingSlipCount = RoutingSlip::where('route_status', 3)->count();
     $superUserCount = $userRole === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
@@ -625,7 +653,7 @@ public function logbookPdf(Request $request)
     $data = compact(
         'offices', 'logs', 'routingSlipCount', 'superUserCount',
         'recordsOfficerCount', 'dpa', 'users', 'doctrackCount', 'groups', 
-        'isPresident', 'isSuperUser'
+        'isPresident', 'isSuperUser', 'doctrackByCtrl', 'ctrl_from', 'ctrl_to', 'month', 'status'
     );
 
     if ($request->ajax() || $request->wantsJson() || $request->has('ctrl_from') || $request->has('month') || $request->has('status')) {
@@ -634,6 +662,143 @@ public function logbookPdf(Request $request)
     }
 
     return view('print.printLogbook', $data);
+}
+
+/**
+ * ✅ Build the document tracking slip entries of the logbook.
+ *
+ * Every control number becomes ONE entry of the combined logbook with the
+ * document details, the action taken and the remarks.
+ */
+private function buildDoctrackLogbookEntries($doctrackRows)
+{
+    if ($doctrackRows->isEmpty()) {
+        return [];
+    }
+
+    $entries = [];
+
+    foreach ($doctrackRows as $row) {
+        $ctrl = (int) $row->ctrl_no;
+
+        if (!isset($entries[$ctrl])) {
+            $entries[$ctrl] = [
+                'ctrl_no'       => $ctrl,
+                'docslip_id'    => $row->docslip_id,
+                'doc_title'     => $row->doc_title,
+                'doc_type'      => $row->doc_type,
+                'source'        => $row->user_name,
+                'creator_id'    => $row->user_id,
+                'date_received' => $row->created_at,
+                'date_released' => $row->updated_at,
+                'doctrack_stat' => $row->doctrack_stat,
+                'recipients'    => [],
+                'user_ids'      => [],
+                'received_date' => null,
+            ];
+        }
+
+        $entry = &$entries[$ctrl];
+
+        if ($row->created_at && (!$entry['date_received'] || $row->created_at < $entry['date_received'])) {
+            $entry['date_received'] = $row->created_at;
+        }
+
+        if ($row->updated_at && (!$entry['date_released'] || $row->updated_at > $entry['date_released'])) {
+            $entry['date_released'] = $row->updated_at;
+        }
+
+        // The status of the transaction is the status of its latest row
+        if ($row->doctrack_stat == 1 || $row->doctrack_stat > $entry['doctrack_stat']) {
+            $entry['doctrack_stat'] = $row->doctrack_stat;
+        }
+
+        if ($row->update_by) {
+            $recipientId = (int) $row->update_by;
+            $entry['recipients'][$recipientId] = $row->updated_at;
+            $entry['user_ids'][] = $recipientId;
+
+            // The date the document was received by the person who acted
+            if ($row->updated_at && (!$entry['received_date'] || $row->updated_at < $entry['received_date'])) {
+                $entry['received_date'] = $row->updated_at;
+            }
+        }
+
+        if ($row->user_id) {
+            $entry['user_ids'][] = (int) $row->user_id;
+        }
+
+        unset($entry);
+    }
+
+    // ✅ Names / departments of the people involved (one query)
+    $userIds = collect($entries)->flatMap(fn($entry) => $entry['user_ids'])->unique()->values();
+    $usersById = $userIds->isEmpty()
+        ? collect()
+        : User::whereIn('id', $userIds->toArray())->get()->keyBy('id');
+
+    // ✅ Remarks of every transaction (one query)
+    $docslipIds = collect($entries)->pluck('docslip_id')->unique()->values();
+    $commentsBySlip = $docslipIds->isEmpty()
+        ? collect()
+        : \App\Models\LogsTracking::whereIn('docslip_id', $docslipIds->toArray())
+            ->whereNotNull('comments')
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('docslip_id');
+
+    $statusLabels = [
+        1 => 'Created',
+        2 => 'Pending',
+        3 => 'Signed',
+        4 => 'Returned with comments',
+        5 => 'Checked',
+        6 => 'Acknowledged',
+    ];
+
+    foreach ($entries as $ctrl => $entry) {
+        $creator = $usersById->get($entry['creator_id']);
+
+        // ✅ The people who took the action
+        $recipientNames = collect($entry['recipients'])
+            ->map(fn($date, $id) => $usersById->get($id))
+            ->filter()
+            ->map(fn($user) => trim($user->fname . ' ' . $user->lname))
+            ->filter()
+            ->unique()
+            ->values();
+
+        // ✅ The person who acted last (the same idea as r_destination on the logbook)
+        $lastActorId = null;
+        $lastActorDate = null;
+        foreach ($entry['recipients'] as $id => $date) {
+            if ($date && (!$lastActorDate || $date > $lastActorDate)) {
+                $lastActorDate = $date;
+                $lastActorId = $id;
+            }
+        }
+
+        $lastActor = $lastActorId ? $usersById->get($lastActorId) : null;
+        $lastActorName = $lastActor ? trim($lastActor->fname . ' ' . $lastActor->lname) : null;
+
+        $comments = $commentsBySlip->get($entry['docslip_id'], collect())
+            ->pluck('comments')
+            ->filter()
+            ->unique()
+            ->values()
+            ->implode(' | ');
+
+        $entries[$ctrl]['action_unit']   = $creator->department ?? 'N/A';
+        $entries[$ctrl]['received_by']   = $recipientNames->implode(', ');
+        $entries[$ctrl]['received_date'] = $entry['received_date']
+            ? \Carbon\Carbon::parse($entry['received_date'])->format('M d, Y')
+            : null;
+        $entries[$ctrl]['action_taken']  = $lastActorName
+            ?: ($statusLabels[$entry['doctrack_stat']] ?? 'Pending');
+        $entries[$ctrl]['remarks']       = $comments;
+    }
+
+    return $entries;
 }
 
 

@@ -43,7 +43,7 @@ public function storeSlip(Request $request)
         'r_destination' => $isSuperUser ? 'required|string' : 'nullable|string',
         'route_status' => 'required|string',
         'received_name' => 'required|string',
-        'document' => 'required|file|mimes:pdf',
+        'document' => 'required|file|mimes:pdf|max:25600',
         'date_received' => 'required|string',
     ]);
 
@@ -1072,7 +1072,7 @@ public function updateSubject(Request $request, $id)
         'source'        => 'required|string|max:255',
         'date_received' => 'required|date',
         'subject'       => 'required|string|max:255',
-        'document'      => 'nullable|file|mimes:pdf|max:20480',
+        'document'      => 'nullable|file|mimes:pdf|max:25600',
     ]);
 
     $routingSlip = RoutingSlip::findOrFail($id);
@@ -1338,7 +1338,7 @@ public function storeRouteDoc(Request $request)
 public function updateRouteDocRecall(Request $request, $id)
 {
     $validatedData = $request->validate([
-        'file_name'       => 'nullable|file|mimes:pdf|max:5120',
+        'file_name'       => 'nullable|file|mimes:pdf|max:25600',
         'source'          => 'required|string|max:255',
         'subject'         => 'required|string|max:255',
         'routed_users'    => 'nullable|array',
