@@ -6,6 +6,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
 use App\Models\Office;
 use App\Models\Document;
 use App\Models\RoutingSlip;
@@ -161,42 +162,37 @@ class DoctrackController extends Controller
 
 public function storeDoctrack(Request $request)
 {
+    // ✅ Normalize the file input so a SINGLE file and MULTIPLE files are both accepted
+    $this->normalizeFileInput($request);
+
     $request->validate([
         'user_id'     => 'required|integer',
         'doc_type'    => 'required|string',
         'doc_title'   => 'required|string',
+        'ctrl_no'     => 'nullable|integer',
         'update_by'   => 'required|array',
         'update_by.*' => 'required|string',
-        'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xls,xlsx,xlsm',
+        'file'        => 'nullable|array',
+        'file.*'      => 'file|mimes:pdf,doc,docx,jpg,jpeg,png,xls,xlsx,xlsm|max:20480',
     ]);
 
     $docslip_id = 'CPSU' . mt_rand(10000000, 99999999);
-    $fileName = null;
 
-    if ($request->hasFile('file')) {
-        $file = $request->file('file');
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $extension = $file->getClientOriginalExtension();
-        $fileName = $originalName . '.' . $extension;
-
-        $i = 1;
-        $storagePath = storage_path('app/doc_track');
-
-        while (file_exists($storagePath . '/' . $fileName)) {
-            $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
-            $i++;
-        }
-
-        $file->storeAs('doc_track', $fileName);
-    }
+    // ✅ Store ALL uploaded files (multiple files in a single upload)
+    $fileNames = $this->storeUploadedFiles($request->file('file'));
+    $fileLogs  = $this->joinFileNames($fileNames);
 
     $creator = User::findOrFail($request->user_id);
     $creatorFullName = $creator->fname . ' ' . $creator->lname;
+
+    // ✅ Control Code coming from the Document Transmittal form
+    $ctrlNo = ($request->ctrl_no !== null && $request->ctrl_no !== '') ? (int) $request->ctrl_no : null;
 
     $documentTrack = Doctrack::create([
         'user_id'       => $creator->id,
         'update_by'     => null,
         'docslip_id'    => $docslip_id,
+        'ctrl_no'       => $ctrlNo,
         'doc_type'      => $request->doc_type,
         'doc_title'     => $request->doc_title,
         'user_name'     => $creatorFullName,
@@ -208,7 +204,7 @@ public function storeDoctrack(Request $request)
         'user_id'    => $creator->id,
         'update_by'  => null,
         'doc_title'  => $request->doc_title,
-        'file_logs'  => $fileName,
+        'file_logs'  => $fileLogs,
         'logs_status'=> 1,
         'comments'   => null,
     ]);
@@ -265,6 +261,7 @@ public function storeDoctrack(Request $request)
             'user_id'       => $creator->id,
             'update_by'     => $recipient->id,
             'docslip_id'    => $docslip_id,
+            'ctrl_no'       => $ctrlNo,
             'doc_type'      => $request->doc_type,
             'doc_title'     => $request->doc_title,
             'user_name'     => $creatorFullName,
@@ -276,7 +273,7 @@ public function storeDoctrack(Request $request)
             'user_id'    => $creator->id,
             'update_by'  => $recipient->id,
             'doc_title'  => $request->doc_title,
-            'file_logs'  => $fileName,
+            'file_logs'  => $fileLogs,
             'logs_status'=> 2,
             'comments'   => null,
         ]);
@@ -290,11 +287,11 @@ public function storeDoctrack(Request $request)
         }
     }
 
-    if ($fileName) {
+    // ✅ Link every uploaded file to the transaction (one row per file)
+    foreach ($fileNames as $fileName) {
         DoctrackFile::create([
-            'doctrack_id' => $documentTrack->id,
-            'docslip_id'  => $docslip_id,
-            'file'        => $fileName,
+            'docslip_id' => $docslip_id,
+            'file'       => $fileName,
         ]);
     }
 
@@ -303,13 +300,13 @@ public function storeDoctrack(Request $request)
         'id'      => $documentTrack->id,
         'message' => 'Document successfully submitted!',
     ]);
-    return redirect()->route('doctrackSlip')
-    ->with('success', 'Document successfully submitted with tracking # ' . $docslip_id . '!');
-
 }
 
 public function storeDoctrackUpdate(Request $request)
 {
+    // ✅ Normalize the file input so a SINGLE file and MULTIPLE files are both accepted
+    $this->normalizeFileInput($request);
+
     $request->validate([
         'user_id'     => 'required|integer',
         'update_by'   => 'required|integer',
@@ -317,27 +314,13 @@ public function storeDoctrackUpdate(Request $request)
         'doc_type'    => 'required|string',
         'doc_title'   => 'required|string',
         'user_name'   => 'required|string',
-        'file'        => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
+        'file'        => 'nullable|array',
+        'file.*'      => 'file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsm,xlsx,xls|max:20480',
     ]);
 
-    $fileName = null;
-
-    // Handle file upload
-    if ($request->hasFile('file')) {
-        $file = $request->file('file');
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $extension = $file->getClientOriginalExtension();
-        $fileName = $originalName . '.' . $extension;
-
-        $i = 1;
-        $storagePath = storage_path('app/doc_track');
-        while (file_exists($storagePath . '/' . $fileName)) {
-            $fileName = $originalName . ' Copy ' . $i . '.' . $extension;
-            $i++;
-        }
-
-        $file->storeAs('doc_track', $fileName);
-    }
+    // ✅ Handle file upload (multiple files allowed)
+    $fileNames = $this->storeUploadedFiles($request->file('file'));
+    $fileLogs  = $this->joinFileNames($fileNames);
 
     // Create doctrack entry
     $documentTrack = Doctrack::create([
@@ -350,21 +333,26 @@ public function storeDoctrackUpdate(Request $request)
         'doctrack_stat' => 2,
     ]);
 
-    // Save file record
-    if ($fileName) {
-        // Delete old file (if any)
-        $existingFile = DoctrackFile::where('docslip_id', $request->docslip_id)->first();
-        if ($existingFile && file_exists($storagePath . '/' . $existingFile->file)) {
-            unlink($storagePath . '/' . $existingFile->file);
+    // Save file record (replace the previous attachment with the newly uploaded files)
+    if (!empty($fileNames)) {
+        $storagePath = storage_path('app/doc_track');
+
+        // Delete old files (if any)
+        $existingFiles = DoctrackFile::where('docslip_id', $request->docslip_id)->get();
+        foreach ($existingFiles as $existingFile) {
+            if ($existingFile->file && file_exists($storagePath . '/' . $existingFile->file)) {
+                unlink($storagePath . '/' . $existingFile->file);
+            }
+            $existingFile->delete();
         }
 
-        DoctrackFile::updateOrCreate(
-            ['docslip_id' => $request->docslip_id],
-            [
-                'doctrack_id' => $documentTrack->id,
-                'file'        => $fileName,
-            ]
-        );
+        // ✅ Store every uploaded file (one row per file)
+        foreach ($fileNames as $fileName) {
+            DoctrackFile::create([
+                'docslip_id' => $request->docslip_id,
+                'file'       => $fileName,
+            ]);
+        }
     }
 
     // Save log entry
@@ -373,7 +361,7 @@ public function storeDoctrackUpdate(Request $request)
         'user_id'    => $request->user_id,
         'update_by'  => $request->update_by,
         'doc_title'  => $request->doc_title,
-        'file_logs'  => $fileName,
+        'file_logs'  => $fileLogs,
         'logs_status'=> 2,
         'comments'   => null,
     ]);
@@ -576,35 +564,52 @@ public function storeDoctrackUpdate(Request $request)
 
 public function uploadFile(Request $request)
 {
+    // ✅ Normalize so a SINGLE file and MULTIPLE files are both accepted
+    $this->normalizeFileInput($request);
+
     $request->validate([
-        'file' => 'required|file|max:10240',
+        'file' => 'required|array',
+        'file.*' => 'file|max:10240',
         'docslip_id' => 'required'
     ]);
 
     try {
         if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            
             // Ensure the directory exists
             $directory = storage_path('app/doc_track');
             if (!File::exists($directory)) {
                 File::makeDirectory($directory, 0755, true);
             }
-            
-            // Move the file to storage/app/doc_track
-            $file->move($directory, $fileName);
-            
-            // Save to database
-            DoctrackFile::create([
-                'docslip_id' => $request->docslip_id,
-                'file' => $fileName,
-                // Add any other fields you need
-            ]);
-            
+
+            $files = $request->file('file');
+            $files = is_array($files) ? $files : [$files];
+
+            $saved = 0;
+
+            // ✅ Move every uploaded file to storage/app/doc_track
+            foreach ($files as $file) {
+                if (!($file instanceof UploadedFile) || !$file->isValid()) {
+                    continue;
+                }
+
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $file->move($directory, $fileName);
+
+                // Save to database
+                DoctrackFile::create([
+                    'docslip_id' => $request->docslip_id,
+                    'file' => $fileName,
+                    // Add any other fields you need
+                ]);
+
+                $saved++;
+            }
+
             return response()->json([
                 'success' => true, 
-                'message' => 'File uploaded successfully'
+                'message' => $saved > 1
+                    ? $saved . ' files uploaded successfully'
+                    : 'File uploaded successfully'
             ]);
         }
         
@@ -780,7 +785,7 @@ public function slipMonitoring($docslip_id)
     $creatorId = Doctrack::where('docslip_id', $docslip_id)->value('user_id');
 
     // Base query
-    $documentTrackid = Doctrack::with('doctrackFile')
+    $documentTrackid = Doctrack::with(['doctrackFile', 'doctrackFiles'])
         ->where('docslip_id', $docslip_id);
 
     // If current user is NOT the creator, filter by update_by
@@ -895,7 +900,7 @@ public function updateSlipStatus(Request $request, $id)
     'user_id'     => $document->user_id,         // creator
     'update_by'   => auth()->id(),               // updater (e.g., GMAR PALMA)
     'doc_title'   => $document->doc_title,
-    'file_logs'   => optional($document->doctrackFile)->file ?? null,
+    'file_logs'   => $this->joinFileNames($document->doctrackFiles->pluck('file')->all()) ?? optional($document->doctrackFile)->file,
     'logs_status' => $document->doctrack_stat,   // 3 = acknowledged, etc.
     'comments'    => $request->comments ?? null,
 ]);
@@ -956,6 +961,81 @@ public function viewFile($filename)
     }
     
     return $response;
+}
+
+/**
+ * ✅ Normalize the "file" input of the request into an array.
+ *
+ * This allows a SINGLE file (name="file") and MULTIPLE files
+ * (name="file[]") to be handled the same way by the controller.
+ */
+protected function normalizeFileInput(Request $request, string $key = 'file')
+{
+    $file = $request->file($key);
+
+    if ($file instanceof UploadedFile) {
+        $request->files->set($key, [$file]);
+    }
+
+    return $request;
+}
+
+/**
+ * ✅ Store one or many uploaded files inside storage/app/doc_track.
+ *
+ * Returns the list of the stored file names.
+ */
+protected function storeUploadedFiles($files): array
+{
+    if ($files instanceof UploadedFile) {
+        $files = [$files];
+    }
+
+    if (!is_array($files)) {
+        return [];
+    }
+
+    $storagePath = storage_path('app/doc_track');
+
+    if (!File::exists($storagePath)) {
+        File::makeDirectory($storagePath, 0755, true);
+    }
+
+    $stored = [];
+
+    foreach ($files as $file) {
+        if (!($file instanceof UploadedFile) || !$file->isValid()) {
+            continue;
+        }
+
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension    = $file->getClientOriginalExtension();
+        $fileName     = $originalName . ($extension ? '.' . $extension : '');
+
+        $i = 1;
+        while (file_exists($storagePath . '/' . $fileName)) {
+            $fileName = $originalName . ' Copy ' . $i . ($extension ? '.' . $extension : '');
+            $i++;
+        }
+
+        $file->storeAs('doc_track', $fileName);
+
+        $stored[] = $fileName;
+    }
+
+    return $stored;
+}
+
+/**
+ * ✅ Join the stored file names so they can be saved on the logs tracking table.
+ */
+protected function joinFileNames(array $fileNames): ?string
+{
+    if (empty($fileNames)) {
+        return null;
+    }
+
+    return mb_substr(implode(', ', $fileNames), 0, 255);
 }
 
 }

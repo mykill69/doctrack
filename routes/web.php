@@ -282,6 +282,8 @@ Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewT
     Route::get('/slip-monitoring/{docslip_id}', [DoctrackController::class, 'slipMonitoring'])->name('slipMonitoring');
     Route::get('/search', [DoctrackController::class, 'search'])->name('search');
     Route::delete('/doc-slip/{docslip_id}', [PagesController::class, 'deleteSlip'])->name('deleteSlip');
+    // ✅ Delete a single row of a transaction (creator only)
+    Route::delete('/doc-slip-row/{id}', [PagesController::class, 'deleteSlipRow'])->name('deleteSlipRow');
     Route::put('/update-slip-status/{id}', [DoctrackController::class, 'updateSlipStatus'])->name('updateSlipStatus');
     Route::get('/doc-track-file/{filename}', [DoctrackController::class, 'viewFile'])->name('docTrackViewFile');
     Route::post('/upload-doc-file', [DoctrackController::class, 'uploadFile'])->name('uploadDoctrackFile');

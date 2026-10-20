@@ -92,10 +92,10 @@
                 { "data": "received_by_date", "name": "received_by_date" },
                 { "data": "action_taken", "name": "action_taken" },
                 { "data": "date_released", "name": "date_released" },
-                { "data": "remarks", "name": "remarks" },
+                { "data": "remarks", "name": "remarks", "orderable": false },
                 { "data": "file_name", "name": "file_name" },
                 { "data": "updated_by", "name": "updated_by" },
-                { "data": "duration", "name": "duration" }
+                { "data": "duration", "name": "duration", "orderable": false }
             ];
 
             // Only add action column for admin/records_officer
@@ -123,6 +123,8 @@
                 "deferRender": true,
                 "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
                 "searching": true,
+                // ✅ Wait before firing the search request (the table is server side)
+                "searchDelay": 400,
                 "language": {
                     "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
                     "search": "Search:",

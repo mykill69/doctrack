@@ -311,7 +311,7 @@ public function getDashboardData(Request $request)
     $isSuperUser = ($userRole === 'super_user');
     $isAdminOrRecordsOfficer = in_array($userRole, ['records_officer', 'administrator']);
 
-    $searchValue = $request->input('search.value');
+    $searchValue = trim((string) $request->input('search.value'));
     $start = (int) $request->input('start', 0);
     $length = (int) $request->input('length', 25);
     
@@ -325,77 +325,109 @@ public function getDashboardData(Request $request)
             $q->where('new_user', $userId)
               ->orWhere('user_id', $userId)
               ->orWhereRaw('LOWER(new_destination) = ?', [strtolower($userFullName)])
-              ->orWhereHas('routingSlip', function ($sq) use ($userFullName) {
-                  $sq->where('pres_dept', $userFullName);
+              // ✅ Resolved through the indexed rslip_id instead of a correlated
+              //    subquery (the old one scanned the whole routing_slip table
+              //    for every single log row)
+              ->orWhereIn('route_id', function ($sub) use ($userFullName) {
+                  $sub->selectRaw('CAST(rslip_id AS UNSIGNED)')
+                      ->from('routing_slip')
+                      ->where('pres_dept', $userFullName);
               });
         });
     }
+
+    // ✅ TOTAL records (before the search filter) - shown on the DataTable footer
+    $totalRecords = (clone $baseQuery)->count();
     
     // Apply search at database level
-    if ($searchValue) {
-        $baseQuery->where(function ($q) use ($searchValue) {
-            $q->where('route_id', 'LIKE', "%{$searchValue}%")
-              ->orWhere('new_destination', 'LIKE', "%{$searchValue}%")
-              ->orWhereHas('routingSlip', function ($sq) use ($searchValue) {
-                  $sq->where('source', 'LIKE', "%{$searchValue}%")
-                    ->orWhere('subject', 'LIKE', "%{$searchValue}%");
+    if ($searchValue !== '') {
+        $like = '%' . $searchValue . '%';
+
+        $baseQuery->where(function ($q) use ($like) {
+            $q->where('route_id', 'LIKE', $like)
+              ->orWhere('new_destination', 'LIKE', $like)
+              ->orWhere('new_file', 'LIKE', $like)
+              ->orWhere('assigned_to', 'LIKE', $like)
+              ->orWhere('comments', 'LIKE', $like)
+              // ✅ Routing slip fields (source / subject / remarks)
+              ->orWhereIn('route_id', function ($sub) use ($like) {
+                  $sub->selectRaw('CAST(rslip_id AS UNSIGNED)')
+                      ->from('routing_slip')
+                      ->where(function ($w) use ($like) {
+                          $w->where('source', 'LIKE', $like)
+                            ->orWhere('subject', 'LIKE', $like)
+                            ->orWhere('trans_remarks', 'LIKE', $like)
+                            ->orWhere('other_remarks', 'LIKE', $like);
+                      });
+              })
+              // ✅ Document fields (file name / subject / purpose)
+              ->orWhereIn('route_id', function ($sub) use ($like) {
+                  $sub->select('route_id')
+                      ->from('documents')
+                      ->where(function ($w) use ($like) {
+                          $w->where('file_name', 'LIKE', $like)
+                            ->orWhere('subject', 'LIKE', $like)
+                            ->orWhere('purpose', 'LIKE', $like);
+                      });
               });
         });
     }
+
+    // ✅ Records that matched the search
+    $filteredRecords = (clone $baseQuery)->count();
     
-    // Get total count - use a faster count method
-    $totalRecords = $baseQuery->count();
+    // ✅ Apply the sorting requested by the DataTable
+    $baseQuery = $this->applyDashboardOrder($baseQuery, $request);
     
     // Get paginated results - only select needed fields, skip eager loading large relations
-    $paginatedLogs = $baseQuery->orderBy('route_id', 'desc')
-        ->skip($start)
-        ->take($length)
-        ->get();
+    $paginatedLogs = $baseQuery->skip($start)->take($length)->get();
     
-    // Preload routing slips and documents only for current page
-    $routeIds = $paginatedLogs->pluck('route_id')->unique()->toArray();
-    $newFiles = $paginatedLogs->pluck('new_file')->unique()->toArray();
+    // ✅ Preload routing slips and documents for the current page (NO n+1 queries)
+    $routeIds = $paginatedLogs->pluck('route_id')->unique()->filter()->toArray();
     
-    // Only query if we have data
-    $allRoutingSlips = collect();
-    $allDocuments = collect();
+    $slipsByRoute = collect();
+    $docsByRoute  = collect();
     
-    if (!empty($routeIds) && !empty($newFiles)) {
-        $allRoutingSlips = RoutingSlip::whereIn('rslip_id', $routeIds)
-            ->whereIn('document', $newFiles)
-            ->get();
-        
-        $allDocuments = Document::whereIn('route_id', $routeIds)
-            ->whereIn('file_name', $newFiles)
-            ->get();
+    if (!empty($routeIds)) {
+        $slipsByRoute = RoutingSlip::whereIn('rslip_id', $routeIds)
+            ->orderBy('id')
+            ->get()
+            ->groupBy(function ($slip) {
+                return (int) $slip->rslip_id;
+            });
+
+        $docsByRoute = Document::whereIn('route_id', $routeIds)
+            ->orderBy('id')
+            ->get()
+            ->groupBy(function ($doc) {
+                return (int) $doc->route_id;
+            });
     }
 
     // Build response data
     $data = [];
     foreach ($paginatedLogs as $log) {
-        $exactSlip = $allRoutingSlips
-            ->where('rslip_id', $log->route_id)
-            ->where('document', $log->new_file)
-            ->first();
-        
-        if (!$exactSlip) {
-            $exactSlip = RoutingSlip::where('rslip_id', $log->route_id)
-                ->where('document', $log->new_file)
-                ->first();
-        }
-        
-        $exactDoc = $allDocuments
-            ->where('route_id', $log->route_id)
-            ->where('file_name', $log->new_file)
-            ->first();
-        
-        if (!$exactDoc) {
-            $exactDoc = Document::where('route_id', $log->route_id)
-                ->where('file_name', $log->new_file)
-                ->first();
-        }
-        
-        $routingSlipId = $exactSlip ? $exactSlip->id : RoutingSlip::where('rslip_id', $log->route_id)->orderBy('id', 'desc')->value('id');
+        $routeSlips = $slipsByRoute->get((int) $log->route_id, collect());
+
+        // ✅ The exact slip is the one matching the file of the log
+        $exactSlip = $routeSlips->first(function ($slip) use ($log) {
+            return mb_strtolower((string) $slip->document) === mb_strtolower((string) $log->new_file);
+        });
+
+        // Fallback used when the log has no matching document on the slip
+        $fallbackSlip = $exactSlip ?: $routeSlips->first();
+
+        // ✅ Avoid a lazy loaded query on the relation
+        $log->setRelation('routingSlip', $fallbackSlip);
+
+        $routeDocs = $docsByRoute->get((int) $log->route_id, collect());
+
+        $exactDoc = $routeDocs->first(function ($doc) use ($log) {
+            return mb_strtolower((string) $doc->file_name) === mb_strtolower((string) $log->new_file);
+        });
+
+        // The routing slip id used on the links (latest one when there is no exact match)
+        $routingSlipId = $exactSlip ? $exactSlip->id : ($routeSlips->last()->id ?? null);
         
         $row = [
             'route_id' => $log->route_id,
@@ -414,7 +446,7 @@ public function getDashboardData(Request $request)
         ];
         
         if ($isAdminOrRecordsOfficer) {
-            $row['action'] = $this->formatRecallAction($log);
+            $row['action'] = $this->formatRecallAction($log, $routingSlipId);
         }
         
         $data[] = $row;
@@ -423,9 +455,60 @@ public function getDashboardData(Request $request)
     return response()->json([
         'draw' => intval($request->input('draw')),
         'recordsTotal' => $totalRecords,
-        'recordsFiltered' => $totalRecords,
+        'recordsFiltered' => $filteredRecords,
         'data' => $data
     ]);
+}
+
+/**
+ * ✅ Apply the DataTable sorting to the dashboard query.
+ *
+ * The routing slip / document columns are resolved with indexed correlated
+ * subqueries, so sorting stays fast even on big tables.
+ */
+private function applyDashboardOrder($query, Request $request)
+{
+    $orderColumnIndex = (int) $request->input('order.0.column', 0);
+    $orderDirection = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+    $columns = $request->input('columns', []);
+    $requested = $columns[$orderColumnIndex]['data'] ?? ($columns[$orderColumnIndex]['name'] ?? null);
+
+    // ✅ Correlated subquery on the routing slip (the CAST keeps the rslip_id index usable)
+    $slipColumn = function ($column) {
+        return "(select rs.$column from routing_slip rs
+                 where rs.rslip_id = cast(logs.route_id as char) collate utf8mb4_general_ci
+                   and rs.document = logs.new_file collate utf8mb4_general_ci
+                 order by rs.id limit 1)";
+    };
+
+    // ✅ Correlated subquery on the documents table
+    $docColumn = function ($column) {
+        return "(select d.$column from documents d
+                 where d.route_id = logs.route_id
+                   and d.file_name = logs.new_file collate utf8mb4_unicode_ci
+                 order by d.id limit 1)";
+    };
+
+    $sortMap = [
+        'route_display'     => 'logs.route_id',
+        'route_id'         => 'logs.route_id',
+        'date_received'    => $slipColumn('date_received'),
+        'source'           => $slipColumn('source'),
+        'subject'          => $slipColumn('subject'),
+        'action_unit'      => $slipColumn('pres_dept'),
+        'received_by_date' => $slipColumn('updated_at'),
+        'action_taken'     => 'logs.assigned_to',
+        'date_released'    => $docColumn('created_at'),
+        'file_name'        => $docColumn('file_name'),
+        'updated_by'       => 'logs.updated_at',
+    ];
+
+    $orderBy = $sortMap[$requested] ?? 'logs.route_id';
+
+    // ✅ A stable second sort keeps the pagination consistent
+    return $query->orderByRaw($orderBy . ' ' . $orderDirection)
+        ->orderBy('logs.id', $orderDirection);
 }
 
 
@@ -549,7 +632,7 @@ public function getDashboardData(Request $request)
         return $diff;
     }
 
-    private function formatRecallAction($log)
+    private function formatRecallAction($log, $routingSlipId = null)
 {
     $user = auth()->user();
     
@@ -557,11 +640,7 @@ public function getDashboardData(Request $request)
         return '';
     }
     
-    // Get the routing_slip ID (primary key) from the log's route_id (rslip_id)
-    $routingSlipId = RoutingSlip::where('rslip_id', $log->route_id)
-        ->orderBy('id', 'desc')
-        ->value('id');
-    
+    // ✅ The routing slip id is already resolved by the caller (no extra query)
     if (!$routingSlipId) {
         return '';
     }

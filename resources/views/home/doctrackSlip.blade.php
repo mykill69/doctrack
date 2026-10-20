@@ -41,7 +41,7 @@
                                         style="font-size: 0.8rem; width: 100%;">
                                         <thead>
                                             <tr>
-                                                @if (auth()->user()->id == 1235)
+                                                @if (in_array(auth()->user()->id, [1235, 56]))
                                                     <th>CTRL #</th>
                                                 @endif
                                                 <th>DATE RECEIVED</th>
@@ -83,16 +83,16 @@
             { "data": "subject", "name": "doc_title", "orderable": true },
             { "data": "action_unit", "orderable": false },
             { "data": "received_by_date", "orderable": false },
-            { "data": "action_taken", "orderable": false },
+            { "data": "action_taken", "name": "action_taken", "orderable": true },
             { "data": "date_released", "name": "updated_at", "orderable": true },
             { "data": "remarks", "orderable": false },
             { "data": "status", "name": "doctrack_stat", "orderable": true },
             { "data": "tracking_code", "orderable": false },
-            { "data": "duration", "orderable": true },
+            { "data": "duration", "orderable": false },
             { "data": "action", "orderable": false, "searchable": false }
         ];
 
-        @if (auth()->user()->id == 1235)
+        @if (in_array(auth()->user()->id, [1235, 56]))
             columns.unshift({ 
                 "data": "ctrl_input", 
                 "name": "ctrl_no", 
@@ -116,6 +116,9 @@
             "order": [[1, "desc"]], // Default order by date_received (index 1)
             "pageLength": 50,
             "deferRender": true,
+            "searching": true,
+            // ✅ Wait before firing the search request (the table is server side)
+            "searchDelay": 400,
             "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
             "language": {
                 "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',

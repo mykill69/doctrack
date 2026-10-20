@@ -800,31 +800,38 @@ public function getDoctrackData(Request $request)
     $user = auth()->user();
     $userId = $user->id;
     $userFullName = $user->fname . ' ' . $user->lname;
-    $isUser1235 = ($userId == 1235);
+    // ✅ Users 1235 and 56 are allowed to see (and edit) the CTRL # column
+    $canViewCtrlNo = in_array((int) $userId, [1235, 56]);
 
-    $searchValue = $request->input('search.value');
-    $start = $request->input('start', 0);
-    $length = $request->input('length', 50);
+    $searchValue = trim((string) $request->input('search.value'));
+    $start = (int) $request->input('start', 0);
+    $length = (int) $request->input('length', 50);
     
     // Get order column and direction from DataTables
-    $orderColumnIndex = $request->input('order.0.column', 0);
-    $orderDirection = $request->input('order.0.dir', 'desc');
+    $orderColumnIndex = (int) $request->input('order.0.column', 0);
+    $orderDirection = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
     
-    // Map column index to database column name
-    $columnMap = [
-        'ctrl_no' => 'ctrl_no',
-        'created_at' => 'created_at',
-        'user_name' => 'user_name',
-        'doc_title' => 'doc_title',
-        'updated_at' => 'updated_at',
-        'doctrack_stat' => 'doctrack_stat'
-    ];
-    
-    // Get the actual column name from the map
+    // ✅ The "name" property of the DataTable column holds the real database column
+    //    (the "data" property is only the key of the JSON payload)
     $columns = $request->input('columns', []);
-    $orderColumn = isset($columns[$orderColumnIndex]['data']) 
-        ? ($columnMap[$columns[$orderColumnIndex]['data']] ?? 'created_at')
-        : 'created_at';
+    $requestedColumn = $columns[$orderColumnIndex]['name'] ?? ($columns[$orderColumnIndex]['data'] ?? null);
+
+    // ✅ Map every sortable column to its SQL expression
+    $sortMap = [
+        'ctrl_no'       => 'doctrack_slip.ctrl_no',
+        'created_at'    => 'doctrack_slip.created_at',
+        'user_name'     => 'doctrack_slip.user_name',
+        'doc_title'     => 'doctrack_slip.doc_title',
+        'updated_at'    => 'doctrack_slip.updated_at',
+        'doctrack_stat' => 'doctrack_slip.doctrack_stat',
+        // ✅ ACTION TAKEN shows the name of the person who took the action, so it is
+        //    resolved through the users table (the id is the primary key, so the
+        //    lookup stays fast). UPPER() is used because that is exactly how the
+        //    name is displayed on the table.
+        'action_taken'  => "UPPER(COALESCE((select concat(u.fname, ' ', u.lname) from users u where u.id = doctrack_slip.update_by), (select concat(u.fname, ' ', u.lname) from users u where u.id = doctrack_slip.user_id)))",
+    ];
+
+    $orderColumn = $sortMap[$requestedColumn] ?? 'doctrack_slip.created_at';
 
     $query = Doctrack::with(['createdBy', 'doctrackFile'])
         ->where(function ($q) use ($userId, $userFullName) {
@@ -835,6 +842,9 @@ public function getDoctrackData(Request $request)
                     ->where('user_id', $userId);
               });
         });
+
+    // ✅ TOTAL records (before the search filter)
+    $totalRecords = (clone $query)->count();
 
     // Search
     if ($searchValue) {
@@ -871,19 +881,41 @@ public function getDoctrackData(Request $request)
         });
     }
 
-    $totalRecords = $query->count();
+    $filteredRecords = (clone $query)->count();
     
     // Apply ordering
-    $query->orderBy($orderColumn, $orderDirection);
+    $query->orderByRaw($orderColumn . ' ' . $orderDirection);
+    
+    // ✅ A stable second sort keeps the pagination consistent
+    $query->orderBy('doctrack_slip.id', $orderDirection);
     
     $doctracks = $query->skip($start)->take($length)->get();
 
-    $data = [];
-    foreach ($doctracks as $record) {
-        $comments = LogsTracking::where('docslip_id', $record->docslip_id)
+    // ✅ Preload the comments of the whole page in a SINGLE query (removes the n+1)
+    $slipIds = $doctracks->pluck('docslip_id')->unique()->filter()->toArray();
+
+    $commentsBySlip = collect();
+    if (!empty($slipIds)) {
+        $commentsBySlip = LogsTracking::whereIn('docslip_id', $slipIds)
             ->whereNotNull('comments')
             ->orderByDesc('created_at')
-            ->get();
+            ->get()
+            ->groupBy('docslip_id');
+    }
+
+    // ✅ Preload the users of the whole page in a SINGLE query (removes the n+1)
+    $userIds = $doctracks->pluck('update_by')
+        ->merge($doctracks->pluck('user_id'))
+        ->filter()
+        ->unique()
+        ->values()
+        ->toArray();
+
+    $usersById = User::whereIn('id', $userIds)->get()->keyBy('id');
+
+    $data = [];
+    foreach ($doctracks as $record) {
+        $comments = $commentsBySlip->get($record->docslip_id, collect());
 
         $commentsHtml = '';
         foreach ($comments as $comment) {
@@ -899,9 +931,7 @@ public function getDoctrackData(Request $request)
             $commentsHtml = '<span class="text-muted">No comments</span>';
         }
 
-        $user = $record->update_by
-            ? \App\Models\User::find($record->update_by)
-            : \App\Models\User::find($record->user_id);
+        $user = $usersById->get($record->update_by ?: $record->user_id);
         
         // FIX: ACTION TAKEN - Convert names to ALL CAPS
         $actionTaken = $user 
@@ -930,14 +960,24 @@ public function getDoctrackData(Request $request)
             default: $statusBadge = '<span class="badge badge-danger">Returned with comments</span>';
         }
 
+        $isCreator = ((int) $record->user_id === (int) $userId);
+
         $actionDropdown = '<div class="btn-group">';
         $actionDropdown .= '<button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">Click here</button>';
         $actionDropdown .= '<div class="dropdown-menu">';
-        if ($record->doctrack_stat == 1) {
-            $actionDropdown .= '<form action="' . route('deleteSlip', ['docslip_id' => $record->docslip_id]) . '" method="POST" onsubmit="return confirm(\'Are you sure?\')">';
+        if ($record->doctrack_stat == 1 && $isCreator) {
+            $actionDropdown .= '<form action="' . route('deleteSlip', ['docslip_id' => $record->docslip_id]) . '" method="POST" onsubmit="return confirm(\'Are you sure? This will delete the whole transaction.\')">';
             $actionDropdown .= '<input type="hidden" name="_token" value="' . csrf_token() . '">';
             $actionDropdown .= '<input type="hidden" name="_method" value="DELETE">';
-            $actionDropdown .= '<button type="submit" class="dropdown-item"><i class="fas fa-trash-alt"></i> Delete</button>';
+            $actionDropdown .= '<button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash-alt"></i> Delete Transaction</button>';
+            $actionDropdown .= '</form>';
+        }
+        if ($isCreator) {
+            // ✅ Delete a single row (useful when there is duplicate data)
+            $actionDropdown .= '<form action="' . route('deleteSlipRow', ['id' => $record->id]) . '" method="POST" onsubmit="return confirm(\'Are you sure? This will delete this row only.\')">';
+            $actionDropdown .= '<input type="hidden" name="_token" value="' . csrf_token() . '">';
+            $actionDropdown .= '<input type="hidden" name="_method" value="DELETE">';
+            $actionDropdown .= '<button type="submit" class="dropdown-item text-warning"><i class="fas fa-minus-circle"></i> Delete Row</button>';
             $actionDropdown .= '</form>';
         }
         $actionDropdown .= '<a class="dropdown-item" href="' . route('slipMonitoring', ['docslip_id' => $record->docslip_id]) . '" target="_blank"><i class="fas fa-eye"></i> View Details</a>';
@@ -945,7 +985,7 @@ public function getDoctrackData(Request $request)
 
         $row = [
             'ctrl_no' => $record->ctrl_no,
-            'ctrl_input' => $isUser1235 ? '<input type="text" class="form-control doctrack-input form-control-sm" data-id="' . $record->id . '" data-field="ctrl_no" value="' . ($record->ctrl_no ?? '') . '" style="width: 80px;">' : '',
+            'ctrl_input' => $canViewCtrlNo ? '<input type="text" class="form-control doctrack-input form-control-sm" data-id="' . $record->id . '" data-field="ctrl_no" value="' . ($record->ctrl_no ?? '') . '" style="width: 80px;">' : '',
             'date_received' => $record->created_at->format('M j, Y'),
             'source' => $record->user_name ?? 'N/A',
             'subject' => ($record->doc_title ?? 'N/A') . ' - ' . ($record->doc_type ?? 'N/A'),
@@ -966,7 +1006,7 @@ public function getDoctrackData(Request $request)
     return response()->json([
         'draw' => intval($request->input('draw')),
         'recordsTotal' => $totalRecords,
-        'recordsFiltered' => $totalRecords,
+        'recordsFiltered' => $filteredRecords,
         'data' => $data
     ]);
 }
@@ -2568,6 +2608,12 @@ public function deleteSlip($docslip_id)
     // Find the document by ID
     $documentTrack = Doctrack::where('docslip_id', $docslip_id)->firstOrFail();
 
+    // ✅ Only the creator of the transaction may delete the whole transaction
+    if ((int) $documentTrack->user_id !== (int) auth()->id()) {
+        return redirect()->route('doctrackSlip')
+            ->with('error', 'Only the creator of the transaction can delete it.');
+    }
+
     // Capture necessary info for logging before deletion
     $docslip_id = $documentTrack->docslip_id;
     $user_id    = $documentTrack->user_id;
@@ -2598,6 +2644,71 @@ public function deleteSlip($docslip_id)
     // Redirect with message
     return redirect()->route('doctrackSlip')
         ->with('success', 'Document deleted and logged successfully!');
+}
+
+/**
+ * ✅ Delete a SINGLE row (entry) of a transaction.
+ *
+ * The creator of the transaction may remove a row when there is duplicate
+ * data, without deleting the whole transaction.
+ */
+public function deleteSlipRow(Request $request, $id)
+{
+    $row = Doctrack::findOrFail($id);
+
+    // ✅ Only the creator of the transaction may delete a row
+    if ((int) $row->user_id !== (int) auth()->id()) {
+        return back()->with('error', 'Only the creator of the transaction can delete a row.');
+    }
+
+    $docslip_id = $row->docslip_id;
+    $user_id    = $row->user_id;
+    $update_by  = $row->update_by;
+    $doc_title  = $row->doc_title;
+
+    // Log the row deletion (no comment is added, the remarks are left as they are)
+    LogsTracking::create([
+        'docslip_id' => $docslip_id,
+        'user_id'    => $user_id,
+        'update_by'  => $update_by,
+        'doc_title'  => $doc_title,
+        'file_logs'  => null,
+        'logs_status'=> 7,
+        'comments'   => null,
+    ]);
+
+    // ✅ Remove the tracking logs that belong to the deleted row (duplicate data)
+    $rowLogs = LogsTracking::where('docslip_id', $docslip_id)
+        ->where('user_id', $user_id)
+        ->where('logs_status', '!=', 7);
+
+    if (is_null($update_by)) {
+        $rowLogs->whereNull('update_by');
+    } else {
+        $rowLogs->where('update_by', $update_by);
+    }
+
+    $rowLogs->delete();
+
+    // Remove the row itself
+    $row->delete();
+
+    // ✅ Clean up the transaction when no rows are left
+    if (Doctrack::where('docslip_id', $docslip_id)->count() === 0) {
+        $storagePath = storage_path('app/doc_track');
+
+        $files = DoctrackFile::where('docslip_id', $docslip_id)->get();
+        foreach ($files as $file) {
+            if ($file->file && file_exists($storagePath . '/' . $file->file)) {
+                @unlink($storagePath . '/' . $file->file);
+            }
+            $file->delete();
+        }
+
+        LogsTracking::where('docslip_id', $docslip_id)->delete();
+    }
+
+    return back()->with('success', 'Row deleted successfully!');
 }
 
 public function offices()

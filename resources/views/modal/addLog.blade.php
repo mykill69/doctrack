@@ -64,7 +64,7 @@
                     {{-- </div> --}}
                     <div class="input-group mb-2">
                         <div class="custom-file">
-                            <input type="file" name="file" class="custom-file-input" id="customFile">
+                            <input type="file" name="file[]" class="custom-file-input" id="customFile" multiple>
                             <label class="custom-file-label" for="customFile" id="fileLabel">
                                 Attach a file if needed <i class="text-bold text-danger">(optional)</i>
                             </label>
@@ -83,9 +83,12 @@
         const fileInput = document.getElementById('customFile');
         const fileLabel = document.getElementById('fileLabel');
 
+        if (!fileInput || !fileLabel) return;
+
         fileInput.addEventListener('change', function() {
-            const fileName = this.files[0]?.name || 'Attach a file if needed';
-            fileLabel.textContent = fileName;
+            // ✅ Support multiple files in one upload
+            const names = Array.from(this.files).map(f => f.name).join(', ');
+            fileLabel.textContent = names || 'Attach a file if needed';
         });
     });
 </script>

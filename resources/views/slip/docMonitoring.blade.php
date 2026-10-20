@@ -185,6 +185,20 @@
                                                         <i class="far fa-clock mr-1"></i>
                                                         {{ $documentTrack->updated_at->format('F d, Y h:i A') }}
                                                     </small>
+
+                                                    {{-- ✅ Creator may delete a single row (duplicate data) --}}
+                                                    @if (auth()->id() === $creatorId)
+                                                        <form action="{{ route('deleteSlipRow', ['id' => $documentTrack->id]) }}"
+                                                            method="POST" class="d-block d-md-inline-block mt-1 mt-md-0 ml-md-2"
+                                                            onsubmit="return confirm('Are you sure? This will delete this row only.')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                                title="Delete this row only">
+                                                                <i class="fas fa-trash-alt"></i> Delete Row
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -220,14 +234,22 @@
 
                                                 <div
                                                     class="col-md-12 d-flex justify-content-between align-items-center flex-wrap mb-3">
-                                                    <div class="d-flex align-items-center">
+                                                    <div class="d-flex align-items-center flex-wrap">
                                                         <i class="fas fa-paperclip text-muted mr-2"></i>
-                                                        @if ($documentTrack->doctrackFile)
-                                                            <a href="{{ route('docTrackViewFile', $documentTrack->doctrackFile->file) }}"
-                                                                target="_blank">
-                                                                <i class="fas fa-file-pdf text-danger"></i>
-                                                                <span>{{ $documentTrack->doctrackFile->file }}</span>
-                                                            </a>
+                                                        @php
+                                                            $attachedFiles = $documentTrack->doctrackFiles ?? collect();
+                                                            if ($attachedFiles->isEmpty() && $documentTrack->doctrackFile) {
+                                                                $attachedFiles = collect([$documentTrack->doctrackFile]);
+                                                            }
+                                                        @endphp
+                                                        @if ($attachedFiles->isNotEmpty())
+                                                            @foreach ($attachedFiles as $attachedFile)
+                                                                <a href="{{ route('docTrackViewFile', $attachedFile->file) }}"
+                                                                    target="_blank" class="mr-3 mb-1">
+                                                                    <i class="fas fa-file-pdf text-danger"></i>
+                                                                    <span>{{ $attachedFile->file }}</span>
+                                                                </a>
+                                                            @endforeach
                                                         @else
                                                             <span class="text-muted">No file attached</span>
                                                         @endif
@@ -437,9 +459,9 @@
                     <input type="hidden" value="${doctrackId}" name="docslip_id">
                 
                 <form id="uploadForm" enctype="multipart/form-data">
-                    <input type="file" name="file" id="fileInput"
+                    <input type="file" name="file[]" id="fileInput" multiple
                         class="form-control border border-secondary rounded" required>
-                    <small class="form-text text-muted">Accepted: pdf, doc(x), jpg, png, xls(x), max 20MB</small>
+                    <small class="form-text text-muted">Accepted: pdf, doc(x), jpg, png, xls(x), max 20MB. You may select multiple files.</small>
                 </form>
             `,
             showCancelButton: true,
@@ -463,12 +485,20 @@
 
                 formData.append('_token', token);
                 formData.append('docslip_id', doctrackId);
-                formData.append('file', fileInput.files[0]);
+
+                // ✅ Append every selected file (multiple files in one upload)
+                Array.from(fileInput.files).forEach(file => {
+                    formData.append('file[]', file);
+                });
 
                 Swal.close();
 
                 return fetch("{{ route('uploadDoctrackFile') }}", {
                         method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
                         body: formData
                     })
                     .then(async response => {

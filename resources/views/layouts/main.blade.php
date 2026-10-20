@@ -639,6 +639,12 @@
                             <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
 
                             <div class="form-group text-left">
+                                <label>Control Code</label>
+                                <input type="number" name="ctrl_no" id="ctrlNo" class="form-control"
+                                    placeholder="Enter Control Code (optional)">
+                            </div>
+
+                            <div class="form-group text-left">
                                 <label>Document Type</label>
                                 <select name="doc_type" class="form-control" required>
                                     <option value="">Select</option>
@@ -696,8 +702,10 @@
 
 
                     <div class="form-group text-left">
-                        <label>Attach File (optional)</label>
-                        <input type="file" name="file" class="form-control" id="docFile">
+                        <label>Attach File(s) (optional)</label>
+                        <input type="file" name="file[]" class="form-control" id="docFile" multiple>
+                        <small class="form-text text-muted">You may attach multiple files in one go.</small>
+                        <div id="docFileList" class="mt-1 small text-muted"></div>
                     </div>
                 </form>
             `,
@@ -710,6 +718,25 @@
                             width: '100%',
                             dropdownParent: $('.swal2-popup')
                         });
+
+                        // ✅ Preview the list of files that will be uploaded
+                        const fileInput = document.getElementById('docFile');
+                        const fileList = document.getElementById('docFileList');
+
+                        if (fileInput && fileList) {
+                            fileInput.addEventListener('change', function() {
+                                if (this.files.length === 0) {
+                                    fileList.innerHTML = '';
+                                    return;
+                                }
+
+                                fileList.innerHTML = '<strong>Selected files:</strong><ul class="mb-0 pl-3">' +
+                                    Array.from(this.files)
+                                        .map(f => '<li>' + f.name + '</li>')
+                                        .join('') +
+                                    '</ul>';
+                            });
+                        }
                     }, 10);
                 },
                 preConfirm: () => {
@@ -717,8 +744,14 @@
                     const formData = new FormData(form);
                     const fileInput = document.getElementById('docFile');
 
-                    if (fileInput.files.length > 0) {
-                        formData.append('file', fileInput.files[0]);
+                    // ✅ Rebuild the file entries so MULTIPLE files are uploaded in one request
+                    formData.delete('file');
+                    formData.delete('file[]');
+
+                    if (fileInput && fileInput.files.length > 0) {
+                        Array.from(fileInput.files).forEach(file => {
+                            formData.append('file[]', file);
+                        });
                     }
 
                     const loader = document.getElementById('page-loader');
@@ -735,13 +768,28 @@
 
                     return fetch("{{ route('storeDoctrack') }}", {
                             method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
                             body: formData
                         })
                         .then(async response => {
                             if (!response.ok) {
                                 const text = await response.text();
                                 console.error("Error response:", response.status, text);
-                                throw new Error(`HTTP ${response.status}: ${text}`);
+
+                                // ✅ Surface the validation messages returned by the controller
+                                let message = `HTTP ${response.status}: ${text}`;
+                                try {
+                                    const payload = JSON.parse(text);
+                                    message = payload.errors
+                                        ? Object.values(payload.errors).flat().join('\n')
+                                        : (payload.message || message);
+                                } catch (parseError) {
+                                    // keep the raw response text
+                                }
+                                throw new Error(message);
                             }
                             return response.json();
                         })

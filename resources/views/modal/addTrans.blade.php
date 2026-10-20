@@ -52,7 +52,7 @@
                                 <i class="fa fa-file"></i>
                             </span>
                         </div>
-                        <input type="file" class="form-control" id="customFile" name="file" onchange="showFileName()">
+                        <input type="file" class="form-control" id="customFile" name="file[]" multiple onchange="showFileName()">
                     </div>
                     <small id="filePlaceholder" class="form-text text-muted">
                         Attach a file if needed <i class="text-bold text-danger">(optional)</i>
@@ -73,7 +73,8 @@
         const input = document.getElementById('customFile');
         const placeholder = document.getElementById('filePlaceholder');
         if (input.files.length > 0) {
-            placeholder.innerHTML = `<strong>Selected:</strong> ${input.files[0].name}`;
+            const names = Array.from(input.files).map(f => f.name).join(', ');
+            placeholder.innerHTML = `<strong>Selected:</strong> ${names}`;
         } else {
             placeholder.innerHTML = `Attach a file if needed <i class="text-bold text-danger">(optional)</i>`;
         }

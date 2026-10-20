@@ -38,6 +38,14 @@ class Doctrack extends Model
         return $this->hasOne(DoctrackFile::class, 'docslip_id', 'docslip_id');
     }
 
+    /**
+     * ✅ All files attached to the transaction (multiple files are supported)
+     */
+    public function doctrackFiles()
+    {
+        return $this->hasMany(DoctrackFile::class, 'docslip_id', 'docslip_id');
+    }
+
     public function routingSlips()
     {
         return $this->hasMany(RoutingSlip::class, 'rslip_id', 'docslip_id');
