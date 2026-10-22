@@ -295,14 +295,14 @@ letter-spacing: 5px;
                                     </div>
                                 @endif
 
-                                {{-- <p style="font-weight:bold; font-size: 18px;font-family: Verdana, sans-serif;">
+                                <p style="font-weight:bold; font-size: 18px;font-family: Verdana, sans-serif;">
                                     <u>MAE FLOR G.
                                         POSADAS, Ph.D.</u>
-                                </p> --}}
-                                <p style="font-weight:bold; font-size: 18px;font-family: Verdana, sans-serif;">
+                                </p>
+                                {{-- <p style="font-weight:bold; font-size: 18px;font-family: Verdana, sans-serif;">
                                     <u>ALADINO C.
                                         MORACA, Ph.D.</u>
-                                </p>
+                                </p> --}}
                                 <p style="margin-top: -20px;font-style: italic;font-family: Verdana, sans-serif;">SUC
                                     President</p>
                             </td>
