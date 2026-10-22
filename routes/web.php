@@ -187,6 +187,7 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/doctrackslip-list', [PagesController::class, 'doctrackSlip'])->name('doctrackSlip');
     Route::get('/doctrackslip-list/data', [PagesController::class, 'getDoctrackData'])->name('doctrackSlip.data');
     Route::get('/served/data', [PagesController::class, 'getServedData'])->name('served.data');
+    Route::get('/pending/data', [PagesController::class, 'getPendingData'])->name('pending.data');
 
     // Update ctrl no in doctrack slip
     Route::put('/doctrack-slip/{doctrack}', [DoctrackController::class, 'update'])->name('doctrack.update');

@@ -1,5 +1,14 @@
 @extends('layouts.main')
 
+@php
+    use App\Models\Log;
+
+    $user = auth()->user();
+    $userFullName = $user->fname . ' ' . $user->lname;
+    $userDepartment = $user->department;
+    $isRecordsOfficer = $user->role === 'records_officer';
+@endphp
+
 <style>
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
         background-color: #007bff !important;
@@ -7,6 +16,15 @@
         color: #fff;
         padding: 0 10px;
         margin-top: 0.31rem;
+    }
+
+    .dataTables_processing {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        font-weight: bold;
+        z-index: 1000;
     }
 </style>
 
@@ -39,143 +57,6 @@
                                                 <th>ACTION</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                            @foreach ($logs as $log)
-                                                <tr>
-                                                    @php
-                                                        $routingSlipId = \App\Models\RoutingSlip::where(
-                                                            'rslip_id',
-                                                            $log->route_id,
-                                                        )
-                                                            ->orderBy('id', 'desc')
-                                                            ->value('id');
-                                                    @endphp
-
-                                                    <td data-order="{{ $log->route_id ?? 0 }}">
-                                                        <a href="{{ route('slipForm', ['id' => $log->route_id]) . '?routing_slip_id=' . $routingSlipId }}"
-                                                            target="_blank" style="color: #007bff;">
-                                                            {{ $log->route_id }}
-                                                        </a>
-                                                    </td>
-
-                                                    <td>{{ $log->date_received ? \Carbon\Carbon::parse($log->date_received)->format('F d, Y') : 'N/A' }}
-                                                    </td>
-                                                    <td>{{ $log->source ?? 'N/A' }}</td>
-                                                    <td>{{ $log->subject ?? 'N/A' }}</td>
-
-                                                    <td>{{ $log->pres_dept ?? 'N/A' }}</td>
-                                                    <td>{{ $log->updated_at ? \Carbon\Carbon::parse($log->updated_at)->format('F j, Y') : 'N/A' }}
-                                                    </td>
-                                                    <td>
-                                                        @php
-                                                            $routingSlip = $log->routingSlip ?? null;
-
-                                                            $destinationUser = $routingSlip
-                                                                ? $users->firstWhere('id', $routingSlip->r_destination)
-                                                                : null;
-
-                                                            $assignedUser = $routingSlip
-                                                                ? $users->firstWhere('id', $routingSlip->assigned_to)
-                                                                : null;
-                                                        @endphp
-
-                                                        {{-- Routing destination --}}
-                                                        @if ($routingSlip && $destinationUser)
-                                                            <strong class="text-danger">
-                                                                {{ ucwords(strtolower($destinationUser->fname)) }}
-                                                                {{ ucwords(strtolower($destinationUser->lname)) }}
-                                                            </strong>
-                                                        @elseif ($routingSlip && $routingSlip->r_destination)
-                                                            <strong class="text-danger">
-                                                                {{ ucwords(strtolower($routingSlip->r_destination)) }}
-                                                            </strong>
-                                                        @endif
-
-                                                        {{-- Re-assigned user --}}
-                                                        @if ($routingSlip && $assignedUser)
-                                                            , was re-assigned to
-                                                            <strong class="text-danger">
-                                                                {{ ucwords(strtolower($assignedUser->fname)) }}
-                                                                {{ ucwords(strtolower($assignedUser->lname)) }}
-                                                            </strong>
-                                                        @elseif ($routingSlip && $routingSlip->assigned_to)
-                                                            , was re-assigned to
-                                                            <strong class="text-danger">
-                                                                {{ ucwords(strtolower($routingSlip->assigned_to)) }}
-                                                            </strong>
-                                                        @endif
-                                                    </td>
-
-                                                    <td>{{ $log->created_at->format('m-d-Y h:i:s A') }}</td>
-                                                    <td style="font-size:10px;width:5%;">
-                                                        @php
-                                                            $transRemarks = $log->trans_remarks ?? 'N/A';
-                                                            $wrappedTransRemarks = preg_replace(
-                                                                '/((?:\S+\s+){4})/',
-                                                                '$1<br>',
-                                                                $transRemarks,
-                                                            );
-
-                                                            $assignCom = $log->assign_com ?? '';
-                                                            $wrappedAssignCom = preg_replace(
-                                                                '/((?:\S+\s+){4})/',
-                                                                '$1<br>',
-                                                                $assignCom,
-                                                            );
-                                                        @endphp
-
-                                                        @if (!empty($transRemarks))
-                                                            <span class="badge badge-success"
-                                                                style="font-size:10px; display: block;">
-                                                                {!! $wrappedTransRemarks !!}
-                                                            </span>
-                                                        @endif
-
-                                                        @if (!empty($assignCom))
-                                                            <span class="badge badge-warning"
-                                                                style="font-size:10px; margin-top:2px; max-width: 150px; display: inline-block; word-wrap: break-word; white-space: normal;">
-                                                                {!! $wrappedAssignCom !!}
-                                                            </span>
-                                                        @endif
-                                                    </td>
-
-                                                    <td>
-                                                        @if ($log->doc_id)
-                                                            <a href="{{ route('documents.viewPdf', ['id' => $log->doc_id]) }}"
-                                                                target="_blank" style="color: #007bff;">
-                                                                <i class="fas fa-file-pdf text-danger"></i>
-                                                                {{ \Illuminate\Support\Str::limit($log->file_name, 22) }}
-                                                            </a>
-                                                        @else
-                                                            <span class="text-muted">
-                                                                <i class="fas fa-file-times text-secondary"></i>
-                                                                No PDF Available
-                                                            </span>
-                                                        @endif
-                                                    </td>
-
-                                                    @php
-                                                        $routingSlipId = \App\Models\RoutingSlip::where(
-                                                            'rslip_id',
-                                                            $log->route_id,
-                                                        )
-                                                            ->orderBy('id', 'desc')
-                                                            ->value('id');
-                                                    @endphp
-
-                                                    <td>
-                                                        <a href="{{ route('tracking', [
-                                                            'route_id' => $log->route_id,
-                                                            'routing_slip_id' => $routingSlipId,
-                                                        ]) }}"
-                                                            class="btn btn-primary" target="_blank">
-                                                            <i class="fas fa-pen"></i>
-                                                        </a>
-                                                    </td>
-
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -191,27 +72,52 @@
 
     <script>
         $(document).ready(function() {
-            var t = $('#pendingTable').DataTable({
-                "order": [
-                    [7, "desc"] // Changed to sort by DATE RELEASED column (index 7) descending
-                ],
-                "pageLength": 20,
-                "columnDefs": [
-                    {
-                        "targets": 0,
-                        "type": "num",
-                        "orderable": true
-                    },
-                    {
-                        "targets": 7, // DATE RELEASED column
-                        "type": "date",
-                        "orderable": true
+            // ✅ Initialize DataTable (server side - same logic as the dashboard)
+            $('#pendingTable').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "{{ route('pending.data') }}",
+                    "type": "GET",
+                    "error": function(xhr, error, thrown) {
+                        console.error('DataTables error:', error);
                     }
-                ]
+                },
+                "columns": [
+                    { "data": "route_display", "name": "route_id" },
+                    { "data": "date_received", "name": "date_received" },
+                    { "data": "source", "name": "source" },
+                    { "data": "subject", "name": "subject" },
+                    { "data": "action_unit", "name": "action_unit" },
+                    { "data": "received_by_date", "name": "received_by_date" },
+                    { "data": "action_taken", "name": "action_taken" },
+                    { "data": "date_released", "name": "date_released" },
+                    { "data": "remarks", "name": "remarks", "orderable": false },
+                    { "data": "file_name", "name": "file_name" },
+                    { "data": "action", "name": "action", "orderable": false, "searchable": false }
+                ],
+                "order": [[0, "desc"]],
+                "pageLength": 20,
+                "deferRender": true,
+                "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
+                "searching": true,
+                // ✅ Wait before firing the search request (the table is server side)
+                "searchDelay": 400,
+                "language": {
+                    "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
+                    "search": "Search:",
+                    "searchPlaceholder": "Search pending records...",
+                    "lengthMenu": "Show _MENU_ entries",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                    "infoFiltered": "(filtered from _MAX_ total entries)",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    }
+                }
             });
-
-            // Apply the order
-            t.order([7, "desc"]).draw();
         });
     </script>
 

@@ -85,7 +85,10 @@
                 "serverSide": true,
                 "ajax": {
                     "url": "{{ route('served.data') }}",
-                    "type": "GET"
+                    "type": "GET",
+                    "error": function(xhr, error, thrown) {
+                        console.error('DataTables error:', error);
+                    }
                 },
                 "columns": [
                     { "data": "route_display", "name": "route_id" },
@@ -96,21 +99,31 @@
                     { "data": "received_by_date", "name": "received_by_date" },
                     { "data": "action_taken", "name": "action_taken" },
                     { "data": "date_released", "name": "date_released" },
-                    { "data": "remarks", "name": "remarks" },
+                    { "data": "remarks", "name": "remarks", "orderable": false },
                     { "data": "file_name", "name": "file_name" },
                     { "data": "updated_at", "name": "updated_at" },
-                    { "data": "duration", "name": "duration" }
+                    { "data": "duration", "name": "duration", "orderable": false }
                 ],
                 "order": [[0, "desc"]],
                 "pageLength": 25,
                 "deferRender": true,
                 "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
+                "searching": true,
+                // ✅ Wait before firing the search request (the table is server side)
+                "searchDelay": 400,
                 "language": {
                     "processing": '<i class="fas fa-spinner fa-spin"></i> Loading...',
                     "search": "Search:",
+                    "searchPlaceholder": "Search records...",
                     "lengthMenu": "Show _MENU_ entries",
                     "info": "Showing _START_ to _END_ of _TOTAL_ entries",
-                    "infoFiltered": "(filtered from _MAX_ total entries)"
+                    "infoFiltered": "(filtered from _MAX_ total entries)",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    }
                 }
             });
         });
