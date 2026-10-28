@@ -33,11 +33,21 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div class="col-md-10">
                                 <h4 class="text-bold mb-11">
-                                    Attachment:
-                                    <a href="{{ route('viewPdfslip', $routingSlips->id) }}" target="_blank"
-                                        class="badge badge-primary text-white">
-                                        {{ $routingSlips->document }} <i class="fas fa-download ml-1"></i>
-                                    </a>
+                                    Attachment(s):
+                                    @if ($routingSlips->document)
+                                        <a href="{{ route('viewPdfslip', $routingSlips->id) }}" target="_blank"
+                                            class="badge badge-primary text-white">
+                                            {{ $routingSlips->document }} <i class="fas fa-download ml-1"></i>
+                                        </a>
+                                    @endif
+                                    @foreach ($routingSlipFiles as $file)
+                                        @if ($file->file_name !== $routingSlips->document)
+                                            <a href="{{ route('routingSlipFile', $file->id) }}" target="_blank"
+                                                class="badge badge-secondary text-white">
+                                                {{ $file->original_name }} <i class="fas fa-download ml-1"></i>
+                                            </a>
+                                        @endif
+                                    @endforeach
                                 </h4>
                             </div>
                             <div class="col-md-1">
@@ -118,16 +128,31 @@
 
                                 {{-- document update --}}
                                 <div class="form-group row">
-                                    <label class="col-md-3 col-form-label">Upload Document:</label>
+                                    <label class="col-md-3 col-form-label">Add Document(s):</label>
                                     <div class="col-md-9">
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" id="document" name="document"
-                                                accept=".pdf">
-                                            <label class="custom-file-label" for="document">Choose document</label>
+                                            <input type="file" class="custom-file-input" id="document" name="document[]"
+                                                accept="application/pdf,.pdf" multiple>
+                                            <label class="custom-file-label" for="document">Choose document(s) to
+                                                attach</label>
                                         </div>
-                                        @if ($routingSlips->document)
-                                            <small class="form-text text-muted">Current:
-                                                {{ $routingSlips->document }}</small>
+                                        <small class="form-text text-muted">New files are added to the existing
+                                            attachments. PDF only, max 550 MB total.</small>
+                                        @if ($routingSlipFiles->isNotEmpty())
+                                            <div class="mt-2">
+                                                <small class="font-weight-bold">Uploaded files:</small>
+                                                <ul class="list-unstyled mb-0">
+                                                    @foreach ($routingSlipFiles as $file)
+                                                        <li>
+                                                            <a href="{{ route('routingSlipFile', $file->id) }}"
+                                                                target="_blank">
+                                                                <i class="fas fa-file-pdf text-danger mr-1"></i>{{ $file->original_name }}
+                                                            </a>
+                                                            <small class="text-muted">({{ $file->file_size_display }})</small>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
                                         @endif
                                     </div>
                                 </div>
@@ -192,7 +217,10 @@
     <script>
         document.querySelectorAll('.custom-file-input').forEach(input => {
             input.addEventListener('change', function() {
-                this.nextElementSibling.innerText = this.files[0]?.name || 'Choose file';
+                const files = Array.from(this.files || []);
+                this.nextElementSibling.innerText = files.length
+                    ? (files.length === 1 ? files[0].name : files.length + ' files selected')
+                    : 'Choose file';
             });
         });
     </script>

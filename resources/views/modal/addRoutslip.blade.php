@@ -88,9 +88,9 @@
 
                         <div class="input-group mb-3">
                             <div class="custom-file">
-                                <input type="file" class="custom-file-input" id="chooseDocuments" name="document"
-                                    required>
-                                <label class="custom-file-label" for="chooseDocuments">Choose documents</label>
+                                <input type="file" class="custom-file-input" id="chooseDocuments" name="document[]"
+                                    accept="application/pdf,.pdf" multiple required>
+                                <label class="custom-file-label" for="chooseDocuments">Choose document(s) (PDF, max 550 MB total)</label>
                             </div>
                         </div>
                         <div class="input-group mb-2">
@@ -125,10 +125,13 @@
 </div>
 
 <script>
-    // Automatically update the label when a file is selected
+    // Automatically update the label when files are selected
     document.querySelectorAll('.custom-file-input').forEach(function(input) {
         input.addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name || "Choose file";
+            const files = Array.from(e.target.files || []);
+            const fileName = files.length
+                ? (files.length === 1 ? files[0].name : files.length + ' files selected')
+                : "Choose file";
             e.target.nextElementSibling.innerText = fileName;
         });
     });

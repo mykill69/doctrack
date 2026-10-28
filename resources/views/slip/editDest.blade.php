@@ -116,11 +116,22 @@
                             <div class="d-flex flex-column flex-md-row align-items-md-center col-md-8 col-12 mb-2 mb-md-0">
                                 <h3 class="card-title text-bold mb-0">
                                     CONTROL NUMBER:
-                                    <a class="text-md badge badge-primary"
-                                        href="{{ route('viewPdfslip', $routingSlips->id) }}" target="_blank">
-                                        {{ $routingSlips->rslip_id }} &emsp; {{ $routingSlips->document }}&nbsp; <i
-                                            class="fas fa-eye"></i>
-                                    </a>
+                                    @if ($routingSlips->document)
+                                        <a class="text-md badge badge-primary"
+                                            href="{{ route('viewPdfslip', $routingSlips->id) }}" target="_blank">
+                                            {{ $routingSlips->rslip_id }} &emsp; {{ $routingSlips->document }}&nbsp; <i
+                                                class="fas fa-eye"></i>
+                                        </a>
+                                    @endif
+                                    @foreach ($routingSlipFiles as $file)
+                                        @if ($file->file_name !== $routingSlips->document)
+                                            <a class="text-md badge badge-secondary ml-1"
+                                                href="{{ route('routingSlipFile', $file->id) }}" target="_blank">
+                                                {{ $routingSlips->rslip_id }} &emsp; {{ $file->original_name }}&nbsp; <i
+                                                    class="fas fa-eye"></i>
+                                            </a>
+                                        @endif
+                                    @endforeach
                                 </h3>
                             </div>
                             <div

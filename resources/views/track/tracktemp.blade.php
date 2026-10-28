@@ -254,11 +254,23 @@
                                             @endphp
                                             <p>
                                                 <strong>File Name:</strong>
-                                                {{ str_replace('_', ' ', $doc->file_name) }}
-                                                <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
-                                                    class="ml-2 btn btn-info btn-sm text-white">
-                                                    View PDF <i class="fas fa-file-pdf ml-1"></i>
-                                                </a>
+                                                @php
+                                                    $routingFiles = \App\Models\RoutingSlipFile::where('rslip_id', $doc->route_id)->orderBy('id')->get();
+                                                @endphp
+                                                @if ($routingFiles->isNotEmpty())
+                                                    @foreach ($routingFiles as $rFile)
+                                                        <a href="{{ route('routingSlipFile', $rFile->id) }}" target="_blank"
+                                                            class="ml-2 btn btn-info btn-sm text-white">
+                                                            {{ str_replace('_', ' ', $rFile->original_name) }} <i class="fas fa-file-pdf ml-1"></i>
+                                                        </a>
+                                                    @endforeach
+                                                @else
+                                                    {{ str_replace('_', ' ', $doc->file_name) }}
+                                                    <a href="{{ route('documents.viewPdf', $doc->id) }}" target="_blank"
+                                                        class="ml-2 btn btn-info btn-sm text-white">
+                                                        View PDF <i class="fas fa-file-pdf ml-1"></i>
+                                                    </a>
+                                                @endif
                                             </p>
                                             <table class="table table-sm table-bordered text-sm">
                                                 <tr>

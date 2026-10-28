@@ -263,6 +263,7 @@ Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewT
     Route::get('/routingSlip', [RoutingSlipController::class, 'viewSlip'])->name('viewSlip');
     Route::put('/route-back/{id}', [RoutingSlipController::class, 'routeBackToPresident'])->name('routeBackToPresident');
     Route::get('/routingSlip/view/{id}', [RoutingSlipController::class, 'viewPdfslip'])->name('viewPdfslip');
+    Route::get('/routingSlip/file/{id}', [RoutingSlipController::class, 'viewRoutingSlipFile'])->name('routingSlipFile');
     Route::delete('/routingSlip/{id}', [RoutingSlipController::class, 'destroy'])->name('routingSlip.destroy');
     Route::get('/slipForm/view/{id}', [RoutingSlipController::class, 'slipForm'])->name('slipForm');
     Route::get('/pdfSlip/view/{id}', [RoutingSlipController::class, 'pdfSlip'])->name('pdfSlip');

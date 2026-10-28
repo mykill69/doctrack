@@ -73,4 +73,20 @@ class RoutingSlip extends Model
     {
         return $this->belongsTo(User::class, 'archived_by');
     }
+
+    /**
+     * Files uploaded for this exact routing slip version.
+     */
+    public function files()
+    {
+        return $this->hasMany(RoutingSlipFile::class, 'routing_slip_id');
+    }
+
+    /**
+     * Every file uploaded for the routing slip transaction (all versions).
+     */
+    public function allFiles()
+    {
+        return $this->hasMany(RoutingSlipFile::class, 'rslip_id', 'rslip_id');
+    }
 }

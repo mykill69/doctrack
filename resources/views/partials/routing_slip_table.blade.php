@@ -67,9 +67,19 @@
                     <td>{{ $slip->source }}</td>
                     <td>{{ $slip->subject }}</td>
                     <td>
-                        <a href="{{ route('viewPdfslip', $slip->id) }}" target="_blank" style="color:#007bff;">
-                            {{ \Illuminate\Support\Str::limit($slip->document, 22) }}
-                        </a>
+                        @if ($slip->document)
+                            <a href="{{ route('viewPdfslip', $slip->id) }}" target="_blank" style="color:#007bff;">
+                                {{ \Illuminate\Support\Str::limit($slip->document, 22) }}
+                            </a>
+                        @endif
+                        @foreach ($slip->files as $file)
+                            @if ($file->file_name !== $slip->document)
+                                @if ($slip->document)<br>@endif
+                                <a href="{{ route('routingSlipFile', $file->id) }}" target="_blank" style="color:#007bff;">
+                                    {{ \Illuminate\Support\Str::limit($file->original_name, 22) }}
+                                </a>
+                            @endif
+                        @endforeach
                     </td>
                     <td>{{ $slip->trans_remarks }}</td>
                     <td>{{ $slip->other_remarks }}</td>

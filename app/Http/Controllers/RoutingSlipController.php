@@ -23,16 +23,27 @@ use App\Models\Doctrack;
 use App\Mail\DocumentRoutedNotification;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Group;
+use App\Models\RoutingSlipFile;
 use App\Services\ArchiveService;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
 
 
 class RoutingSlipController extends Controller
 {
    
 
+/**
+ * Maximum size allowed for a routing slip upload, in kilobytes.
+ * 563200 KB = 550 MB (per file and for the whole request).
+ */
+private const MAX_ROUTING_SLIP_UPLOAD_KB = 563200;
+
 public function storeSlip(Request $request)
 {
     $isSuperUser = auth()->user()->role === 'super_user';
+
+    $this->normalizeRoutingSlipDocumentInput($request);
 
     $request->validate([
         'ctrl_no' => 'required|integer',
@@ -44,17 +55,16 @@ public function storeSlip(Request $request)
         'r_destination' => $isSuperUser ? 'required|string' : 'nullable|string',
         'route_status' => 'required|string',
         'received_name' => 'required|string',
-        'document' => 'required|file|mimes:pdf|max:25600',
+        'document' => 'required|array|min:1',
+        'document.*' => 'file|mimes:pdf|max:' . self::MAX_ROUTING_SLIP_UPLOAD_KB,
         'date_received' => 'required|string',
     ]);
 
-    // Store the uploaded PDF
-    $pdfFile = $request->file('document');
-    $pdfName = $pdfFile->getClientOriginalName();
-    $pdfFile->storeAs('documents', $pdfName);
+    $files = $this->uploadedRoutingSlipDocuments($request);
+    $this->validateRoutingSlipUploadSize($files);
 
     // Save to DB without modifying PDF
-    RoutingSlip::create([
+    $routingSlip = RoutingSlip::create([
         'rslip_id' => $request->ctrl_no,
         'user_id' => $request->user_id,
         'source' => $request->source,
@@ -62,15 +72,114 @@ public function storeSlip(Request $request)
         'trans_remarks' => $request->trans_remarks,
         'other_remarks' => $request->other_remarks,
         'r_destination' => $request->r_destination,
-        'document' => $pdfName,
+        'document' => null,
         'received_name' => $request->received_name,
         'route_status' => $request->route_status,
         'date_received' => $request->date_received,
     ]);
 
+    $this->storeRoutingSlipUploads($routingSlip, $files);
 
-    
     return redirect()->route('viewSlip')->with('success', 'Routing slip was created successfully.');
+}
+
+/**
+ * Accept both the legacy single "document" upload and the new "document[]"
+ * multi-file upload, and always expose it as an array to the validator.
+ */
+private function normalizeRoutingSlipDocumentInput(Request $request): void
+{
+    $files = $request->file('document');
+
+    if ($files instanceof UploadedFile) {
+        $request->files->set('document', [$files]);
+    }
+}
+
+/**
+ * @return UploadedFile[]
+ */
+private function uploadedRoutingSlipDocuments(Request $request): array
+{
+    $files = $request->file('document');
+
+    if ($files instanceof UploadedFile) {
+        return [$files];
+    }
+
+    if (!is_array($files)) {
+        return [];
+    }
+
+    return array_values(array_filter($files, fn ($file) => $file instanceof UploadedFile && $file->isValid()));
+}
+
+private function validateRoutingSlipUploadSize(array $files): void
+{
+    $totalBytes = 0;
+
+    foreach ($files as $file) {
+        $totalBytes += (int) $file->getSize();
+    }
+
+    if ($totalBytes > self::MAX_ROUTING_SLIP_UPLOAD_KB * 1024) {
+        throw ValidationException::withMessages([
+            'document' => 'The total size of the uploaded files must not be greater than 550 MB.',
+        ]);
+    }
+}
+
+/**
+ * Store every uploaded file and record it against the routing slip. The first
+ * file also becomes routing_slip.document so existing print/view flows keep
+ * working exactly as before.
+ */
+private function storeRoutingSlipUploads(RoutingSlip $routingSlip, array $files): void
+{
+    foreach ($files as $file) {
+        $storedName = $this->uniqueRoutingSlipFileName($file->getClientOriginalName());
+
+        $file->storeAs('documents', $storedName);
+
+        $routingSlip->files()->create([
+            'rslip_id' => $routingSlip->rslip_id,
+            'file_name' => $storedName,
+            'original_name' => $file->getClientOriginalName(),
+            'file_size' => (int) $file->getSize(),
+            'uploaded_by' => auth()->id(),
+        ]);
+
+        if (empty($routingSlip->document)) {
+            $routingSlip->document = $storedName;
+        }
+    }
+
+    if ($routingSlip->isDirty()) {
+        $routingSlip->save();
+    }
+}
+
+private function uniqueRoutingSlipFileName(string $originalName): string
+{
+    $name = trim(str_replace(['/', '\\'], '_', $originalName));
+
+    if ($name === '') {
+        $name = 'document.pdf';
+    }
+
+    if (!Storage::exists('documents/' . $name)) {
+        return $name;
+    }
+
+    $info = pathinfo($name);
+    $base = $info['filename'] ?? 'document';
+    $extension = $info['extension'] ?? 'pdf';
+
+    do {
+        $candidate = $base . '_' . Str::random(6) . '.' . $extension;
+    } while (Storage::exists('documents/' . $candidate));
+
+    return $candidate;
 }
 
 
@@ -416,6 +525,32 @@ public function viewPdfslip($id)
     } else {
         return redirect()->back()->with('error', 'File not found.');
     }
+}
+
+/**
+ * Stream one of the additional files uploaded for a routing slip.
+ */
+public function viewRoutingSlipFile($id)
+{
+    $file = RoutingSlipFile::findOrFail($id);
+
+    abort_if(app(ArchiveService::class)->isRouteArchived($file->rslip_id), 404, 'This transaction has been archived.');
+
+    $candidates = [
+        storage_path('app/documents/' . $file->file_name),
+        storage_path('app/public/documents/' . $file->file_name),
+        public_path('storage/documents/' . $file->file_name),
+    ];
+
+    foreach ($candidates as $path) {
+        if (is_file($path)) {
+            return response()->file($path, [
+                'Content-Disposition' => 'inline; filename="' . $file->original_name . '"',
+            ]);
+        }
+    }
+
+    return redirect()->back()->with('error', 'File not found.');
 }
 
 public function slipForm(Request $request, $id)
@@ -926,6 +1061,19 @@ public function pdfSlip(Request $request, $id)
         return redirect()->back()->with('error', 'Routing slip not found.');
     }
 
+    // Delete every additional attachment stored for this routing slip row
+    $attachments = $routingSlips->files()->get();
+
+    foreach ($attachments as $attachment) {
+        $attachmentPath = 'documents/' . $attachment->file_name;
+
+        if (Storage::exists($attachmentPath)) {
+            Storage::delete($attachmentPath);
+        }
+
+        $attachment->delete();
+    }
+
     // Build the full file path
     $filePath = 'documents/' . $routingSlips->document; // Ensure file_name has the correct relative path
 
@@ -937,7 +1085,7 @@ public function pdfSlip(Request $request, $id)
     // Delete the routing slip record from the database
     $routingSlips->delete();
 
-    return redirect()->back()->with('success', 'Routing slip and its file deleted successfully.');
+    return redirect()->back()->with('success', 'Routing slip and its files deleted successfully.');
 }
 
 
@@ -958,20 +1106,25 @@ public function editSlip($id)
     $superUserCount = $userId === 'super_user' ? RoutingSlip::where('route_status', 1)->count() : 0;
     $recordsOfficerCount = $userId === 'records_officer' ? RoutingSlip::where('route_status', 2)->count() : 0;
     $users = User::select('id', 'fname', 'lname')->get();
+    $routingSlipFiles = RoutingSlipFile::where('rslip_id', $routingSlips->rslip_id)
+        ->orderBy('id')
+        ->get();
 
     return view('slip.editSlip', compact(
         'routingSlips',
         'routingSlipCount',
         'superUserCount',
         'recordsOfficerCount',
-        'users'
-
+        'users',
+        'routingSlipFiles'
     ));
 }
 
 
     public function updateSlip(Request $request, $id)
 {
+    $this->normalizeRoutingSlipDocumentInput($request);
+
     $request->validate([
         'op_ctrl'         => 'required|integer',
         'user_id'         => 'required|integer',
@@ -984,22 +1137,33 @@ public function editSlip($id)
         'route_status'    => 'required|string',
         'received_name'   => 'required|array',
         'received_name.*' => 'required|string',
-        'document'        => 'nullable|file|mimes:pdf',
+        'document'        => 'nullable|array|min:1',
+        'document.*'      => 'file|mimes:pdf|max:' . self::MAX_ROUTING_SLIP_UPLOAD_KB,
     ]);
 
     $routingSlip = RoutingSlip::findOrFail($id);
 
-    // Handle document update
-    if ($request->hasFile('document')) {
-        // Delete old document if exists
+    // Add every newly selected file instead of replacing the existing
+    // attachment(s). The primary document is only filled when it is empty.
+    $newFiles = $this->uploadedRoutingSlipDocuments($request);
+    $this->validateRoutingSlipUploadSize($newFiles);
+
+    if (!empty($newFiles)) {
+        // Replacing the previous attachment(s) with the newly selected ones.
+        foreach ($routingSlip->files()->get() as $existingFile) {
+            if (Storage::exists('documents/' . $existingFile->file_name)) {
+                Storage::delete('documents/' . $existingFile->file_name);
+            }
+            $existingFile->delete();
+        }
+
         if ($routingSlip->document && Storage::exists('documents/' . $routingSlip->document)) {
             Storage::delete('documents/' . $routingSlip->document);
         }
 
-        $pdfFile = $request->file('document');
-        $pdfName = $pdfFile->getClientOriginalName();
-        $pdfFile->storeAs('documents', $pdfName);
-        $routingSlip->document = $pdfName;
+        $routingSlip->document = null;
+
+        $this->storeRoutingSlipUploads($routingSlip, $newFiles);
     }
 
     // Update other fields
@@ -1208,6 +1372,9 @@ public function editDest($id)
     $groups = Group::all();
 
     $routingSlips = RoutingSlip::findOrFail($id);
+    $routingSlipFiles = RoutingSlipFile::where('rslip_id', $routingSlips->rslip_id)
+        ->orderBy('id')
+        ->get();
     $users = User::select('id', 'fname', 'lname')->get();
     $logs = Log::where('user_id', $userId)->get();
 
@@ -1235,7 +1402,8 @@ public function editDest($id)
         'superUserCount',
         'recordsOfficerCount',
         'groups',
-        'selectedUsers' // pass to view
+        'selectedUsers', // pass to view
+        'routingSlipFiles'
     ));
 }
 
