@@ -23,6 +23,7 @@ use App\Models\Doctrack;
 use App\Mail\DocumentRoutedNotification;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Group;
+use App\Services\ArchiveService;
 
 
 class RoutingSlipController extends Controller
@@ -419,6 +420,8 @@ public function viewPdfslip($id)
 
 public function slipForm(Request $request, $id)
 {
+    abort_if(app(ArchiveService::class)->isRouteArchived($id), 404, 'This transaction has been archived.');
+
     /** @var \App\Models\User $user */
     $user = auth()->user();
 
@@ -669,6 +672,8 @@ public function slipForm(Request $request, $id)
 
 public function pdfSlip(Request $request, $id)
 {
+    abort_if(app(ArchiveService::class)->isRouteArchived($id), 404, 'This transaction has been archived.');
+
     $routingSlipId = $request->query('routing_slip_id');
 
     if (!$routingSlipId) {
@@ -1255,6 +1260,12 @@ public function storeRouteDoc(Request $request)
         'routed_users.*'  => 'required|string',
     ]);
 
+    abort_if(
+        app(ArchiveService::class)->isRouteArchived((string) $validatedData['route_id']),
+        404,
+        'This transaction has been archived.'
+    );
+
     $document = Document::create([
         'doc_type'   => $validatedData['doc_type'],
         'full_name'  => $validatedData['full_name'],
@@ -1344,6 +1355,8 @@ public function updateRouteDocRecall(Request $request, $id)
         'routed_users'    => 'nullable|array',
         'routed_users.*'  => 'required|string',
     ]);
+
+    abort_if(app(ArchiveService::class)->isRouteArchived($id), 404, 'This transaction has been archived.');
 
     $routingSlip = RoutingSlip::where('rslip_id', $id)->first();
     if ($routingSlip) {
@@ -1578,6 +1591,8 @@ public function recallSlip($id)
 
 public function updateAssign(Request $request, $routeId)
 {
+    abort_if(app(ArchiveService::class)->isRouteArchived($routeId), 404, 'This transaction has been archived.');
+
     $request->validate([
         'assigned_to'    => 'required|string',
         'assign_com'     => 'required|string',

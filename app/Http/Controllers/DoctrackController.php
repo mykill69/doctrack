@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Mail\DoctrackNotification;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Group;
+use App\Services\ArchiveService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Response;
@@ -333,6 +334,12 @@ public function storeDoctrackUpdate(Request $request)
     //    new ones are counted)
     $this->validateTotalUploadSize($request);
 
+    abort_if(
+        app(ArchiveService::class)->isDocumentTrackingArchived($request->docslip_id),
+        404,
+        'This transaction has been archived.'
+    );
+
     // ✅ Handle file upload (multiple files allowed)
     $fileNames = $this->storeUploadedFiles($request->file('file'));
     $fileLogs  = $this->joinFileNames($fileNames);
@@ -588,6 +595,12 @@ public function uploadFile(Request $request)
         'docslip_id' => 'required'
     ]);
 
+    abort_if(
+        app(ArchiveService::class)->isDocumentTrackingArchived($request->docslip_id),
+        404,
+        'This transaction has been archived.'
+    );
+
     try {
         // ✅ The TOTAL size of the files of the transaction must not exceed 25MB
         //    (the files already attached are counted as well)
@@ -655,6 +668,8 @@ public function uploadFile(Request $request)
 
 public function docslipForm($id)
 {
+    abort_if(Doctrack::archived()->whereKey($id)->exists(), 404, 'This transaction has been archived.');
+
     $documentTrack = Doctrack::findOrFail($id);
     $user = auth()->user(); // ✅ fix: get user object, not just the ID
 
@@ -667,6 +682,11 @@ public function docslipForm($id)
 public function pdfDocSlip($id)
 {
     $documentTrack = DoctrackFile::findOrFail($id);
+    abort_if(
+        app(ArchiveService::class)->isDocumentTrackingArchived($documentTrack->docslip_id),
+        404,
+        'This transaction has been archived.'
+    );
     $filePath = storage_path('storage/doc_track/' . $documentTrack->file);
 
     if (file_exists($filePath)) {
@@ -801,6 +821,12 @@ public function pdfDocSlip($id)
 
 public function slipMonitoring($docslip_id)
 {
+    abort_if(
+        app(ArchiveService::class)->isDocumentTrackingArchived($docslip_id),
+        404,
+        'This transaction has been archived.'
+    );
+
       $users = User::orderBy('fname', 'asc')   // ✅ sort ascending
                  ->orderBy('lname', 'asc')
                  ->get();

@@ -11,6 +11,7 @@ use App\Models\Doctrack;
 use App\Models\LogsHistory;
 use App\Models\RoutingSlip;
 use App\Models\RouteDocument;
+use App\Services\ArchiveService;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
@@ -665,6 +666,10 @@ private function applyDashboardOrder($query, Request $request)
     $routeId = $request->query('route_id');
     $routingSlipId = $request->query('routing_slip_id');
 
+    if ($routeId) {
+        abort_if(app(ArchiveService::class)->isRouteArchived($routeId), 404, 'This transaction has been archived.');
+    }
+
     if ($routeId && !$routingSlipId) {
         $routingSlipId = RoutingSlip::where('rslip_id', $routeId)
             ->orderBy('id', 'desc')
@@ -813,6 +818,8 @@ private function applyDashboardOrder($query, Request $request)
         }
 
         $routeId = $document->route_id;
+        abort_if(app(ArchiveService::class)->isRouteArchived($routeId), 404, 'This transaction has been archived.');
+
         $currentUser = Auth::user();
         $fullName = $currentUser->fname . ' ' . $currentUser->lname;
 
@@ -869,6 +876,11 @@ private function applyDashboardOrder($query, Request $request)
     public function download($id)
     {
         $document = Document::findOrFail($id);
+        abort_if(
+            app(ArchiveService::class)->isRoutingSlipArchived($document->route_id),
+            404,
+            'This transaction has been archived.'
+        );
         $filePath = storage_path('app/public/documents/' . $document->file_name);
 
         if (file_exists($filePath)) {
@@ -947,6 +959,11 @@ private function applyDashboardOrder($query, Request $request)
 public function viewPdf($id)
 {
     $document = Document::findOrFail($id);
+    abort_if(
+        app(ArchiveService::class)->isRoutingSlipArchived($document->route_id),
+        404,
+        'This transaction has been archived.'
+    );
 
     $log = Log::where('doc_id', $id)
         ->where('new_destination', auth()->user()->fname . ' ' . auth()->user()->lname)

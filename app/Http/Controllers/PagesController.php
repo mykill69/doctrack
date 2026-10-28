@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\Esig;
 use App\Models\Doctrack;
 use App\Models\DoctrackFile;
+use App\Services\ArchiveService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
@@ -2342,6 +2343,18 @@ public function getViewLogsData(Request $request)
             $q->where('logs.user_id', $userId)
               ->orWhere('logs.new_user', $userId)
               ->orWhere('logs.new_destination', $userFullName);
+        })
+        ->whereNotExists(function ($q) {
+            $q->select(DB::raw(1))
+                ->from('routing_slip')
+                ->whereColumn('routing_slip.rslip_id', 'logs.route_id')
+                ->where('routing_slip.is_archived', 1);
+        })
+        ->whereNotExists(function ($q) {
+            $q->select(DB::raw(1))
+                ->from('doctrack_slip')
+                ->whereColumn('doctrack_slip.docslip_id', 'logs.route_id')
+                ->where('doctrack_slip.is_archived', 1);
         });
 
     if ($searchValue) {
@@ -2471,6 +2484,12 @@ public function getViewLogsTrackingData(Request $request)
     $query = LogsTracking::where(function ($q) use ($userId) {
             $q->where('user_id', $userId)
               ->orWhere('update_by', $userId);
+        })
+        ->whereNotExists(function ($q) {
+            $q->select(DB::raw(1))
+                ->from('doctrack_slip')
+                ->whereColumn('doctrack_slip.docslip_id', 'logs_tracking.docslip_id')
+                ->where('doctrack_slip.is_archived', 1);
         });
 
     if ($searchValue) {
@@ -2823,6 +2842,8 @@ public function viewDistribution($id)
 
 public function viewDistributionPdf($id)
 {
+    abort_if(app(ArchiveService::class)->isRouteArchived($id), 404, 'This transaction has been archived.');
+
     $routingSlip = DB::table('routing_slip')->where('rslip_id', $id)->first();
 
     $logs = DB::table('logs')
@@ -3211,6 +3232,576 @@ public function storeGroup(Request $request)
     \App\Models\Group::create($request->only('group_name'));
 
     return response()->json(['success' => 'Group added successfully.']);
+}
+
+/**
+ * TURNAROUND TIME REPORT
+ *
+ * Two separate transaction types are supported:
+ *  - Tracking documents (doctrack_slip): one transaction is one docslip_id.
+ *    It is completed when every recipient row has been acknowledged
+ *    (doctrack_stat = 6).
+ *  - Routing slips (routing_slip): a slip is completed when route_status = 3.
+ *
+ * The turnaround time is measured from the date received (the first log for
+ * tracking documents and the created_at value for routing slips) up to the
+ * final acknowledgement (or final routing action for routing slips).
+ */
+public function turnaround(Request $request)
+{
+    $data = $this->buildTurnaroundReport($request);
+
+    return view('home.turnaround', $data);
+}
+
+/**
+ * Return the report HTML for the JavaScript filter. This keeps the address
+ * bar on /turnaround while the transaction type and date range change.
+ */
+public function turnaroundData(Request $request)
+{
+    $data = $this->buildTurnaroundReport($request);
+
+    return response()->json([
+        'html' => view('home.partials.turnaround_report', $data)->render(),
+        'type' => $data['type'],
+        'typeLabel' => strtoupper($data['typeLabel']),
+    ]);
+}
+
+public function turnaroundPdf(Request $request)
+{
+    $data = $this->buildTurnaroundReport($request);
+
+    // A PDF containing thousands of rows is very heavy for DomPDF and can
+    // exhaust the server's memory. The summary above still covers every
+    // transaction; only the detail rows are capped.
+    $pdfDetailLimit = $data['type'] === 'routing' ? 500 : 1000;
+    $data['pdfTotalRows'] = $data['turnaroundData']->count();
+    $data['pdfDetailLimit'] = $pdfDetailLimit;
+    $data['pdfLimited'] = $data['pdfTotalRows'] > $pdfDetailLimit;
+    $data['turnaroundData'] = $data['turnaroundData']->take($pdfDetailLimit)->values();
+
+    $pdf = Pdf::loadView('pdf.turnaround', $data);
+    $pdf->setPaper('A4', 'landscape');
+
+    return $pdf->download(
+        'turnaround-' . $data['type'] . '-' . now()->format('Y-m-d') . '.pdf'
+    );
+}
+
+/**
+ * Build all the data used by both the page and the PDF export.
+ */
+private function buildTurnaroundReport(Request $request): array
+{
+    // Routing slips are the primary display unless tracking documents are
+    // explicitly requested.
+    $type = $request->input('type') === 'tracking' ? 'tracking' : 'routing';
+
+    $startDate = $request->filled('start_date')
+        ? Carbon::parse($request->start_date)->startOfDay()
+        : null;
+
+    $endDate = $request->filled('end_date')
+        ? Carbon::parse($request->end_date)->endOfDay()
+        : null;
+
+    $user = auth()->user();
+    $canViewAll = $this->canViewAllTurnaround($user);
+    $userOffice = $user->department ?: '';
+
+    if ($type === 'routing') {
+        $turnaroundData = $this->buildRoutingTurnaroundRows($request, $startDate, $endDate);
+        $typeLabel = 'Routing Slips';
+        $typeLabelSingular = 'Routing Slip';
+    } else {
+        $turnaroundData = $this->buildTrackingTurnaroundRows($request, $startDate, $endDate);
+        $typeLabel = 'Tracking Documents';
+        $typeLabelSingular = 'Tracking Document';
+    }
+
+    // Newest transactions first.
+    $turnaroundData = $turnaroundData->sortByDesc('started_at')->values();
+
+    [$dailyReport, $weeklyReport, $monthlyReport, $officeReport] =
+        $this->buildTurnaroundGroupReports($turnaroundData);
+
+    $overallStats = $this->buildTurnaroundStats($turnaroundData);
+
+    return [
+        'type' => $type,
+        'typeLabel' => $typeLabel,
+        'typeLabelSingular' => $typeLabelSingular,
+        'canViewAll' => $canViewAll,
+        'userOffice' => $userOffice,
+        'turnaroundData' => $turnaroundData,
+        'officeReport' => $officeReport,
+        'dailyReport' => $dailyReport,
+        'weeklyReport' => $weeklyReport,
+        'monthlyReport' => $monthlyReport,
+        'overallStats' => $overallStats,
+        'startDate' => $request->input('start_date'),
+        'endDate' => $request->input('end_date'),
+    ];
+}
+
+/**
+ * User id 56 has been given full access to the year-end turnaround report.
+ * Records officers and administrators also see every transaction.
+ * Every other role only sees their own completed transactions.
+ */
+private function canViewAllTurnaround($user): bool
+{
+    if (!$user) {
+        return false;
+    }
+
+    return (int) $user->id === 56
+        || in_array($user->role, ['Administrator', 'records_officer'], true);
+}
+
+/**
+ * Normalize an office/department name so differently-cased or spaced values
+ * still match the same office.
+ */
+private function normalizeOffice($value): string
+{
+    $value = preg_replace('/\s+/', ' ', trim((string) $value));
+
+    return mb_strtoupper($value);
+}
+
+/**
+ * Turnaround rows of the document tracking slips (doctrack_slip table).
+ *
+ * A "transaction" is one docslip_id. It is counted as completed when every
+ * recipient row has already been acknowledged (doctrack_stat = 6).
+ */
+private function buildTrackingTurnaroundRows(Request $request, $startDate, $endDate)
+{
+    $user = auth()->user();
+    $userId = $user->id;
+
+    // Only user id 56, records officers and administrators can see every
+    // transaction. Standard users only see their own completed transactions.
+    $canViewAll = $this->canViewAllTurnaround($user);
+
+    // Only fully acknowledged transactions (all recipient rows are status 6).
+    $completedIds = Doctrack::query()
+        ->select('docslip_id')
+        ->whereNotNull('update_by')
+        ->groupBy('docslip_id')
+        ->havingRaw('SUM(CASE WHEN doctrack_stat <> 6 THEN 1 ELSE 0 END) = 0')
+        ->pluck('docslip_id');
+
+    // The first log is the date received and the last acknowledgement log is
+    // the date acknowledged.
+    $logSummary = LogsTracking::query()
+        ->selectRaw('docslip_id, MIN(created_at) AS started_at, MAX(CASE WHEN logs_status = 6 THEN created_at END) AS finished_at')
+        ->whereIn('docslip_id', $completedIds)
+        ->groupBy('docslip_id')
+        ->get()
+        ->filter(function ($row) use ($startDate, $endDate) {
+            if (!$row->started_at || !$row->finished_at) {
+                return false;
+            }
+
+            $started = Carbon::parse($row->started_at);
+
+            if ($startDate && $started->lt($startDate)) {
+                return false;
+            }
+
+            if ($endDate && $started->gt($endDate)) {
+                return false;
+            }
+
+            return true;
+        });
+
+    $docslipIds = $logSummary->pluck('docslip_id')->unique()->values();
+
+    // One row of information per transaction.
+    $details = Doctrack::query()
+        ->selectRaw('docslip_id, MIN(user_id) AS creator_id, MAX(ctrl_no) AS ctrl_no, MIN(user_name) AS user_name')
+        ->whereIn('docslip_id', $docslipIds)
+        ->groupBy('docslip_id')
+        ->get()
+        ->keyBy('docslip_id');
+
+    // The person who gave the final acknowledgement is the office that
+    // actually completed the transaction.
+    $lastAckLogs = LogsTracking::query()
+        ->whereIn('docslip_id', $docslipIds)
+        ->where('logs_status', 6)
+        ->orderBy('created_at')
+        ->get(['docslip_id', 'update_by', 'created_at'])
+        ->groupBy('docslip_id')
+        ->map(function ($logs) {
+            return $logs->last();
+        });
+
+    $creatorIds = $details->pluck('creator_id')->filter()->unique();
+    $ackUserIds = $lastAckLogs->pluck('update_by')->filter()->unique();
+
+    $users = User::whereIn('id', $creatorIds->merge($ackUserIds)->unique()->values())
+        ->get()
+        ->keyBy('id');
+
+    $threshold = 24 * 60;
+    $rows = collect();
+
+    foreach ($logSummary as $log) {
+        $detail = $details->get($log->docslip_id);
+
+        if (!$detail) {
+            continue;
+        }
+
+        $creator = $users->get($detail->creator_id);
+        $ackLog = $lastAckLogs->get($log->docslip_id);
+        $ackUser = $ackLog ? $users->get($ackLog->update_by) : null;
+
+        $source = $creator
+            ? trim($creator->fname . ' ' . $creator->lname)
+            : ($detail->user_name ?: 'N/A');
+
+        $personnel = $ackUser
+            ? trim($ackUser->fname . ' ' . $ackUser->lname)
+            : $source;
+
+        $office = $ackUser
+            ? ($ackUser->department ?: ($ackUser->position ?: 'N/A'))
+            : ($creator ? ($creator->department ?: ($creator->position ?: 'N/A')) : 'N/A');
+
+        $started = Carbon::parse($log->started_at);
+        $finished = Carbon::parse($log->finished_at);
+        $diffInMinutes = (int) round($started->diffInMinutes($finished));
+
+        $rows->push([
+            'personnel' => $personnel,
+            'office' => $office,
+            'source' => $source,
+            'ctrl_no' => $detail->ctrl_no ?: 'N/A',
+            'reference' => $log->docslip_id,
+            'actor_id' => $ackUser ? $ackUser->id : null,
+            'date_received' => $started->format('m/d/Y H:i'),
+            'date_completed' => $finished->format('m/d/Y H:i'),
+            'started_at' => $started,
+            'finished_at' => $finished,
+            'duration_minutes' => $diffInMinutes,
+            'duration_display' => $this->formatTurnaroundDuration($diffInMinutes),
+            'remarks' => $diffInMinutes > $threshold ? 'Not on-time' : 'On Time',
+        ]);
+    }
+
+    // Standard users only see transactions that they themselves completed
+    // (the last acknowledgement was made by their account).
+    if (!$canViewAll) {
+        $rows = $rows->filter(function ($row) use ($userId) {
+            return (int) $row['actor_id'] === (int) $userId;
+        })->values();
+    }
+
+    return $rows;
+}
+
+/**
+ * Turnaround rows of the routing slips (routing_slip table).
+ *
+ * A routing slip is counted as completed when route_status = 3. The
+ * turnaround time is measured from the date it was received up to its last
+ * acknowledgement (or its last routing action when there is no acknowledgement).
+ */
+private function buildRoutingTurnaroundRows(Request $request, $startDate, $endDate)
+{
+    $user = auth()->user();
+    $userId = $user->id;
+    $userOffice = $this->normalizeOffice($user->department ?? '');
+
+    // Only user id 56, records officers and administrators can see every
+    // routing slip. Standard users only see their own completed slips.
+    $canViewAll = $this->canViewAllTurnaround($user);
+
+    $query = RoutingSlip::query()->where('route_status', 3);
+
+    if ($startDate) {
+        $query->whereDate('date_received', '>=', $startDate->toDateString());
+    }
+
+    if ($endDate) {
+        $query->whereDate('date_received', '<=', $endDate->toDateString());
+    }
+
+    $slips = $query->get();
+    $rslipIds = $slips->pluck('rslip_id')->filter()->unique()->values();
+
+    $logsByRoute = Log::query()
+        ->whereIn('route_id', $rslipIds)
+        ->get(['route_id', 'new_destination', 'status_update', 'created_at'])
+        ->groupBy(function ($log) {
+            return (string) $log->route_id;
+        });
+
+    // Map "Firstname Lastname" => department so a destination can be shown
+    // as an office/department.
+    $destinationUsers = User::query()
+        ->select('id', 'fname', 'lname', 'department', 'position')
+        ->get()
+        ->mapWithKeys(function ($destinationUser) {
+            $key = mb_strtolower(trim($destinationUser->fname . ' ' . $destinationUser->lname));
+
+            return [$key => [
+                'id' => $destinationUser->id,
+                'name' => trim($destinationUser->fname . ' ' . $destinationUser->lname),
+                'department' => $destinationUser->department ?: ($destinationUser->position ?: 'N/A'),
+            ]];
+        });
+
+    $threshold = 24 * 60;
+    $rows = collect();
+
+    foreach ($slips as $slip) {
+        $slipLogs = $logsByRoute->get((string) $slip->rslip_id, collect());
+
+        if ($slipLogs->isEmpty()) {
+            continue;
+        }
+
+        $firstLog = $slipLogs->sortBy(function ($log) {
+            return $log->created_at;
+        })->first();
+
+        // The last acknowledgement is the actual completion; when there is no
+        // acknowledgement log, the last routing log is used instead.
+        $ackLog = $slipLogs->where('status_update', 3)
+            ->sortByDesc(function ($log) {
+                return $log->created_at;
+            })
+            ->first();
+
+        $completionLog = $ackLog ?: $slipLogs->sortByDesc(function ($log) {
+            return $log->created_at;
+        })->first();
+
+        $started = $slip->created_at
+            ? Carbon::parse($slip->created_at)
+            : Carbon::parse($firstLog->created_at);
+
+        $finished = Carbon::parse($completionLog->created_at);
+
+        if ($finished->lt($started)) {
+            $started = Carbon::parse($firstLog->created_at);
+        }
+
+        $destination = trim((string) ($completionLog->new_destination ?? ''));
+
+        $destinationUser = $destination !== ''
+            ? $destinationUsers->get(mb_strtolower(preg_replace('/\s+/', ' ', $destination)))
+            : null;
+
+        $personnel = $destinationUser['name'] ?? ($destination !== '' ? $destination : 'N/A');
+        $office = $destinationUser['department'] ?? ($destination !== '' ? $destination : 'N/A');
+
+        $diffInMinutes = (int) round($started->diffInMinutes($finished));
+
+        $rows->push([
+            'personnel' => $personnel,
+            'office' => $office,
+            'source' => $slip->source ?: 'N/A',
+            'ctrl_no' => $slip->op_ctrl ?: $slip->rslip_id,
+            'reference' => $slip->rslip_id,
+            'actor_id' => $destinationUser['id'] ?? null,
+            'date_received' => $started->format('m/d/Y H:i'),
+            'date_completed' => $finished->format('m/d/Y H:i'),
+            'started_at' => $started,
+            'finished_at' => $finished,
+            'duration_minutes' => $diffInMinutes,
+            'duration_display' => $this->formatTurnaroundDuration($diffInMinutes),
+            'remarks' => $diffInMinutes > $threshold ? 'Not on-time' : 'On Time',
+        ]);
+    }
+
+    // Standard users only see slips whose final destination is their own
+    // account. Generic office destinations (not tied to a user account) are
+    // allowed when they match the user's own office.
+    if (!$canViewAll) {
+        $rows = $rows->filter(function ($row) use ($userId, $userOffice) {
+            if ((int) $row['actor_id'] === (int) $userId) {
+                return true;
+            }
+
+            return $row['actor_id'] === null
+                && $userOffice !== ''
+                && $this->normalizeOffice($row['office']) === $userOffice;
+        })->values();
+    }
+
+    return $rows;
+}
+
+/**
+ * Build the daily, weekly, monthly and per-office turnaround summaries.
+ */
+private function buildTurnaroundGroupReports($turnaroundData): array
+{
+    $dailyData = [];
+    $weeklyData = [];
+    $monthlyData = [];
+    $officeData = [];
+
+    foreach ($turnaroundData as $row) {
+        $started = $row['started_at'];
+
+        $dayKey = $started->format('Y-m-d');
+        if (!isset($dailyData[$dayKey])) {
+            $dailyData[$dayKey] = [
+                'period' => $started->format('F j, Y'),
+                'sort' => $dayKey,
+                'total_minutes' => 0,
+                'count' => 0,
+            ];
+        }
+        $dailyData[$dayKey]['total_minutes'] += $row['duration_minutes'];
+        $dailyData[$dayKey]['count']++;
+
+        $weekKey = $started->format('o-\WW');
+        if (!isset($weeklyData[$weekKey])) {
+            $weeklyData[$weekKey] = [
+                'period' => $started->copy()->startOfWeek()->format('M d') . ' - ' . $started->copy()->endOfWeek()->format('M d, Y'),
+                'sort' => $weekKey,
+                'total_minutes' => 0,
+                'count' => 0,
+            ];
+        }
+        $weeklyData[$weekKey]['total_minutes'] += $row['duration_minutes'];
+        $weeklyData[$weekKey]['count']++;
+
+        $monthKey = $started->format('Y-m');
+        if (!isset($monthlyData[$monthKey])) {
+            $monthlyData[$monthKey] = [
+                'period' => $started->format('F Y'),
+                'sort' => $monthKey,
+                'total_minutes' => 0,
+                'count' => 0,
+            ];
+        }
+        $monthlyData[$monthKey]['total_minutes'] += $row['duration_minutes'];
+        $monthlyData[$monthKey]['count']++;
+
+        $officeName = $this->normalizeOffice($row['office'] ?: 'N/A');
+
+        if (!isset($officeData[$officeName])) {
+            $officeData[$officeName] = [
+                'office' => $officeName,
+                'total_minutes' => 0,
+                'count' => 0,
+            ];
+        }
+        $officeData[$officeName]['total_minutes'] += $row['duration_minutes'];
+        $officeData[$officeName]['count']++;
+    }
+
+    $officeReport = collect($officeData)
+        ->sortBy('office')
+        ->map(function ($row) {
+            $average = $row['count'] > 0 ? $row['total_minutes'] / $row['count'] : 0;
+
+            return [
+                'office' => $row['office'],
+                'transactions' => $row['count'],
+                'total_display' => $this->formatTurnaroundDuration($row['total_minutes']),
+                'avg_display' => $this->formatTurnaroundDuration($average),
+            ];
+        })
+        ->values();
+
+    return [
+        $this->buildTurnaroundSummary($dailyData),
+        $this->buildTurnaroundSummary($weeklyData),
+        $this->buildTurnaroundSummary($monthlyData),
+        $officeReport,
+    ];
+}
+
+/**
+ * Build the overall turnaround statistics of a transaction type.
+ */
+private function buildTurnaroundStats($turnaroundData): array
+{
+    $totalTransactions = $turnaroundData->count();
+    $totalMinutes = $turnaroundData->sum('duration_minutes');
+    $overallAverageMinutes = $totalTransactions > 0 ? $totalMinutes / $totalTransactions : 0;
+
+    $fastest = 'N/A';
+    $slowest = 'N/A';
+
+    if ($totalTransactions > 0) {
+        $sorted = $turnaroundData->sortBy('duration_minutes')->values();
+        $fastest = $sorted->first()['duration_display'];
+        $slowest = $sorted->last()['duration_display'];
+    }
+
+    $onTimeCount = $turnaroundData->where('remarks', 'On Time')->count();
+    $notOnTimeCount = $totalTransactions - $onTimeCount;
+
+    return [
+        'total_transactions' => $totalTransactions,
+        'total_display' => $this->formatTurnaroundDuration($totalMinutes),
+        'avg_display' => $this->formatTurnaroundDuration($overallAverageMinutes),
+        'fastest' => $fastest,
+        'slowest' => $slowest,
+        'on_time' => $onTimeCount,
+        'not_on_time' => $notOnTimeCount,
+        'compliance_rate' => $totalTransactions > 0 ? round(($onTimeCount / $totalTransactions) * 100, 1) : 0,
+    ];
+}
+
+/**
+ * Turn the grouped daily/weekly/monthly rows into display-ready collections.
+ */
+private function buildTurnaroundSummary(array $data)
+{
+    return collect($data)
+        ->sortByDesc('sort')
+        ->map(function ($row) {
+            $average = $row['count'] > 0 ? $row['total_minutes'] / $row['count'] : 0;
+
+            return [
+                'period' => $row['period'],
+                'transactions' => $row['count'],
+                'total_display' => $this->formatTurnaroundDuration($row['total_minutes']),
+                'avg_display' => $this->formatTurnaroundDuration($average),
+            ];
+        })
+        ->values();
+}
+
+/**
+ * Format a number of minutes the same way the rest of the system does.
+ */
+private function formatTurnaroundDuration($totalMinutes): string
+{
+    $totalMinutes = max(0, (int) round($totalMinutes));
+
+    $days = intdiv($totalMinutes, 1440);
+    $hours = intdiv($totalMinutes % 1440, 60);
+    $minutes = $totalMinutes % 60;
+
+    $parts = [];
+
+    if ($days > 0) {
+        $parts[] = $days . ' ' . Str::plural('day', $days);
+    }
+
+    if ($hours > 0) {
+        $parts[] = $hours . ' ' . Str::plural('hr', $hours);
+    }
+
+    $parts[] = $minutes . ' ' . Str::plural('min', $minutes);
+
+    return implode(', ', $parts);
 }
 
 

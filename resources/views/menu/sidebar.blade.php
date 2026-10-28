@@ -129,6 +129,14 @@
             </a>
         </li>
 
+        <li class="nav-item">
+            <a href="{{ route('turnaround') }}"
+                class="nav-link {{ request()->routeIs('turnaround') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-clock"></i>
+                <p>Turnaround Time</p>
+            </a>
+        </li>
+
         {{-- @if ($user_role == 'Administrator' || $user_role == 'records_officer')
             @php $distributionActive = request()->routeIs('distributionList', 'trackingDistributionList'); @endphp
             <li class="nav-item {{ $distributionActive ? 'menu-open menu-is-opening' : '' }}">
@@ -243,5 +251,33 @@
                 </li>
             </ul>
         </li>
+
+        @if (auth()->check() && auth()->user()->id == 56 && $user_role === 'records_officer')
+            @php
+                $archiveActive = request()->routeIs('archive.*');
+            @endphp
+            <li class="nav-item {{ $archiveActive ? 'menu-is-opening menu-open' : '' }}">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-archive nav-icon"></i>
+                    <p>ARCHIVED LOGBOOK<i class="right fas fa-angle-left"></i></p>
+                </a>
+                <ul class="nav nav-treeview" style="{{ $archiveActive ? 'display: block;' : 'display: none;' }}">
+                    <li class="nav-item">
+                        <a href="{{ route('archive.index') }}"
+                            class="nav-link {{ request()->routeIs('archive.index') ? 'active' : '' }}">
+                            <i class="fas fa-archive nav-icon text-primary"></i>
+                            <p>Archive Logbook</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('archive.history') }}"
+                            class="nav-link {{ request()->routeIs('archive.history*') ? 'active' : '' }}">
+                            <i class="fas fa-history nav-icon text-success"></i>
+                            <p>Archived History Logbook</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        @endif
     </ul>
 </nav>

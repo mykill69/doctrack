@@ -9,6 +9,7 @@ use App\Http\Controllers\RoutingSlipController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\DoctrackController;
 use App\Http\Controllers\PrintController;
+use App\Http\Controllers\ArchiveController;
 
 // Route::group(['middleware'=>['guest']],function(){
 //     Route::get('/', function () {
@@ -189,6 +190,11 @@ Route::group(['middleware'=>['login_auth']],function(){
     Route::get('/served/data', [PagesController::class, 'getServedData'])->name('served.data');
     Route::get('/pending/data', [PagesController::class, 'getPendingData'])->name('pending.data');
 
+    // Turnaround time report
+    Route::get('/turnaround', [PagesController::class, 'turnaround'])->name('turnaround');
+    Route::get('/turnaround/data', [PagesController::class, 'turnaroundData'])->name('turnaround.data');
+    Route::post('/turnaround/pdf', [PagesController::class, 'turnaroundPdf'])->name('turnaround.pdf');
+
     // Update ctrl no in doctrack slip
     Route::put('/doctrack-slip/{doctrack}', [DoctrackController::class, 'update'])->name('doctrack.update');
 
@@ -292,4 +298,23 @@ Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewT
     // Print
     Route::get('/print-logbook', [PrintController::class, 'printLogbook'])->name('printLogbook');
     Route::get('/print-logbook/pdf', [PrintController::class, 'logbookPdf'])->name('logbookPdf');
+
+    // Archive Logbook (restricted to account id 56 with the records_officer role)
+    Route::group([
+        'middleware' => ['archive_access'],
+        'prefix' => 'archived-logbook',
+        'as' => 'archive.',
+    ], function () {
+        Route::get('/', [ArchiveController::class, 'index'])->name('index');
+        Route::get('/preview', [ArchiveController::class, 'preview'])->name('preview');
+        Route::post('/', [ArchiveController::class, 'store'])->name('store');
+        Route::get('/history', [ArchiveController::class, 'history'])->name('history');
+        Route::get('/history/routing/data', [ArchiveController::class, 'routingData'])->name('history.routingData');
+        Route::get('/history/document/data', [ArchiveController::class, 'documentData'])->name('history.documentData');
+        Route::get('/history/routing/{rslipId}', [ArchiveController::class, 'showRouting'])->name('history.routingShow');
+        Route::get('/history/document/{docslipId}', [ArchiveController::class, 'showDocument'])->name('history.documentShow');
+        Route::get('/file/routing/{id}', [ArchiveController::class, 'routingFile'])->name('file.routing');
+        Route::get('/file/document/{id}', [ArchiveController::class, 'documentFile'])->name('file.document');
+        Route::get('/file/attachment/{id}', [ArchiveController::class, 'documentAttachment'])->name('file.documentAttachment');
+    });
 });
