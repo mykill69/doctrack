@@ -91,7 +91,7 @@
                                     <div class="col-md-9">
                                         <select class="form-control" name="trans_remarks" required>
                                             <option value="">Select Remarks</option>
-                                            @foreach (['Appropriate Action', 'Comment &/or Recommendation', 'Information', 'Endorsement', 'Edit/Correct', 'Review/Study', 'File', 'Draft Reply', 'See the Office', 'Calendar'] as $remark)
+                                            @foreach (['Approved', 'Appropriate Action', 'Comment &/or Recommendation', 'Information', 'Endorsement', 'Edit/Correct', 'Review/Study', 'File', 'Draft Reply', 'See the Office', 'Calendar'] as $remark)
                                                 <option value="{{ $remark }}">{{ $remark }}</option>
                                             @endforeach
                                         </select>
