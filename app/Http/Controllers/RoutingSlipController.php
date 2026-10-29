@@ -918,8 +918,9 @@ public function pdfSlip(Request $request, $id)
     // PRESIDENT ESIGNATURE
     // ==============================
 
+    // President's Office account (38) holds the president's e-signature
     $esigUserId = match ($routingSlip->pres_dept) {
-        "Dr. Aladino C. Moraca" => 38,
+        "Dr. Aladino C. Moraca", "Dr. Mae Flor G. Posadas" => 38,
         'VPAF' => 63,
         'VPAA' => 64,
         default => null,
