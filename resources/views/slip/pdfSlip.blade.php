@@ -231,12 +231,20 @@ letter-spacing: 5px;
                             <td></td>
                         </tr>
 
+                        @php
+                            // Normalize so the selected remark always shows and is checked, even if
+                            // the live remarks table lacks it or values differ in spacing/casing.
+                            $norm = fn($v) => mb_strtolower(trim((string) $v));
+                            $remarkList = $remarks->pluck('remarks_dtls')->map($norm);
+                            $selectedRemark = $norm($routingSlip->trans_remarks ?? '');
+                        @endphp
+
                         <tr>
                             <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
                                 @foreach (['Appropriate Action', 'Approved', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
-                                    @if ($remarks->contains('remarks_dtls', $leftItem))
+                                    @if ($remarkList->contains($norm($leftItem)) || $selectedRemark === $norm($leftItem))
                                         <div style="padding: 4px;">
-                                            @if ($routingSlip->trans_remarks === $leftItem)
+                                            @if ($selectedRemark === $norm($leftItem))
                                                 <img src="{{ public_path('template/img/square_check.png') }}"
                                                     alt="Checkmark" style="width:20px;">
                                             @else
@@ -251,9 +259,9 @@ letter-spacing: 5px;
 
                             <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
                                 @foreach (['File', 'Information', 'Review/Study', 'See the Office', 'Others'] as $rightItem)
-                                    @if ($remarks->contains('remarks_dtls', $rightItem))
+                                    @if ($remarkList->contains($norm($rightItem)) || $selectedRemark === $norm($rightItem))
                                         <div style="padding: 4px;">
-                                            @if ($routingSlip->trans_remarks === $rightItem)
+                                            @if ($selectedRemark === $norm($rightItem))
                                                 <img src="{{ public_path('template/img/square_check.png') }}"
                                                     alt="Checkmark" style="width:20px;">
                                             @else
@@ -373,9 +381,9 @@ letter-spacing: 5px;
                             <tr>
                                 <td colspan="2" style="text-align: left; font-family: Verdana, sans-serif;">
                                     @foreach (['Appropriate Action', 'Approved', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
-                                        @if ($remarks->contains('remarks_dtls', $leftItem))
+                                        @if ($remarkList->contains($norm($leftItem)) || $selectedRemark === $norm($leftItem))
                                             <div style="padding: 4px;">
-                                                @if ($routingSlip->trans_remarks === $leftItem)
+                                                @if ($selectedRemark === $norm($leftItem))
                                                     <img src="{{ public_path('template/img/square_check.png') }}"
                                                         alt="Checkmark" style="width:20px;">
                                                 @else
@@ -390,9 +398,9 @@ letter-spacing: 5px;
 
                                 <td colspan="2" style="text-align: left; font-family: Verdana, sans-serif;">
                                     @foreach (['File', 'Information', 'Review/Study', 'See the Office', 'Others'] as $rightItem)
-                                        @if ($remarks->contains('remarks_dtls', $rightItem))
+                                        @if ($remarkList->contains($norm($rightItem)) || $selectedRemark === $norm($rightItem))
                                             <div style="padding: 4px;">
-                                                @if ($routingSlip->trans_remarks === $rightItem)
+                                                @if ($selectedRemark === $norm($rightItem))
                                                     <img src="{{ public_path('template/img/square_check.png') }}"
                                                         alt="Checkmark" style="width:20px;">
                                                 @else
