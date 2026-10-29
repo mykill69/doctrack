@@ -407,12 +407,18 @@ public function viewSlip()
 
     $perPage = 15;
 
-    if ($userRole === 'super_user') {
+    if ($userId == 38) {
+        // President's Office: Get ALL Routed to President (status 1) AND ALL Routed back to Records (status 2)
+        $routingSlips = RoutingSlip::whereIn('route_status', [1, 2])
+                        ->orderBy('updated_at', 'desc')
+                        ->get();
+    }
+    elseif ($userRole === 'super_user') {
         // Super User: Get ALL Routed to President (status 1)
         $routingSlips = RoutingSlip::where('route_status', 1)
                         ->orderBy('updated_at', 'desc')
                         ->get();
-    } 
+    }
     elseif ($userRole === 'records_officer') {
         // Records Officer: Get ALL their created routing slips with route_status == 2 AND route_status == 1
         $routingSlips = RoutingSlip::whereIn('route_status', [1, 2])  // Can see both Routed to President and Routed back to Records

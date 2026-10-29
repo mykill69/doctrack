@@ -100,6 +100,10 @@
                                                     'enroute' => 'Pending',
                                                 ];
 
+                                                if ($role === 'records_officer') {
+                                                    unset($tabs['enroute']);
+                                                }
+
                                                 if ($role === 'super_user') {
                                                     $tabs = [
                                                         'routed1' => 'Routed to President',
