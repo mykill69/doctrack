@@ -290,8 +290,9 @@ letter-spacing: 5px;
                                         @if ($esig->user_id == 63 || $esig->user_id == 64)
                                             <span style="font-weight: bold;">for:</span>
                                         @endif
+                                        {{-- lowered by 0.5in; margin-bottom offsets it so the name below stays in place --}}
                                         <img src="{{ $esigSrc }}" alt="Electronic Signature"
-                                            style="width: 200px; height: auto; margin-bottom: -20px;">
+                                            style="width: 200px; height: auto; margin-top: 0.5in; margin-bottom: -0.71in;">
                                     </div>
                                 @endif
 
