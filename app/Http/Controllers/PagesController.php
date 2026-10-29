@@ -2707,6 +2707,15 @@ public function passChange(Request $request, $id)
         ->with('success', 'User updated successfully.');
 }
 
+public function showEsig($filename)
+{
+    $path = storage_path('app/esignature/' . $filename);
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    return response()->file($path);
+}
+
 
 // public function distributionList()
 // {

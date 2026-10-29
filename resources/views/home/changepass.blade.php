@@ -80,7 +80,7 @@
 
                                         @if ($userEsig && $userEsig->esig_file)
                                             <p>Current E-Signature:</p>
-                                            <img src="{{ asset('storage/esignature/' . $userEsig->esig_file) }}"
+                                            <img src="{{ route('esig.show', $userEsig->esig_file) }}"
                                                 alt="E-signature" class="img-thumbnail" style="max-height: 120px;">
                                         @endif
 

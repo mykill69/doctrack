@@ -254,6 +254,7 @@ Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewT
     Route::post('/update-dpa', [UserController::class, 'updateDpa'])->name('update.dpa');
     Route::get('/users/ChangePass/{id}', [PagesController::class, 'userPassword'])->name('userPassword');
     Route::put('/users/passChange/{id}', [PagesController::class, 'passChange'])->name('passChange');
+    Route::get('/esignature/{filename}', [PagesController::class, 'showEsig'])->name('esig.show');
     Route::delete('/users/{id}', [UserController::class, 'deleteUser'])->name('users.deleteUser');
 
     // Routing slip
