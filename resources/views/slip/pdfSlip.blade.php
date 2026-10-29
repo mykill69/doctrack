@@ -233,7 +233,7 @@ letter-spacing: 5px;
 
                         <tr>
                             <td colspan="2" style="text-align: left;font-family: Verdana, sans-serif;">
-                                @foreach (['Appropriate Action', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
+                                @foreach (['Appropriate Action', 'Approved', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
                                     @if ($remarks->contains('remarks_dtls', $leftItem))
                                         <div style="padding: 4px;">
                                             @if ($routingSlip->trans_remarks === $leftItem)
@@ -372,7 +372,7 @@ letter-spacing: 5px;
 
                             <tr>
                                 <td colspan="2" style="text-align: left; font-family: Verdana, sans-serif;">
-                                    @foreach (['Appropriate Action', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
+                                    @foreach (['Appropriate Action', 'Approved', 'Calendar', 'Comment & Recommendation', 'Draft Reply', 'Endorsement'] as $leftItem)
                                         @if ($remarks->contains('remarks_dtls', $leftItem))
                                             <div style="padding: 4px;">
                                                 @if ($routingSlip->trans_remarks === $leftItem)
