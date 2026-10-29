@@ -92,22 +92,21 @@
                         @php
                             $user = auth()->user();
                             $userId = $user->id;
-                            $userDepartment = trim($user->department);
                             $userFullName = trim($user->fname . ' ' . $user->lname);
                             $userRole = $user->role;
 
+                            // Same scope as PagesController::getServedData (only the person it was routed to)
                             $servedQuery = Log::whereNotNull('new_user');
 
                             if ($userRole !== 'records_officer') {
-                                $servedQuery->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+                                $servedQuery->where(function ($q) use ($userId, $userFullName) {
                                     $q->where('new_user', $userId)
                                         ->orWhere('user_id', $userId)
-                                        ->orWhere('new_destination', $userDepartment)
                                         ->orWhere('new_destination', $userFullName);
                                 });
                             }
 
-                            $statusUpdateCount = $servedQuery->distinct('route_id')->count();
+                            $statusUpdateCount = $servedQuery->distinct()->count('route_id');
                         @endphp
                         <span class="badge badge-success ml-2">{{ $statusUpdateCount }}</span>
                     </p>

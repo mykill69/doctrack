@@ -1640,7 +1640,6 @@ public function served()
     {
         $user = auth()->user();
         $userId = $user->id;
-        $userDepartment = trim($user->department);
         $userFullName = trim($user->fname . ' ' . $user->lname);
         $userRole = $user->role;
 
@@ -1649,14 +1648,14 @@ public function served()
         $length = (int) $request->input('length', 25);
 
         // The documents the logged in user is allowed to see
-        $applyScope = function ($query) use ($userId, $userDepartment, $userFullName, $userRole) {
+        // Only the person the document was routed to can see it (not the rest of their department)
+        $applyScope = function ($query) use ($userId, $userFullName, $userRole) {
             $query->whereNotNull('new_user');
 
             if ($userRole !== 'records_officer') {
-                $query->where(function ($q) use ($userId, $userDepartment, $userFullName) {
+                $query->where(function ($q) use ($userId, $userFullName) {
                     $q->where('new_user', $userId)
                       ->orWhere('user_id', $userId)
-                      ->orWhere('new_destination', $userDepartment)
                       ->orWhere('new_destination', $userFullName);
                 });
             }
