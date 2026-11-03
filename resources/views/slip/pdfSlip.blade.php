@@ -179,7 +179,7 @@ letter-spacing: 5px;
                         <tr>
                             <th colspan="4" style="border-style: none;">
                                 <div class="center-content">
-                                    <img src="{{ public_path('template/img/header_new.png') }}" class="header-img"
+                                    <img src="{{ public_path('template/img/header_new_2.png') }}" class="header-img"
                                         alt="Header Image">
                                     <h1>Routing Slip</h1>
                                 </div>
@@ -317,14 +317,14 @@ letter-spacing: 5px;
                             </td>
                         </tr>
 
-                        <tr style="font-size:9px;font-family: Verdana, sans-serif;">
-                            <td style="text-align: center;width: 40%;">
-                                <p>Doc Control Code:CPSU-F-QA-23</p>
+                        <tr style="font-size:8px;font-family: Verdana, sans-serif;">
+                            <td style="text-align: center;width: 50%;">
+                                <p>Doc Control Code:CPSU-F-QA-23-REV01</p>
                             </td>
-                            <td colspan="2" style="text-align: left;width: 35%;">
-                                <p>Effective Date:09/12/2018</p>
+                            <td colspan="2" style="text-align: left;width: 30%;">
+                                <p>Effective Date:09/04/2024</p>
                             </td>
-                            <td style="text-align: left;width: 25%;">
+                            <td style="text-align: left;width: 20%;">
                                 <p>Page No.: 1 of 1</p>
                             </td>
                         </tr>
@@ -450,14 +450,14 @@ letter-spacing: 5px;
                                 </td>
                             </tr>
 
-                            <tr style="font-size:9px; font-family: Verdana, sans-serif;">
-                                <td style="text-align: center; width: 40%;">
-                                    <p>Doc Control Code: CPSU-F-QA-23</p>
+                            <tr style="font-size:8px; font-family: Verdana, sans-serif;">
+                                <td style="text-align: center; width: 50%;">
+                                    <p>Doc Control Code: CPSU-F-QA-23-REV01</p>
                                 </td>
-                                <td colspan="2" style="text-align: left; width: 35%;">
-                                    <p>Effective Date: 09/12/2018</p>
+                                <td colspan="2" style="text-align: left; width: 30%;">
+                                    <p>Effective Date: 09/04/2024</p>
                                 </td>
-                                <td style="text-align: left; width: 25%;">
+                                <td style="text-align: left; width: 20%;">
                                     <p>Page No.: 1 of 1</p>
                                 </td>
                             </tr>
