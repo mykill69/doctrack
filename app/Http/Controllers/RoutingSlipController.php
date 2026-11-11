@@ -1594,6 +1594,8 @@ public function updateRouteDocRecall(Request $request, $id)
             : [];
 
         $finalDestinations = [];
+        // Every individual name still selected on the form (existing + newly added)
+        $selectedNames = [];
 
         foreach ($validatedData['routed_users'] as $destination) {
             $users = collect();
@@ -1612,6 +1614,7 @@ public function updateRouteDocRecall(Request $request, $id)
 
             foreach ($users as $user) {
                 $fullName = $user->fname . ' ' . $user->lname;
+                $selectedNames[] = $fullName;
 
                 if (!in_array($fullName, $existingDestinations) && !in_array($fullName, $finalDestinations)) {
                     $finalDestinations[] = $fullName;
@@ -1643,8 +1646,21 @@ public function updateRouteDocRecall(Request $request, $id)
             }
         }
 
+        $selectedNames = array_values(array_unique($selectedNames));
+
+        // Personnel that were on the transaction but were removed on the recall form
+        $removedDestinations = array_values(array_diff($existingDestinations, $selectedNames));
+
+        if (!empty($removedDestinations)) {
+            Log::where('doc_id', $document->id)
+                ->whereIn('new_destination', $removedDestinations)
+                ->delete();
+        }
+
         if ($routingSlip) {
-            $combined = array_values(array_unique(array_merge($existingDestinations, $finalDestinations)));
+            // Keep only the personnel still selected (preserving original order), then append new ones
+            $kept = array_values(array_intersect($existingDestinations, $selectedNames));
+            $combined = array_values(array_unique(array_merge($kept, $finalDestinations)));
             $routingSlip->routed_users = implode(', ', $combined);
             $routingSlip->route_status = 3;
             $routingSlip->save();

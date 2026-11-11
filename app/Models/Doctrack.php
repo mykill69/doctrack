@@ -16,6 +16,8 @@ class Doctrack extends Model
     protected $fillable = [
         'docslip_id',
         'ctrl_no',
+        'date_received',
+        'source_id',
         'user_id',
         'update_by',
         'doc_type',
@@ -32,6 +34,7 @@ class Doctrack extends Model
         'is_archived' => 'boolean',
         'archived_at' => 'datetime',
         'ctrl_no' => 'integer',
+        'date_received' => 'date',
     ];
 
     /**
@@ -70,6 +73,14 @@ class Doctrack extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * User selected as the Source in the Document Transmittal form
+     */
+    public function source()
+    {
+        return $this->belongsTo(User::class, 'source_id');
     }
 
     public function archivedBy()

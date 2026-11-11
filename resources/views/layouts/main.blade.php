@@ -645,6 +645,23 @@
                             </div>
 
                             <div class="form-group text-left">
+                                <label>Date Received</label>
+                                <input type="date" name="date_received" id="dateReceived" class="form-control"
+                                    value="{{ now()->format('Y-m-d') }}" required>
+                            </div>
+
+                            <div class="form-group text-left">
+                                <label>Source</label>
+                                <select name="source_id" id="sourceId" class="form-control"
+                                    data-placeholder="Select source..." required>
+                                    <option value=""></option>
+                                    @foreach ($users as $user)
+                                        <option value="{{ $user->id }}">{{ $user->fname }} {{ $user->lname }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="form-group text-left">
                                 <label>Document Type</label>
                                 <select name="doc_type" class="form-control" required>
                                     <option value="">Select</option>
@@ -660,7 +677,7 @@
                             </div>
 
                             <div class="form-group text-left">
-                                <label>Document Title</label>
+                                <label>Subject Matter</label>
                                 <textarea name="doc_title" class="form-control" rows="2" required></textarea>
                             </div>
 
@@ -719,6 +736,15 @@
                             dropdownParent: $('.swal2-popup')
                         });
 
+                        // ✅ Searchable single-select for the Source user
+                        $('#sourceId').select2({
+                            theme: 'bootstrap4',
+                            width: '100%',
+                            placeholder: 'Select source...',
+                            allowClear: true,
+                            dropdownParent: $('.swal2-popup')
+                        });
+
                         // ✅ Preview the list of files that will be uploaded
                         const fileInput = document.getElementById('docFile');
                         const fileList = document.getElementById('docFileList');
@@ -743,6 +769,16 @@
                     const form = document.getElementById('docForm');
                     const formData = new FormData(form);
                     const fileInput = document.getElementById('docFile');
+
+                    // ✅ Date Received and Source are required
+                    if (!formData.get('date_received')) {
+                        Swal.showValidationMessage('Please enter the Date Received.');
+                        return false;
+                    }
+                    if (!formData.get('source_id')) {
+                        Swal.showValidationMessage('Please select the Source.');
+                        return false;
+                    }
 
                     // ✅ Rebuild the file entries so MULTIPLE files are uploaded in one request
                     formData.delete('file');

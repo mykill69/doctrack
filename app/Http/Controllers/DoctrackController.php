@@ -178,6 +178,8 @@ public function storeDoctrack(Request $request)
         'doc_type'    => 'required|string',
         'doc_title'   => 'required|string',
         'ctrl_no'     => 'nullable|integer',
+        'date_received' => 'required|date',
+        'source_id'   => 'required|integer|exists:users,id',
         'update_by'   => 'required|array',
         'update_by.*' => 'required|string',
         'file'        => 'nullable|array',
@@ -199,11 +201,17 @@ public function storeDoctrack(Request $request)
     // ✅ Control Code coming from the Document Transmittal form
     $ctrlNo = ($request->ctrl_no !== null && $request->ctrl_no !== '') ? (int) $request->ctrl_no : null;
 
+    // ✅ Date Received and Source coming from the Document Transmittal form
+    $dateReceived = $request->date_received;
+    $sourceId     = (int) $request->source_id;
+
     $documentTrack = Doctrack::create([
         'user_id'       => $creator->id,
         'update_by'     => null,
         'docslip_id'    => $docslip_id,
         'ctrl_no'       => $ctrlNo,
+        'date_received' => $dateReceived,
+        'source_id'     => $sourceId,
         'doc_type'      => $request->doc_type,
         'doc_title'     => $request->doc_title,
         'user_name'     => $creatorFullName,
@@ -273,6 +281,8 @@ public function storeDoctrack(Request $request)
             'update_by'     => $recipient->id,
             'docslip_id'    => $docslip_id,
             'ctrl_no'       => $ctrlNo,
+            'date_received' => $dateReceived,
+            'source_id'     => $sourceId,
             'doc_type'      => $request->doc_type,
             'doc_title'     => $request->doc_title,
             'user_name'     => $creatorFullName,
@@ -344,11 +354,18 @@ public function storeDoctrackUpdate(Request $request)
     $fileNames = $this->storeUploadedFiles($request->file('file'));
     $fileLogs  = $this->joinFileNames($fileNames);
 
+    // ✅ Carry the Date Received / Source of the original transaction forward
+    $original = Doctrack::where('docslip_id', $request->docslip_id)
+        ->orderBy('id')
+        ->first(['date_received', 'source_id']);
+
     // Create doctrack entry
     $documentTrack = Doctrack::create([
         'user_id'       => $request->user_id,
         'update_by'     => $request->update_by,
         'docslip_id'    => $request->docslip_id,
+        'date_received' => $original?->date_received,
+        'source_id'     => $original?->source_id,
         'doc_type'      => $request->doc_type,
         'doc_title'     => $request->doc_title,
         'user_name'     => $request->user_name,

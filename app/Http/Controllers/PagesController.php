@@ -821,7 +821,9 @@ public function getDoctrackData(Request $request)
     $sortMap = [
         'ctrl_no'       => 'doctrack_slip.ctrl_no',
         'created_at'    => 'doctrack_slip.created_at',
-        'user_name'     => 'doctrack_slip.user_name',
+        // ✅ SOURCE shows the user selected in the Document Transmittal form
+        //    (falls back to the creator's name for older transactions)
+        'user_name'     => "COALESCE((select concat(u.fname, ' ', u.lname) from users u where u.id = doctrack_slip.source_id), doctrack_slip.user_name)",
         'doc_title'     => 'doctrack_slip.doc_title',
         'updated_at'    => 'doctrack_slip.updated_at',
         'doctrack_stat' => 'doctrack_slip.doctrack_stat',
@@ -852,6 +854,11 @@ public function getDoctrackData(Request $request)
         $query->where(function ($q) use ($searchValue) {
             $q->where('docslip_id', 'LIKE', "%{$searchValue}%")
               ->orWhere('user_name', 'LIKE', "%{$searchValue}%")
+              // ✅ Search by the selected Source user as well
+              ->orWhereIn('source_id', function ($sub) use ($searchValue) {
+                  $sub->select('id')->from('users')
+                      ->whereRaw("concat(fname, ' ', lname) LIKE ?", ["%{$searchValue}%"]);
+              })
               ->orWhere('doc_title', 'LIKE', "%{$searchValue}%")
               ->orWhere('doc_type', 'LIKE', "%{$searchValue}%")
               ->orWhere('ctrl_no', 'LIKE', "%{$searchValue}%")
@@ -907,6 +914,7 @@ public function getDoctrackData(Request $request)
     // ✅ Preload the users of the whole page in a SINGLE query (removes the n+1)
     $userIds = $doctracks->pluck('update_by')
         ->merge($doctracks->pluck('user_id'))
+        ->merge($doctracks->pluck('source_id'))
         ->filter()
         ->unique()
         ->values()
@@ -988,10 +996,16 @@ public function getDoctrackData(Request $request)
             'ctrl_no' => $record->ctrl_no,
             'ctrl_input' => $canViewCtrlNo ? '<input type="text" class="form-control doctrack-input form-control-sm" data-id="' . $record->id . '" data-field="ctrl_no" value="' . ($record->ctrl_no ?? '') . '" style="width: 80px;">' : '',
             'date_received' => $record->created_at->format('M j, Y'),
-            'source' => $record->user_name ?? 'N/A',
+            // ✅ Source = user selected in the Document Transmittal form
+            //    (older transactions without a source fall back to the creator's name)
+            'source' => ($sourceUser = $usersById->get($record->source_id))
+                ? e($sourceUser->fname . ' ' . $sourceUser->lname)
+                : e($record->user_name ?? 'N/A'),
             'subject' => ($record->doc_title ?? 'N/A') . ' - ' . ($record->doc_type ?? 'N/A'),
             'action_unit' => '--',
-            'received_by_date' => '--',
+            'received_by_date' => $record->date_received
+                ? $record->date_received->format('M j, Y')
+                : '--',
             'action_taken' => $actionTaken, // Now in ALL CAPS
             'date_released' => $record->updated_at->format('M d, Y'),
             'remarks' => $commentsHtml,

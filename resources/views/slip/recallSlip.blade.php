@@ -18,10 +18,50 @@
         line-height: 1.5;
     }
 
-    .select2-selection__rendered {
+    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
+        gap: 4px;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Selected personnel / group tags */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        display: inline-flex !important;
+        align-items: center;
+        background-color: #007bff !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 0.2rem;
+        padding: 2px 8px !important;
+        margin: 0 !important;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    /* Show the remove (x) button on this page so personnel can be removed */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        display: inline-block !important;
+        position: static !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        border: none !important;
+        background: transparent !important;
+        margin: 0 6px 0 0 !important;
+        padding: 0 !important;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: #fff !important;
+    }
+
+    .select2-container--default .select2-search--inline .select2-search__field {
+        margin-top: 0;
+        min-width: 150px;
     }
 
     .select2-dropdown {
@@ -233,9 +273,7 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
+    {{-- jQuery and Select2 are already loaded by layouts.main; loading them again here breaks the tag styling --}}
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
