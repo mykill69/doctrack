@@ -1661,6 +1661,8 @@ public function served()
         $searchValue = trim((string) $request->input('search.value'));
         $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 25);
+        // ✅ "Show entries" goes up to 500 rows per page (also guards against -1 / huge values)
+        $length = ($length < 1 || $length > 500) ? 500 : $length;
 
         // The documents the logged in user is allowed to see
         // Only the person the document was routed to can see it (not the rest of their department)
