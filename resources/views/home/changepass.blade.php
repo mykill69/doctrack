@@ -78,9 +78,28 @@
                                         <input type="file" class="form-control mb-2" name="esig_file" id="esig_file"
                                             accept="image/png, image/jpeg">
 
-                                        @if ($userEsig && $userEsig->esig_file)
-                                            <p>Current E-Signature:</p>
-                                            <img src="{{ route('esig.show', $userEsig->esig_file) }}"
+                                        <small class="form-text text-muted mb-2">
+                                            PNG or JPG only (max 5MB). Your signature is stored encrypted.
+                                        </small>
+
+                                        @error('esig_file')
+                                            <div class="text-danger small mb-2">{{ $message }}</div>
+                                        @enderror
+
+                                        @if ($userEsig && $userEsig->needsReupload())
+                                            {{-- Legacy signature uploaded before encryption --}}
+                                            <div class="alert alert-warning py-2 px-3 small mb-0">
+                                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                <strong>Please upload your e-signature again.</strong>
+                                                Your previous signature was saved without encryption and is no longer
+                                                used on documents until you re-upload it.
+                                            </div>
+                                        @elseif ($userEsig && $userEsig->esig_file)
+                                            <p class="mb-1">
+                                                Current E-Signature:
+                                                <span class="badge badge-success"><i class="fas fa-lock"></i> Encrypted</span>
+                                            </p>
+                                            <img src="{{ route('esig.show') }}?v={{ $userEsig->updated_at?->timestamp }}"
                                                 alt="E-signature" class="img-thumbnail" style="max-height: 120px;">
                                         @endif
 

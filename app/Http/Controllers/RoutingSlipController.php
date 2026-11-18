@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\Group;
 use App\Models\RoutingSlipFile;
 use App\Services\ArchiveService;
+use App\Services\EsignatureService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
@@ -910,15 +911,9 @@ public function pdfSlip(Request $request, $id)
         $reassigningUserEsig = Esig::where('user_id', $reassigningUser->id)->first();
     }
 
-    // ✅ Convert reassigning user esig to base64
-    if ($reassigningUserEsig && $reassigningUserEsig->esig_file) {
-        $esigPath = storage_path('app/esignature/' . $reassigningUserEsig->esig_file);
-        if (file_exists($esigPath)) {
-            $imageData = file_get_contents($esigPath);
-            $mimeType = mime_content_type($esigPath);
-            $reassigningUserEsigSrc = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-        }
-    }
+    // ✅ Decrypt the reassigning user's esig in memory and convert it to base64
+    $esigService = app(EsignatureService::class);
+    $reassigningUserEsigSrc = $esigService->dataUri($reassigningUserEsig);
 
     // ==============================
     // PRESIDENT ESIGNATURE
@@ -938,14 +933,8 @@ public function pdfSlip(Request $request, $id)
     if ($esigUserId) {
         $esig = Esig::where('user_id', $esigUserId)->first();
 
-        if ($esig && $esig->esig_file) {
-            $esigPath = storage_path('app/esignature/' . $esig->esig_file);
-            if (file_exists($esigPath)) {
-                $imageData = file_get_contents($esigPath);
-                $mimeType = mime_content_type($esigPath);
-                $esigSrc = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-            }
-        }
+        // ✅ Decrypted in memory (legacy unencrypted signatures are not used)
+        $esigSrc = $esigService->dataUri($esig);
     }
 
     // ==============================

@@ -18,6 +18,7 @@ use App\Models\Esig;
 use App\Models\Doctrack;
 use App\Models\DoctrackFile;
 use App\Services\ArchiveService;
+use App\Services\EsignatureService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
@@ -2654,21 +2655,23 @@ public function userPassword($id)
 
 public function passChange(Request $request, $id)
 {
+    // ✅ Users can only update their OWN account / e-signature
+    //    (the id in the URL can be changed by anyone, so it is not trusted)
+    abort_unless((int) $id === (int) auth()->id(), 403, 'You can only update your own account.');
+
     $validator = Validator::make($request->all(), [
         'email' => 'nullable|string|max:255|unique:users,email,' . $id,
         'password' => 'nullable|string|min:8|confirmed',
         'department' => 'nullable|string|max:255',
-        'esig_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:25600',
+        // ✅ Signature must be a real PNG/JPG image (PDF cannot be shown as a signature)
+        'esig_file' => 'nullable|file|image|mimes:jpeg,png,jpg|max:5120',
     ]);
 
     if ($validator->fails()) {
         return redirect()->back()->withErrors($validator)->withInput();
     }
 
-    $user = User::find($id);
-    if (!$user) {
-        return redirect()->back()->with('error', 'User not found');
-    }
+    $user = auth()->user();
 
     // ✅ Update password if provided
     if ($request->filled('password')) {
@@ -2680,37 +2683,13 @@ public function passChange(Request $request, $id)
         $user->department = $request->department;
     }
 
-    // ✅ Handle E-signature upload
+    // ✅ Handle E-signature upload (saved ENCRYPTED in storage/app/esignature)
     if ($request->hasFile('esig_file')) {
-        $file = $request->file('esig_file');
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $extension = $file->getClientOriginalExtension();
-        $filename = $user->fname . '_' . $originalName . '.' . $extension;
-
-        $i = 1;
-        $storagePath = storage_path('app/esignature');
-
-        while (file_exists($storagePath . '/' . $filename)) {
-            $filename = $user->fname . '_' . $originalName . ' Copy ' . $i . '.' . $extension;
-            $i++;
+        try {
+            app(EsignatureService::class)->store($user, $request->file('esig_file'));
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->back()->withErrors(['esig_file' => $e->getMessage()])->withInput();
         }
-
-        // Delete old file if exists
-        $existingEsig = Esig::where('user_id', $user->id)->first();
-        if ($existingEsig && $existingEsig->esig_file) {
-            $oldPath = $storagePath . '/' . $existingEsig->esig_file;
-            if (file_exists($oldPath)) {
-                unlink($oldPath);
-            }
-        }
-
-        // Save new file
-        $file->storeAs('esignature', $filename);
-
-        Esig::updateOrCreate(
-            ['user_id' => $user->id],
-            ['esig_file' => $filename]
-        );
     }
 
     // ✅ Save changes to user
@@ -2720,13 +2699,22 @@ public function passChange(Request $request, $id)
         ->with('success', 'User updated successfully.');
 }
 
-public function showEsig($filename)
+/**
+ * Preview of the logged-in user's OWN e-signature (decrypted in memory).
+ * Other users' signatures can no longer be opened by guessing the file name.
+ */
+public function showEsig()
 {
-    $path = storage_path('app/esignature/' . $filename);
-    if (!file_exists($path)) {
-        abort(404);
-    }
-    return response()->file($path);
+    $esig = Esig::where('user_id', auth()->id())->first();
+    $contents = app(EsignatureService::class)->contents($esig);
+
+    abort_if($contents === null, 404);
+
+    return response($contents, 200, [
+        'Content-Type'           => $esig->mime_type ?: 'image/png',
+        'Cache-Control'          => 'no-store, private',
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
 }
 
 
@@ -2877,25 +2865,12 @@ public function viewDistributionPdf($id)
         ->unique('new_destination')
         ->values();
 
-    // Add e-signature if status_update == 3
-    $logs->transform(function ($log) {
-        if ($log->status_update == 3) {
-            $esig = \App\Models\Esig::where('user_id', $log->new_user)->first();
-            if ($esig && $esig->esig_file) {
-                $esigPath = storage_path('app/esignature/' . $esig->esig_file);
-                if (file_exists($esigPath)) {
-                    $imageData = file_get_contents($esigPath);
-                    $mimeType = mime_content_type($esigPath);
-                    $log->esig_src = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-                } else {
-                    $log->esig_src = null;
-                }
-            } else {
-                $log->esig_src = null;
-            }
-        } else {
-            $log->esig_src = null;
-        }
+    // Add e-signature if status_update == 3 (decrypted in memory)
+    $esigService = app(EsignatureService::class);
+    $logs->transform(function ($log) use ($esigService) {
+        $log->esig_src = $log->status_update == 3
+            ? $esigService->dataUriForUser($log->new_user)
+            : null;
         return $log;
     });
 
@@ -2983,23 +2958,10 @@ public function viewTrackingDistributionPdf($id)
                 ? trim($log->receivedBy->fname . ' ' . $log->receivedBy->lname)
                 : null;
 
-            if (in_array($log->doctrack_stat, [3, 5])) {
-                $esig = \App\Models\Esig::where('user_id', $log->update_by)->first();
-                if ($esig && $esig->esig_file) {
-                    $esigPath = storage_path('app/esignature/' . $esig->esig_file);
-                    if (file_exists($esigPath)) {
-                        $imageData = file_get_contents($esigPath);
-                        $mimeType = mime_content_type($esigPath);
-                        $log->esig_src = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-                    } else {
-                        $log->esig_src = null;
-                    }
-                } else {
-                    $log->esig_src = null;
-                }
-            } else {
-                $log->esig_src = null;
-            }
+            // ✅ E-signature (decrypted in memory)
+            $log->esig_src = in_array($log->doctrack_stat, [3, 5])
+                ? app(EsignatureService::class)->dataUriForUser($log->update_by)
+                : null;
 
             return $log;
         });

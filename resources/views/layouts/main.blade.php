@@ -626,6 +626,36 @@
     </script>
 
 
+    {{-- ✅ Ask users with an old (unencrypted) e-signature to upload it again --}}
+    @php
+        $esigNeedsReupload = auth()->check()
+            && \App\Models\Esig::where('user_id', auth()->id())->where('is_encrypted', false)->exists();
+    @endphp
+    @if ($esigNeedsReupload && !request()->routeIs('userPassword'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                let shown = false;
+                try { shown = sessionStorage.getItem('esigReuploadNotice') === '1'; } catch (e) {}
+                if (shown || typeof Swal === 'undefined') return;
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Please re-upload your e-signature',
+                    html: 'For security, e-signatures are now stored <b>encrypted</b>.<br>' +
+                        'Your current signature will not appear on documents until you upload it again.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Upload now',
+                    cancelButtonText: 'Later'
+                }).then(function(result) {
+                    try { sessionStorage.setItem('esigReuploadNotice', '1'); } catch (e) {}
+                    if (result.isConfirmed) {
+                        window.location.href = "{{ route('userPassword', ['id' => auth()->id()]) }}";
+                    }
+                });
+            });
+        </script>
+    @endif
+
     @php
         $users = \App\Models\User::orderBy('fname')->get();
     @endphp
