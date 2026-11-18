@@ -61,14 +61,15 @@
 
                                 {{-- Control Number (EDITABLE) --}}
                                 <div class="form-group row">
-                                    <label for="op_ctrl" class="col-md-3 col-form-label font-weight-bold">
+                                    <label for="ctrl_no" class="col-md-3 col-form-label font-weight-bold">
                                         Control Number: <span class="text-danger">*</span>
                                     </label>
                                     <div class="col-md-9">
-                                        <input type="number" class="form-control" name="op_ctrl"
-                                            value="{{ old('op_ctrl', $routingSlips->op_ctrl ?? $routingSlips->rslip_id) }}"
+                                        {{-- Edits the CTRL # of the transaction (routing_slip.rslip_id) --}}
+                                        <input type="number" class="form-control" id="ctrl_no" name="ctrl_no" min="1"
+                                            value="{{ old('ctrl_no', $routingSlips->rslip_id) }}"
                                             required>
-                                        @error('op_ctrl')
+                                        @error('ctrl_no')
                                             <span class="text-danger">{{ $message }}</span>
                                         @enderror
                                     </div>

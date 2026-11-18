@@ -1233,7 +1233,7 @@ public function updateSubject(Request $request, $id)
     }
     
     $request->validate([
-        'op_ctrl'       => 'required|integer',
+        'ctrl_no'       => 'required|integer|min:1',
         'source'        => 'required|string|max:255',
         'date_received' => 'required|date',
         'subject'       => 'required|string|max:255',
@@ -1241,11 +1241,30 @@ public function updateSubject(Request $request, $id)
     ]);
 
     $routingSlip = RoutingSlip::findOrFail($id);
-    
+
     if ($routingSlip->route_status != 1) {
         return redirect()->route('viewSlip')->with('error', 'Can only edit slips routed to President.');
     }
-    
+
+    // ✅ Control Number = the CTRL # of the transaction (routing_slip.rslip_id)
+    $oldCtrlNo = (string) $routingSlip->rslip_id;
+    $newCtrlNo = (string) (int) $request->input('ctrl_no');
+
+    if ($newCtrlNo !== $oldCtrlNo) {
+        // Do not allow two active transactions with the same CTRL # in the same year
+        $year = optional($routingSlip->created_at)->year ?? now()->year;
+        $taken = RoutingSlip::where('rslip_id', $newCtrlNo)
+            ->where('id', '!=', $routingSlip->id)
+            ->whereYear('created_at', $year)
+            ->exists();
+
+        if ($taken) {
+            return redirect()->back()
+                ->withErrors(['ctrl_no' => "Control Number {$newCtrlNo} is already used by another transaction this year."])
+                ->withInput();
+        }
+    }
+
     // Handle document replacement
     if ($request->hasFile('document')) {
         // Delete old document if exists
@@ -1259,13 +1278,49 @@ public function updateSubject(Request $request, $id)
         $routingSlip->document = $pdfName;
     }
     
-    $routingSlip->op_ctrl       = $request->input('op_ctrl');
-    $routingSlip->source        = $request->input('source');
-    $routingSlip->date_received = $request->input('date_received');
-    $routingSlip->subject       = $request->input('subject');
-    $routingSlip->save();
+    DB::transaction(function () use ($routingSlip, $request, $oldCtrlNo, $newCtrlNo) {
+        if ($newCtrlNo !== $oldCtrlNo) {
+            $this->changeRoutingSlipCtrlNo($routingSlip, $oldCtrlNo, $newCtrlNo);
+        }
+
+        $routingSlip->rslip_id      = $newCtrlNo;
+        $routingSlip->source        = $request->input('source');
+        $routingSlip->date_received = $request->input('date_received');
+        $routingSlip->subject       = $request->input('subject');
+        $routingSlip->save();
+    });
 
     return redirect()->route('viewSlip')->with('success', 'Routing Slip CTRL#' . $routingSlip->rslip_id . ' updated successfully.');
+}
+
+/**
+ * Move the records linked to the old CTRL # to the new CTRL #.
+ *
+ * - routing_slip_files are linked by routing_slip_id, so they are always updated.
+ * - documents / logs / assign_logs / route_documents are linked ONLY by the
+ *   CTRL # (route_id). Because CTRL #s are reused (e.g. every year), they are
+ *   only moved when no other routing slip uses the old CTRL #; otherwise they
+ *   could belong to the other transaction and are left untouched.
+ */
+private function changeRoutingSlipCtrlNo(RoutingSlip $routingSlip, string $oldCtrlNo, string $newCtrlNo): void
+{
+    RoutingSlipFile::where('routing_slip_id', $routingSlip->id)
+        ->update(['rslip_id' => $newCtrlNo]);
+
+    $oldCtrlIsShared = RoutingSlip::withoutGlobalScopes()
+        ->where('rslip_id', $oldCtrlNo)
+        ->where('id', '!=', $routingSlip->id)
+        ->exists();
+
+    if ($oldCtrlIsShared) {
+        \Illuminate\Support\Facades\Log::info("CTRL# {$oldCtrlNo} -> {$newCtrlNo} (routing_slip.id {$routingSlip->id}): "
+            . 'old CTRL# is used by another slip, linked documents/logs were not moved.');
+        return;
+    }
+
+    foreach (['documents', 'logs', 'assign_logs', 'route_documents'] as $table) {
+        DB::table($table)->where('route_id', $oldCtrlNo)->update(['route_id' => $newCtrlNo]);
+    }
 }
 
 
