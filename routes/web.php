@@ -257,7 +257,9 @@ Route::get('/trackingDistributionList/pdf/{id}', [PagesController::class, 'viewT
     Route::get('/esignature/preview', [PagesController::class, 'showEsig'])->name('esig.show');
     Route::delete('/users/{id}', [UserController::class, 'deleteUser'])->name('users.deleteUser');
 
-    // Routing slip
+
+
+    // Routing slip routes
     Route::post('/routingSlip', [RoutingSlipController::class, 'storeSlip'])->name('storeSlip');
     Route::get('/routingSlip/edit/{id}', [RoutingSlipController::class, 'editSlip'])->name('editSlip');
     Route::put('/routingSlip/update/{id}', [RoutingSlipController::class, 'updateSlip'])->name('updateSlip');
